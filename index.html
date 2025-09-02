@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sổ Thu Chi (với Trợ lý AI)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+        .modal { transition: opacity 0.3s ease; }
+        .spinner, .loader {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #4f46e5;
+            animation: spin 1s ease infinite;
+        }
+        .loader { width: 48px; height: 48px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .tab-button.active { 
+            border-color: #4f46e5; 
+            color: #4f46e5; 
+            background-color: #eef2ff; 
+        }
+        .plan-item-checkbox:checked + div {
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+        #toast {
+            transition: opacity 0.5s, transform 0.5s;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="app-shell">
+        <!-- Màn Hình Đăng Nhập -->
+        <div id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-4">
+             <div class="text-center max-w-md w-full">
+                <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Sổ Thu Chi Cá Nhân</h1>
+                <p class="text-gray-600 mt-2 mb-8">An toàn, riêng tư và dễ sử dụng. <br/> Hãy đăng nhập để quản lý tài chính của bạn.</p>
+                <button id="login-btn" class="bg-white text-gray-700 font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition flex items-center justify-center w-full max-w-xs mx-auto">
+                    <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="Google logo" class="h-6 mr-4">
+                    Đăng nhập với Google
+                </button>
+            </div>
+        </div>
+
+        <!-- Nội Dung Ứng Dụng -->
+        <div id="app-container" class="hidden">
+            <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex flex-col justify-center items-center z-50">
+                <div class="loader"></div>
+                <p class="mt-4 text-gray-600 font-semibold">Đang tải dữ liệu của bạn...</p>
+            </div>
+
+            <div class="container mx-auto p-4 md:p-6 max-w-7xl pb-64">
+                 <header class="flex justify-between items-center mb-6">
+                    <div class="text-left">
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Sổ Thu Chi</h1>
+                        <p class="text-gray-600 mt-1">Quản lý thu chi và kế hoạch cá nhân.</p>
+                    </div>
+                    <div id="user-profile" class="flex items-center gap-3">
+                        <span id="user-name" class="font-semibold hidden sm:block"></span>
+                        <img id="user-photo" class="w-10 h-10 rounded-full" src="" alt="User photo">
+                        <button id="logout-btn" class="bg-gray-200 text-gray-700 font-semibold text-sm py-2 px-3 rounded-lg hover:bg-gray-300 transition">Đăng xuất</button>
+                    </div>
+                </header>
+
+                <main>
+                    <section id="summary" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div class="bg-green-100 p-4 rounded-lg shadow-md text-center">
+                            <h2 class="text-lg font-semibold text-green-800">Tổng Thu</h2>
+                            <p id="total-income" class="text-2xl font-bold text-green-600">0 ₫</p>
+                        </div>
+                        <div class="bg-red-100 p-4 rounded-lg shadow-md text-center">
+                            <h2 class="text-lg font-semibold text-red-800">Tổng Chi</h2>
+                            <p id="total-expense" class="text-2xl font-bold text-red-600">0 ₫</p>
+                        </div>
+                        <div class="bg-indigo-100 p-4 rounded-lg shadow-md text-center">
+                            <h2 class="text-lg font-semibold text-indigo-800">Lợi Nhuận</h2>
+                            <p id="net-profit" class="text-2xl font-bold text-indigo-600">0 ₫</p>
+                        </div>
+                    </section>
+                    
+                    <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
+                        <div class="p-2 border-b border-gray-200 mb-4">
+                            <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 items-center justify-center">
+                                <label class="font-semibold text-sm sm:text-base">Xem dữ liệu theo:</label>
+                                <select id="report-range" class="border rounded-md px-2 py-1 w-full sm:w-auto">
+                                    <option value="all">Tất cả thời gian</option>
+                                    <option value="day">Hôm nay</option>
+                                    <option value="week">Tuần này</option>
+                                    <option value="month">Tháng này</option>
+                                    <option value="year">Năm nay</option>
+                                    <option value="custom">Tùy chọn...</option>
+                                </select>
+                                <div id="custom-date-range" class="hidden flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                    <input type="date" id="custom-start" class="border rounded-md px-2 py-1 w-full sm:w-auto">
+                                    <input type="date" id="custom-end" class="border rounded-md px-2 py-1 w-full sm:w-auto">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border-b border-gray-200 mb-4">
+                            <nav class="flex justify-around">
+                                <button id="tab-plan" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Kế Hoạch</button>
+                                <button id="tab-history" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Lịch Sử Giao Dịch</button>
+                                <button id="tab-dashboard" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Báo Cáo</button>
+                            </nav>
+                        </div>
+
+                        <div>
+                            <!-- TAB KẾ HOẠCH -->
+                            <div id="content-plan">
+                                <div class="mb-4">
+                                    <input type="search" id="search-plan" placeholder="Tìm kiếm trong kế hoạch..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                </div>
+                                <div id="plan-list-container" class="max-h-[500px] overflow-y-auto">
+                                    <ul id="plan-list" class="space-y-3"></ul>
+                                </div>
+                                <p id="plan-empty-state" class="text-center text-gray-500 py-8">Chưa có kế hoạch nào.</p>
+                            </div>
+
+                            <!-- TAB LỊCH SỬ -->
+                            <div id="content-history" class="hidden">
+                                <div class="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-4">
+                                    <input type="search" id="search-history" placeholder="Tìm kiếm trong lịch sử..." class="w-full md:w-1/2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                    <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                                        <button id="export-xlsx-btn" class="w-full sm:w-auto bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition duration-300 text-sm disabled:bg-gray-400">Xuất Excel</button>
+                                    </div>
+                                </div>
+                                <div id="transaction-list-container" class="max-h-[500px] overflow-y-auto">
+                                    <ul id="transaction-list" class="space-y-3"></ul>
+                                </div>
+                                <p id="transaction-empty-state" class="text-center text-gray-500 py-8">Chưa có giao dịch nào được ghi nhận.</p>
+                            </div>
+                            
+                            <!-- TAB BÁO CÁO -->
+                            <div id="content-dashboard" class="hidden">
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-center mb-2">Cơ Cấu Chi Phí</h3>
+                                        <div class="relative h-80 w-full">
+                                            <canvas id="expense-pie-chart"></canvas>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-center mb-2">Dòng Tiền Theo Thời Gian</h3>
+                                        <div class="relative h-80 w-full">
+                                            <canvas id="flow-line-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            <!-- Floating Action Buttons -->
+            <div class="fixed bottom-6 right-6 flex flex-col items-center gap-4 z-40">
+                <button id="add-ai-btn" title="Nhập liệu nhanh với AI" class="w-14 h-14 bg-purple-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-purple-700 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0m-8.485 2.828l.707.707M15 21v-1m-4.5 0h3" /></svg>
+                </button>
+                <button id="add-transaction-btn" title="Ghi Giao Dịch Nhanh" class="w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M8.433 7.418c.158-.103.346-.196.567-.267v1.698a2.5 2.5 0 00-.567-.267z" /><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.5 4.5 0 00-1.879 3.487c.03.021.059.042.088.063a1 1 0 001.246-1.555A2.5 2.5 0 0110 8.5v1.445a1 1 0 102 0V9.945a2.5 2.5 0 011.026-1.953c.125-.09.264-.171.413-.243a1 1 0 10-.83-1.843A4.502 4.502 0 0011 5.092V5zM12 12a2 2 0 10-4 0 2 2 0 004 0z" clip-rule="evenodd" /></svg>
+                </button>
+                <button id="add-plan-btn" title="Thêm Kế Hoạch Mới" class="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                </button>
+            </div>
+            
+             <!-- MODALs -->
+            <div id="form-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
+                <div class="bg-white rounded-lg shadow-xl p-6 md:p-8 w-full max-w-lg transform transition-transform duration-300 scale-95 max-h-[90vh] overflow-y-auto">
+                    <h2 id="modal-title" class="text-2xl font-bold mb-4"></h2>
+                    <form id="main-form">
+                        <input type="hidden" id="editing-id">
+                        <div class="mb-4">
+                            <label class="block font-semibold mb-2">Loại</label>
+                            <div class="flex space-x-4">
+                                <label class="flex items-center"><input type="radio" name="type" value="income" class="form-radio text-green-500" checked> <span class="ml-2">Khoản Thu</span></label>
+                                <label class="flex items-center"><input type="radio" name="type" value="expense" class="form-radio text-red-500"> <span class="ml-2">Khoản Chi</span></label>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="description" class="block font-semibold mb-2">Nội dung</label>
+                                <input type="text" id="description" placeholder="VD: Bán bún, Mua thịt..." class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                            <div>
+                                 <label for="amount" class="block font-semibold mb-2">Số tiền (VNĐ)</label>
+                                <input type="number" id="amount" placeholder="Nhập số tiền" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                        </div>
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="category" class="block font-semibold mb-2">Danh mục</label>
+                                <select id="category" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required></select>
+                            </div>
+                             <div>
+                                <label for="date" class="block font-semibold mb-2">Ngày</label>
+                                <input type="date" id="date" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                        </div>
+                        <div class="space-y-4 mb-4 border-t pt-4 mt-4">
+                             <h3 class="font-semibold text-gray-700">Thông tin bổ sung (Không bắt buộc)</h3>
+                             <div id="customer-name-field" class="hidden">
+                                <label for="customerName" class="block font-semibold mb-2 text-sm">Tên khách hàng</label>
+                                <input type="text" id="customerName" placeholder="VD: Anh Ba, Chị Tư" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label for="customerNote" class="block font-semibold mb-2 text-sm">Ghi chú</label>
+                                <textarea id="customerNote" rows="2" placeholder="VD: Giao hàng lúc 12h, không cay..." class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition">Hủy</button>
+                            <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">Lưu</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div id="complete-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+                    <h2 class="text-xl font-bold mb-4">Xác nhận hoàn thành</h2>
+                    <p class="mb-2">Kế hoạch: <strong id="complete-plan-description" class="text-indigo-600"></strong></p>
+                    <form id="complete-plan-form">
+                        <input type="hidden" id="complete-plan-id">
+                        <div>
+                            <label for="complete-plan-amount" class="block font-semibold mb-2">Số tiền thực tế</label>
+                            <input type="number" id="complete-plan-amount" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition">Hủy</button>
+                            <button type="submit" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition">Hoàn Thành & Ghi Sổ</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div id="confirmation-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
+                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+                    <h2 id="confirmation-title" class="text-xl font-bold mb-4">Xác nhận hành động</h2>
+                    <p id="confirmation-message" class="mb-6">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+                    <div class="flex justify-end space-x-3">
+                        <button id="confirm-cancel-btn" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition">Hủy</button>
+                        <button id="confirm-action-btn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition">Xóa</button>
+                    </div>
+                </div>
+            </div>
+             <div id="ai-entry-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
+                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+                    <h2 class="text-2xl font-bold mb-4 text-purple-700">✨ Nhập Liệu Nhanh với AI</h2>
+                    <p class="text-gray-600 mb-4">Mô tả giao dịch của bạn bằng ngôn ngữ tự nhiên. Ví dụ: "Hôm qua chi 150k mua rau củ".</p>
+                    <form id="ai-entry-form">
+                        <textarea id="ai-input" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Nhập mô tả của bạn ở đây..."></textarea>
+                        <div class="flex justify-end items-center space-x-3 mt-6">
+                            <div id="ai-spinner" class="spinner hidden"></div>
+                            <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition">Hủy</button>
+                            <button type="submit" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 transition">Phân tích & Nhập liệu</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-lg text-white shadow-lg opacity-0 transform translate-y-10 z-50">
+                <p id="toast-message"></p>
+            </div>
+        </div>
+    </div>
+    
+<script>
+// This is the complete script. No parts are missing.
+document.addEventListener('DOMContentLoaded', () => {
+    // --- App Setup & State ---
+    const appShell = document.getElementById('app-shell');
+    const loginScreen = document.getElementById('login-screen');
+    const appContainer = document.getElementById('app-container');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userPhoto = document.getElementById('user-photo');
+    const userName = document.getElementById('user-name');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const totalIncomeEl = document.getElementById('total-income');
+    const totalExpenseEl = document.getElementById('total-expense');
+    const netProfitEl = document.getElementById('net-profit');
+    const transactionList = document.getElementById('transaction-list');
+    const transactionEmptyState = document.getElementById('transaction-empty-state');
+    const planList = document.getElementById('plan-list');
+    const planEmptyState = document.getElementById('plan-empty-state');
+    const addPlanBtn = document.getElementById('add-plan-btn');
+    const addTransactionBtn = document.getElementById('add-transaction-btn');
+    const exportXlsxBtn = document.getElementById('export-xlsx-btn');
+    const searchPlanInput = document.getElementById('search-plan');
+    const searchHistoryInput = document.getElementById('search-history');
+    const formModal = document.getElementById('form-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const mainForm = document.getElementById('main-form');
+    const editingIdInput = document.getElementById('editing-id');
+    const descriptionInput = document.getElementById('description');
+    const amountInput = document.getElementById('amount');
+    const dateInput = document.getElementById('date');
+    const categorySelect = document.getElementById('category');
+    const typeRadios = formModal.querySelectorAll('input[name="type"]');
+    const customerNameField = document.getElementById('customer-name-field');
+    const customerNameInput = document.getElementById('customerName');
+    const customerNoteInput = document.getElementById('customerNote');
+    const completePlanModal = document.getElementById('complete-plan-modal');
+    const completePlanForm = document.getElementById('complete-plan-form');
+    const completePlanIdInput = document.getElementById('complete-plan-id');
+    const completePlanDescriptionEl = document.getElementById('complete-plan-description');
+    const completePlanAmountInput = document.getElementById('complete-plan-amount');
+    const confirmationModal = document.getElementById('confirmation-modal');
+    const confirmationMessage = document.getElementById('confirmation-message');
+    const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+    const confirmActionBtn = document.getElementById('confirm-action-btn');
+    const tabPlan = document.getElementById('tab-plan');
+    const tabHistory = document.getElementById('tab-history');
+    const tabDashboard = document.getElementById('tab-dashboard');
+    const contentPlan = document.getElementById('content-plan');
+    const contentHistory = document.getElementById('content-history');
+    const contentDashboard = document.getElementById('content-dashboard');
+    const reportRangeEl = document.getElementById('report-range');
+    const customDateRangeDiv = document.getElementById('custom-date-range');
+    const customStartEl = document.getElementById('custom-start');
+    const customEndEl = document.getElementById('custom-end');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    const addAiBtn = document.getElementById('add-ai-btn');
+    const aiEntryModal = document.getElementById('ai-entry-modal');
+    const aiEntryForm = document.getElementById('ai-entry-form');
+    const aiInput = document.getElementById('ai-input');
+    const aiSpinner = document.getElementById('ai-spinner');
+    
+    let auth, db;
+    let transactionsCollection, plansCollection;
+    let transactions = [], plans = [];
+    let currentUserId = null;
+    let toastTimeout;
+    let confirmAction = null;
+    let expensePieChart, flowLineChart;
+    const expensePieChartCtx = document.getElementById('expense-pie-chart')?.getContext('2d');
+    const flowLineChartCtx = document.getElementById('flow-line-chart')?.getContext('2d');
+
+    const categories = {
+        income: ['Bán tại quán', 'Giao hàng', 'Thu khác'],
+        expense: ['Nguyên liệu chính', 'Nguyên liệu phụ', 'Vật tư', 'Chi phí vận hành', 'Chi phí khác']
+    };
+
+    // --- Firebase Initialization & Auth Handling ---
+    try {
+        const firebaseConfig = {
+            apiKey: "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc",
+            authDomain: "sothuchiapp-5efc7.firebaseapp.com",
+            projectId: "sothuchiapp-5efc7",
+            storageBucket: "sothuchiapp-5efc7.appspot.com",
+            messagingSenderId: "537279498834",
+            appId: "1:537279498834:web:b5277e19fc234d11e36d8b"
+        };
+        if (typeof firebase === 'undefined') throw new Error("Firebase SDK not loaded.");
+        
+        firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth();
+        db = firebase.firestore();
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUserId = user.uid;
+                userName.textContent = user.displayName;
+                userPhoto.src = user.photoURL;
+                
+                const transactionsPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/transactions`;
+                const plansPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/plans`;
+                transactionsCollection = db.collection(transactionsPath);
+                plansCollection = db.collection(plansPath);
+                
+                loginScreen.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                loadingOverlay.style.display = 'flex';
+                listenForData();
+            } else {
+                currentUserId = null;
+                transactions = []; plans = [];
+                renderAll();
+                appContainer.classList.add('hidden');
+                loginScreen.classList.remove('hidden');
+            }
+        });
+    } catch (err) {
+        loginScreen.innerHTML = `<p class="text-red-500 text-center">${err.message}</p>`;
+    }
+    
+    const signInWithGoogle = () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(error => alert("Đăng nhập thất bại: " + error.message));
+    };
+    const signOut = () => auth.signOut();
+    loginBtn.addEventListener('click', signInWithGoogle);
+    logoutBtn.addEventListener('click', signOut);
+
+    function listenForData() {
+        if (!transactionsCollection || !plansCollection) return;
+        
+        transactionsCollection.onSnapshot(snapshot => {
+            let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            transactions = data;
+            renderAll();
+            loadingOverlay.style.display = 'none';
+        }, err => showError("Không thể tải lịch sử giao dịch: " + err.message));
+
+        plansCollection.onSnapshot(snapshot => {
+            let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            plans = data;
+            renderAll();
+        }, err => showError("Không thể tải danh sách kế hoạch: " + err.message));
+    }
+    
+    function renderAll() {
+        const dateFilteredTransactions = filterData(transactions, 'date');
+        const planSearchTerm = searchPlanInput.value;
+        const historySearchTerm = searchHistoryInput.value;
+        const searchedPlans = filterData(plans, 'search', planSearchTerm);
+        const searchedTransactions = filterData(dateFilteredTransactions, 'search', historySearchTerm);
+        updateSummary(dateFilteredTransactions);
+        renderTransactionList(searchedTransactions);
+        renderPlanList(searchedPlans);
+        if (!contentDashboard.classList.contains('hidden')) {
+            updateCharts(dateFilteredTransactions);
+        }
+    }
+    function renderPlanList(source) {
+        planList.innerHTML = '';
+        planEmptyState.style.display = source.length === 0 ? 'block' : 'none';
+        source.forEach(plan => planList.appendChild(createPlanElement(plan)));
+    }
+    function renderTransactionList(source) {
+        transactionList.innerHTML = '';
+        transactionEmptyState.style.display = source.length === 0 ? 'block' : 'none';
+        source.forEach(tx => transactionList.appendChild(createTransactionElement(tx)));
+    }
+    function updateSummary(source) {
+        const totalIncome = source.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
+        const totalExpense = source.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
+        totalIncomeEl.textContent = formatCurrency(totalIncome);
+        totalExpenseEl.textContent = formatCurrency(totalExpense);
+        netProfitEl.textContent = formatCurrency(totalIncome - totalExpense);
+        netProfitEl.classList.toggle('text-green-600', totalIncome - totalExpense >= 0);
+        netProfitEl.classList.toggle('text-red-600', totalIncome - totalExpense < 0);
+        exportXlsxBtn.disabled = source.length === 0;
+    }
+    function createPlanElement(plan) {
+        const { id, type, description, amount, category, customerName, customerNote, createdAt, date } = plan;
+        const isIncome = type === 'income';
+        const item = document.createElement('li');
+        item.className = `p-3 rounded-lg flex items-start gap-3 border-l-4 ${isIncome ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`;
+        let extraInfoHtml = '';
+        if ((isIncome && customerName) || customerNote) {
+            extraInfoHtml = `<div class="mt-2 pt-2 border-t border-gray-200 text-sm text-gray-700">
+                ${(isIncome && customerName) ? `<p><strong>KH:</strong> ${customerName}</p>` : ''}
+                ${customerNote ? `<p><strong>Ghi chú:</strong> ${customerNote}</p>` : ''}
+            </div>`;
+        }
+        const displayDateTimeStr = formatDisplayDateTime(createdAt, date);
+        item.innerHTML = `<input type="checkbox" class="plan-item-checkbox mt-1 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <div class="flex-grow flex flex-col">
+                <div>
+                    <p class="font-bold text-gray-500 text-sm">${category || ''}</p>
+                    <p class="font-semibold">${description || ''}</p>
+                    <p class="text-sm font-bold mt-1 ${isIncome ? 'text-green-600' : 'text-red-600'}">${formatCurrency(amount)}</p>
+                    ${extraInfoHtml}
+                </div>
+                <p class="text-xs text-gray-500 text-right mt-2">${displayDateTimeStr}</p>
+            </div>
+            <div class="flex flex-col gap-2">
+                <button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                <button data-action="delete" class="text-gray-500 hover:text-red-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+            </div>`;
+        item.querySelector('.plan-item-checkbox').addEventListener('change', (e) => { if (e.target.checked) { openCompletePlanModal(plan); e.target.checked = false; } });
+        item.querySelector('button[data-action="edit"]').addEventListener('click', () => openFormModal('editPlan', plan));
+        item.querySelector('button[data-action="delete"]').addEventListener('click', () => deletePlan(id, description));
+        return item;
+    }
+    function createTransactionElement(tx) {
+        const { id, type, description, amount, date, category, customerName, customerNote, createdAt } = tx;
+        const isIncome = type === 'income';
+        const item = document.createElement('li');
+        item.className = `p-4 rounded-lg border-l-4 ${isIncome ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`;
+        const displayDateTimeStr = formatDisplayDateTime(createdAt, date);
+        let extraInfoHtml = '';
+        if ((isIncome && customerName) || customerNote) {
+            extraInfoHtml = `<div class="mt-2 pt-2 border-t border-gray-200 text-sm text-gray-700">
+                ${(isIncome && customerName) ? `<p><strong>KH:</strong> ${customerName}</p>` : ''}
+                ${customerNote ? `<p><strong>Ghi chú:</strong> ${customerNote}</p>` : ''}
+            </div>`;
+        }
+        item.innerHTML = `<div class="flex justify-between items-start">
+                <div class="flex-grow flex flex-col">
+                    <div>
+                        <p class="font-bold text-gray-500 text-sm">${category || 'Chưa phân loại'}</p>
+                        <p class="font-semibold text-lg">${description || 'Không có nội dung'}</p>
+                        ${extraInfoHtml}
+                    </div>
+                    <p class="text-xs text-gray-500 text-right mt-2">${displayDateTimeStr}</p>
+                </div>
+                <div class="text-right flex-shrink-0 ml-4">
+                    <p class="font-bold text-xl ${isIncome ? 'text-green-600' : 'text-red-600'}">${isIncome ? '+' : '-'}${formatCurrency(amount)}</p>
+                    <div class="flex gap-2 justify-end mt-1">
+                        <button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                        <button data-action="delete" class="text-gray-500 hover:text-red-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+                    </div>
+                </div>
+            </div>`;
+        item.querySelector('button[data-action="edit"]').addEventListener('click', () => openFormModal('editTransaction', tx));
+        item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteTransaction(id, description));
+        return item;
+    }
+    function openFormModal(mode, data = {}) {
+        currentFormMode = mode;
+        mainForm.reset();
+        dateInput.valueAsDate = new Date();
+        editingIdInput.value = data.id || '';
+        const type = data.type || 'income';
+        formModal.querySelector(`input[name="type"][value="${type}"]`).checked = true;
+        switch(mode) {
+            case 'addPlan': modalTitle.textContent = 'Thêm Kế Hoạch Mới'; break;
+            case 'editPlan': case 'editTransaction':
+                modalTitle.textContent = mode === 'editPlan' ? 'Chỉnh Sửa Kế Hoạch' : 'Chỉnh Sửa Giao Dịch';
+                descriptionInput.value = data.description || '';
+                amountInput.value = data.amount || '';
+                dateInput.value = data.date || '';
+                customerNameInput.value = data.customerName || '';
+                customerNoteInput.value = data.customerNote || '';
+                updateCategoryOptions();
+                categorySelect.value = data.category || '';
+                break;
+            case 'addTransaction': modalTitle.textContent = 'Thêm Giao Dịch Nhanh'; break;
+        }
+        updateFormFieldsVisibility();
+        if (mode !== 'editPlan' && mode !== 'editTransaction') { updateCategoryOptions(); }
+        formModal.classList.remove('hidden');
+        setTimeout(() => formModal.classList.remove('opacity-0'), 10);
+    }
+    function closeFormModal() { formModal.classList.add('opacity-0'); setTimeout(() => formModal.classList.add('hidden'), 300); }
+    function openCompletePlanModal(plan) {
+        completePlanIdInput.value = JSON.stringify(plan);
+        completePlanDescriptionEl.textContent = plan.description;
+        completePlanAmountInput.value = plan.amount;
+        completePlanModal.classList.remove('hidden');
+        setTimeout(() => completePlanModal.classList.remove('opacity-0'), 10);
+    }
+    function closeCompletePlanModal() { completePlanModal.classList.add('opacity-0'); setTimeout(() => completePlanModal.classList.add('hidden'), 300); }
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const data = { type: formModal.querySelector('input[name="type"]:checked').value, description: descriptionInput.value.trim(), amount: +amountInput.value, date: dateInput.value, category: categorySelect.value, customerName: customerNameInput.value.trim(), customerNote: customerNoteInput.value.trim(), createdAt: new Date().toISOString() };
+        if (!data.description || data.amount <= 0) { return showToast("Vui lòng nhập nội dung và số tiền hợp lệ.", "error"); }
+        try {
+            if (currentFormMode === 'addPlan') { await plansCollection.add(data); showToast("Đã thêm kế hoạch thành công!"); } 
+            else if (currentFormMode === 'editPlan') { delete data.createdAt; await plansCollection.doc(editingIdInput.value).update(data); showToast("Đã cập nhật kế hoạch!"); } 
+            else if (currentFormMode === 'addTransaction') { await transactionsCollection.add(data); showToast("Đã thêm giao dịch thành công!"); } 
+            else if (currentFormMode === 'editTransaction') { delete data.createdAt; await transactionsCollection.doc(editingIdInput.value).update(data); showToast("Đã cập nhật giao dịch!"); }
+            closeFormModal();
+        } catch (err) { showToast(`Lỗi: ${err.message}`, "error"); }
+    }
+    async function handleCompletePlanSubmit(e) {
+        e.preventDefault();
+        const plan = JSON.parse(completePlanIdInput.value);
+        const actualAmount = +completePlanAmountInput.value;
+        if (actualAmount <= 0) return showToast("Vui lòng nhập số tiền thực tế hợp lệ.", "error");
+        const newTransaction = { ...plan, amount: actualAmount, date: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() };
+        delete newTransaction.id;
+        try {
+            await transactionsCollection.add(newTransaction);
+            await plansCollection.doc(plan.id).delete();
+            showToast("Đã hoàn thành kế hoạch!");
+            closeCompletePlanModal();
+        } catch (err) { showToast(`Lỗi: ${err.message}`, "error"); }
+    }
+    function openConfirmationModal(message, onConfirm) {
+        confirmationMessage.textContent = message;
+        confirmAction = onConfirm;
+        confirmationModal.classList.remove('hidden');
+        setTimeout(() => confirmationModal.classList.remove('opacity-0'), 10);
+    }
+    function closeConfirmationModal() { confirmationModal.classList.add('opacity-0'); setTimeout(() => confirmationModal.classList.add('hidden'), 300); }
+    const deletePlan = (id, description) => { openConfirmationModal(`Bạn có chắc muốn xóa kế hoạch "${description}"?`, async () => { try { await plansCollection.doc(id).delete(); showToast("Đã xóa kế hoạch."); } catch(e) { showToast('Lỗi: '+e.message, "error"); } }); };
+    const deleteTransaction = (id, description) => { openConfirmationModal(`Bạn có chắc muốn xóa giao dịch "${description}"?`, async () => { try { await transactionsCollection.doc(id).delete(); showToast("Đã xóa giao dịch."); } catch(e) { showToast('Lỗi: '+e.message, "error"); } }); };
+    const formatCurrency = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
+    const showError = (msg) => { console.error(msg); loadingOverlay.innerHTML = `<p class="text-red-500 p-4 text-center">${msg}</p>`; };
+    function formatDisplayDateTime(createdAt, date) { const timestamp = createdAt || date; if (!timestamp) return 'Không có ngày'; const d = new Date(timestamp); const dateStr = d.toLocaleDateString('vi-VN'); const timeStr = d.toLocaleTimeString('vi-VN'); return `${dateStr} ${timeStr}`; }
+    function showToast(message, type = "success") { clearTimeout(toastTimeout); toastMessage.textContent = message; toast.className = toast.className.replace(/bg-\w+-500/, ''); toast.classList.add(type === "success" ? "bg-green-500" : "bg-red-500"); toast.classList.remove("opacity-0", "translate-y-10"); toastTimeout = setTimeout(() => { toast.classList.add("opacity-0", "translate-y-10"); }, 3000); }
+    function updateFormFieldsVisibility() { const selectedType = formModal.querySelector('input[name="type"]:checked').value; customerNameField.classList.toggle('hidden', selectedType !== 'income'); }
+    function updateCategoryOptions() { const selectedType = formModal.querySelector('input[name="type"]:checked').value; categorySelect.innerHTML = categories[selectedType].map(c => `<option value="${c}">${c}</option>`).join(''); updateFormFieldsVisibility(); }
+    function filterData(data, filterType, searchTerm = '') {
+        if (filterType === 'search') { const term = searchTerm.toLowerCase().trim(); if (!term) return data; return data.filter(item => Object.values(item).some(value => String(value).toLowerCase().includes(term))); }
+        if (filterType === 'date') { const range = reportRangeEl.value; if (range === 'all') return data.slice(); const today = new Date(); today.setHours(0, 0, 0, 0); let start, end = new Date(); end.setHours(23, 59, 59, 999);
+            switch(range) { case 'day': start = new Date(today); break; case 'week': start = new Date(today.setDate(today.getDate() - (today.getDay() || 7) + 1)); break; case 'month': start = new Date(today.getFullYear(), today.getMonth(), 1); break; case 'year': start = new Date(today.getFullYear(), 0, 1); break; case 'custom': start = customStartEl.value ? new Date(customStartEl.value) : null; end = customEndEl.value ? new Date(customEndEl.value) : null; if(start) start.setHours(0,0,0,0); if(end) end.setHours(23, 59, 59, 999); break; default: start = end = null; }
+            return data.filter(t => { if (!t.date) return false; const d = new Date(t.date); return (!start || d >= start) && (!end || d <= end); });
+        } return data;
+    }
+    function switchTab(tab) {
+        [contentPlan, contentHistory, contentDashboard].forEach(c => c.classList.add('hidden'));
+        [tabPlan, tabHistory, tabDashboard].forEach(t => t.classList.remove('active'));
+        if (tab === 'plan') { contentPlan.classList.remove('hidden'); tabPlan.classList.add('active'); } 
+        else if (tab === 'history') { contentHistory.classList.remove('hidden'); tabHistory.classList.add('active'); } 
+        else { contentDashboard.classList.remove('hidden'); tabDashboard.classList.add('active'); renderAll(); }
+    }
+    const handleFilterChange = () => { const isCustom = reportRangeEl.value === 'custom'; customDateRangeDiv.classList.toggle('hidden', !isCustom); customDateRangeDiv.classList.toggle('flex', isCustom); renderAll(); };
+    function updateCharts(source) {
+        const expenseLabels = []; const expenseData = []; const lineLabels = []; const incomeData = []; const expenseLineData = [];
+        const expenses = source.filter(t => t.type === 'expense');
+        if (expenses.length > 0) { const expenseByCategory = expenses.reduce((acc, curr) => { acc[curr.category] = (acc[curr.category] || 0) + (curr.amount || 0); return acc; }, {}); expenseLabels.push(...Object.keys(expenseByCategory)); expenseData.push(...Object.values(expenseByCategory)); }
+        if (source.length > 0) { const dataByDate = source.reduce((acc, curr) => { const date = curr.date.split('T')[0]; if (!acc[date]) acc[date] = { income: 0, expense: 0 }; acc[date][curr.type] += (curr.amount || 0); return acc; }, {}); const sortedDates = Object.keys(dataByDate).sort((a,b) => new Date(a) - new Date(b)); lineLabels.push(...sortedDates.map(date => new Date(date).toLocaleDateString('vi-VN'))); incomeData.push(...sortedDates.map(date => dataByDate[date].income)); expenseLineData.push(...sortedDates.map(date => dataByDate[date].expense)); }
+        if (!expensePieChart && expensePieChartCtx && expenseLabels.length > 0) { expensePieChart = new Chart(expensePieChartCtx, { type: 'doughnut', data: { labels: expenseLabels, datasets: [{ data: expenseData, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'] }] }, options: { responsive: true, maintainAspectRatio: false } }); } else if (expensePieChart) { expensePieChart.data.labels = expenseLabels; expensePieChart.data.datasets[0].data = expenseData; expensePieChart.update(); }
+        if (!flowLineChart && flowLineChartCtx && lineLabels.length > 0) { flowLineChart = new Chart(flowLineChartCtx, { type: 'line', data: { labels: lineLabels, datasets: [ { label: 'Tổng Thu', data: incomeData, borderColor: '#16a34a', backgroundColor: '#16a34a20', fill: true, tension: 0.1 }, { label: 'Tổng Chi', data: expenseLineData, borderColor: '#dc2626', backgroundColor: '#dc262620', fill: true, tension: 0.1 } ] }, options: { responsive: true, maintainAspectRatio: false } }); } else if (flowLineChart) { flowLineChart.data.labels = lineLabels; flowLineChart.data.datasets[0].data = incomeData; flowLineChart.data.datasets[1].data = expenseLineData; flowLineChart.update(); }
+    }
+    const exportToXLSX = () => {
+        const source = filterData(transactions, 'date');
+        const sorted = [...source].sort((a,b)=> new Date(a.date)-new Date(b.date));
+        const totalIncome = sorted.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amount||0),0);
+        const totalExpense = sorted.filter(t=>t.type==='expense').reduce((s,t)=>s+(t.amount||0),0);
+        const summaryData = [["BÁO CÁO TỔNG QUAN"], [],["Khoản mục", "Số tiền"],["Tổng Thu", totalIncome],["Tổng Chi", totalExpense],["Lợi Nhuận", totalIncome-totalExpense]];
+        const ws_summary = XLSX.utils.aoa_to_sheet(summaryData); ws_summary['!cols'] = [{wch: 25}, {wch: 20}];
+        const header = ['Ngày', 'Loại', 'Nội dung', 'Số tiền', 'Danh mục', 'Tên khách hàng', 'Ghi chú'];
+        const dataRows = sorted.map(t => ({ 'Ngày': new Date(t.createdAt || t.date), 'Loại': t.type === 'income' ? 'Thu' : 'Chi', 'Nội dung': t.description, 'Số tiền': t.type === 'income' ? t.amount : -t.amount, 'Danh mục': t.category, 'Tên khách hàng': t.customerName || '', 'Ghi chú': t.customerNote || '' }));
+        const ws_details = XLSX.utils.json_to_sheet(dataRows, {header: header}); ws_details['!cols'] = [{wch:20},{wch:8},{wch:30},{wch:18},{wch:20},{wch:20},{wch:30}];
+        const totalRowNum = dataRows.length + 2; ws_details[`C${totalRowNum}`] = {t:'s', v:'LỢI NHUẬN TỔNG CỘNG:'}; ws_details[`D${totalRowNum}`] = {t:'n', f:`SUM(D2:D${totalRowNum-1})`, z: '#,##0 "₫"'};
+        for(let i = 2; i <= totalRowNum; i++) { if(ws_details[`D${i}`]) ws_details[`D${i}`].z = '#,##0 "₫"'; }
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws_summary, "BaoCaoTongQuan");
+        XLSX.utils.book_append_sheet(wb, ws_details, "GiaoDichChiTiet");
+        XLSX.writeFile(wb, `SoThuChi_BaoCao_${new Date().toISOString().split('T')[0]}.xlsx`);
+    };
+    const openAiEntryModal = () => { aiInput.value = ''; aiEntryModal.classList.remove('hidden'); setTimeout(() => aiEntryModal.classList.remove('opacity-0'), 10); };
+    const closeAiEntryModal = () => { aiEntryModal.classList.add('opacity-0'); setTimeout(() => aiEntryModal.classList.add('hidden'), 300); };
+    const handleAiEntry = async (e) => {
+        e.preventDefault();
+        const textInput = aiInput.value.trim();
+        if (!textInput) { return showToast("Vui lòng nhập mô tả giao dịch.", "error"); }
+        aiSpinner.classList.remove('hidden'); e.target.querySelector('button[type="submit"]').disabled = true;
+        const prompt = `Analyze the following Vietnamese text describing a financial transaction for a small business. Extract the key information into a JSON object that strictly follows the provided schema. The current date is ${new Date().toLocaleDateString('en-CA')} for context. Infer dates like "hôm qua" (yesterday), "hôm nay" (today). Determine the 'type' as either 'income' or 'expense'. Select the most appropriate 'category' from the provided enum list. Combine any extra details into 'customerNote'. User's text: "${textInput}"`;
+        try {
+            const apiKey = "YOUR_API_KEY_HERE";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "type": { "type": "STRING", "enum": ["income", "expense"] }, "description": { "type": "STRING" }, "amount": { "type": "NUMBER" }, "category": { "type": "STRING", "enum": [...categories.income, ...categories.expense] }, "date": { "type": "STRING" }, "customerNote": { "type": "STRING" } }, required: ["type", "description", "amount", "category", "date"] } } };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) { throw new Error(`API call failed with status: ${response.status}`); }
+            const result = await response.json();
+            const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (jsonText) { const parsedData = JSON.parse(jsonText); closeAiEntryModal(); openFormModal('addTransaction', parsedData); } else { throw new Error("AI did not return valid data."); }
+        } catch (error) { console.error('Error with AI entry:', error); showToast(`AI không thể xử lý yêu cầu: ${error.message}`, "error"); } finally { aiSpinner.classList.add('hidden'); e.target.querySelector('button[type="submit"]').disabled = false; }
+    };
+    addPlanBtn.addEventListener('click', () => openFormModal('addPlan'));
+    addTransactionBtn.addEventListener('click', () => openFormModal('addTransaction'));
+    addAiBtn.addEventListener('click', openAiEntryModal);
+    aiEntryModal.querySelector('.cancel-btn').addEventListener('click', closeAiEntryModal);
+    aiEntryForm.addEventListener('submit', handleAiEntry);
+    mainForm.addEventListener('submit', handleFormSubmit);
+    completePlanForm.addEventListener('submit', handleCompletePlanSubmit);
+    formModal.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', closeFormModal));
+    completePlanModal.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', closeCompletePlanModal));
+    formModal.addEventListener('click', (e) => e.target === formModal && closeFormModal());
+    completePlanModal.addEventListener('click', (e) => e.target === completePlanModal && closeCompletePlanModal());
+    confirmCancelBtn.addEventListener('click', closeConfirmationModal);
+    confirmActionBtn.addEventListener('click', () => { if(confirmAction) confirmAction(); closeConfirmationModal(); });
+    confirmationModal.addEventListener('click', (e) => e.target === confirmationModal && closeConfirmationModal());
+    typeRadios.forEach(r => r.addEventListener('change', updateCategoryOptions));
+    tabPlan.addEventListener('click', () => switchTab('plan'));
+    tabHistory.addEventListener('click', () => switchTab('history'));
+    tabDashboard.addEventListener('click', () => switchTab('dashboard'));
+    reportRangeEl.addEventListener('change', handleFilterChange);
+    customStartEl.addEventListener('change', renderAll);
+    customEndEl.addEventListener('change', renderAll);
+    searchPlanInput.addEventListener('input', renderAll);
+    searchHistoryInput.addEventListener('input', renderAll);
+    exportXlsxBtn.addEventListener('click', exportToXLSX);
+    switchTab('plan'); handleFilterChange();
+});
+</script>
+</body>
+</html>
