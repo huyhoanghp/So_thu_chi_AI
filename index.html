@@ -661,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const textInput = aiInput.value.trim();
         if (!textInput) { return showToast("Vui lòng nhập mô tả giao dịch.", "error"); }
-        if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
+        if (geminiApiKey === "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc") {
              return showToast("Lỗi: API Key của Gemini chưa được thiết lập trong mã nguồn.", "error");
         }
         aiSpinner.classList.remove('hidden'); e.target.querySelector('button[type="submit"]').disabled = true;
@@ -705,4 +705,5 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
 
