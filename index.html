@@ -282,7 +282,6 @@
     </div>
     
 <script>
-// This is the complete script. No parts are missing.
 document.addEventListener('DOMContentLoaded', () => {
     // --- App Setup & State ---
     const appShell = document.getElementById('app-shell');
@@ -344,7 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiInput = document.getElementById('ai-input');
     const aiSpinner = document.getElementById('ai-spinner');
     
-    let auth, db;
+    let auth, db, geminiApiKey;
     let transactionsCollection, plansCollection;
     let transactions = [], plans = [];
     let currentUserId = null;
@@ -361,7 +360,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Firebase Initialization & Auth Handling ---
     try {
-        // TODO: PASTE YOUR FIREBASE CONFIG OBJECT HERE
         const firebaseConfig = {
             apiKey: "AIzaSyBkgzeseW1hFbiEiHrK6kXtMgdFE4gdUSI",
             authDomain: "sothuchiapp-5efc7.firebaseapp.com",
@@ -372,8 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
             measurementId: "G-XYK5Q974RP"
         };
 
-        // TODO: PASTE YOUR GEMINI API KEY HERE
-        const geminiApiKey = "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc";
+        geminiApiKey = "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc";
         
         if (!firebaseConfig.apiKey) {
             loginScreen.innerHTML = `<p class="text-red-500 text-center">Lỗi: Cấu hình Firebase chưa được thiết lập trong mã nguồn.</p>`;
@@ -539,32 +536,46 @@ document.addEventListener('DOMContentLoaded', () => {
         item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteTransaction(id, description));
         return item;
     }
+    
     function openFormModal(mode, data = {}) {
         currentFormMode = mode;
         mainForm.reset();
-        dateInput.valueAsDate = new Date();
-        editingIdInput.value = data.id || '';
+        
         const type = data.type || 'income';
         formModal.querySelector(`input[name="type"][value="${type}"]`).checked = true;
+        updateCategoryOptions();
+
         switch(mode) {
-            case 'addPlan': modalTitle.textContent = 'Thêm Kế Hoạch Mới'; break;
-            case 'editPlan': case 'editTransaction':
+            case 'addPlan':
+                modalTitle.textContent = 'Thêm Kế Hoạch Mới';
+                dateInput.valueAsDate = new Date();
+                break;
+            case 'addTransaction':
+                modalTitle.textContent = 'Thêm Giao Dịch Nhanh';
+                descriptionInput.value = data.description || '';
+                amountInput.value = data.amount || '';
+                dateInput.value = data.date || new Date().toISOString().split('T')[0];
+                categorySelect.value = data.category || '';
+                customerNameInput.value = data.customerName || '';
+                customerNoteInput.value = data.customerNote || '';
+                break;
+            case 'editPlan':
+            case 'editTransaction':
                 modalTitle.textContent = mode === 'editPlan' ? 'Chỉnh Sửa Kế Hoạch' : 'Chỉnh Sửa Giao Dịch';
+                editingIdInput.value = data.id || '';
                 descriptionInput.value = data.description || '';
                 amountInput.value = data.amount || '';
                 dateInput.value = data.date || '';
+                categorySelect.value = data.category || '';
                 customerNameInput.value = data.customerName || '';
                 customerNoteInput.value = data.customerNote || '';
-                updateCategoryOptions();
-                categorySelect.value = data.category || '';
                 break;
-            case 'addTransaction': modalTitle.textContent = 'Thêm Giao Dịch Nhanh'; break;
         }
         updateFormFieldsVisibility();
-        if (mode !== 'editPlan' && mode !== 'editTransaction') { updateCategoryOptions(); }
         formModal.classList.remove('hidden');
         setTimeout(() => formModal.classList.remove('opacity-0'), 10);
     }
+
     function closeFormModal() { formModal.classList.add('opacity-0'); setTimeout(() => formModal.classList.add('hidden'), 300); }
     function openCompletePlanModal(plan) {
         completePlanIdInput.value = JSON.stringify(plan);
@@ -661,12 +672,9 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const textInput = aiInput.value.trim();
         if (!textInput) { return showToast("Vui lòng nhập mô tả giao dịch.", "error"); }
-        
-        // SỬA LỖI: Thay thế chuỗi API Key cứng bằng chuỗi mặc định
         if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
              return showToast("Lỗi: API Key của Gemini chưa được thiết lập trong mã nguồn.", "error");
         }
-
         aiSpinner.classList.remove('hidden'); e.target.querySelector('button[type="submit"]').disabled = true;
         const prompt = `Analyze the following Vietnamese text describing a financial transaction for a small business. Extract the key information into a JSON object that strictly follows the provided schema. The current date is ${new Date().toLocaleDateString('en-CA')} for context. Infer dates like "hôm qua" (yesterday), "hôm nay" (today). Determine the 'type' as either 'income' or 'expense'. Select the most appropriate 'category' from the provided enum list. Combine any extra details into 'customerNote'. User's text: "${textInput}"`;
         try {
