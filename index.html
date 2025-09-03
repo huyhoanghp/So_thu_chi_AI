@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sổ Thu Chi (với Trợ lý AI)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
@@ -351,6 +351,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let toastTimeout;
     let confirmAction = null;
     let expensePieChart, flowLineChart;
+    let currentFormMode = null;
+    let unsubTx = null, unsubPlans = null;
+    let firstLoads = { tx: false, plans: false };
+
     const expensePieChartCtx = document.getElementById('expense-pie-chart')?.getContext('2d');
     const flowLineChartCtx = document.getElementById('flow-line-chart')?.getContext('2d');
 
@@ -376,16 +380,21 @@ document.addEventListener('DOMContentLoaded', () => {
         db = firebase.firestore();
 
         auth.onAuthStateChanged(user => {
+            // clean up previous listeners
+            if (typeof unsubTx === 'function') { try { unsubTx(); } catch(e){}; unsubTx = null; }
+            if (typeof unsubPlans === 'function') { try { unsubPlans(); } catch(e){}; unsubPlans = null; }
+            firstLoads = { tx: false, plans: false };
+
             if (user) {
                 currentUserId = user.uid;
-                userName.textContent = user.displayName;
-                userPhoto.src = user.photoURL;
-                
+                userName.textContent = user.displayName || user.email || 'Tài khoản';
+                userPhoto.src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || user.email || 'User')}`;
+
                 const transactionsPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/transactions`;
                 const plansPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/plans`;
                 transactionsCollection = db.collection(transactionsPath);
                 plansCollection = db.collection(plansPath);
-                
+
                 loginScreen.classList.add('hidden');
                 appContainer.classList.remove('hidden');
                 loadingOverlay.style.display = 'flex';
@@ -412,20 +421,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function listenForData() {
         if (!transactionsCollection || !plansCollection) return;
-        
-        transactionsCollection.onSnapshot(snapshot => {
+
+        // Unsubscribe old listeners if any (safety)
+        if (typeof unsubTx === 'function') { try { unsubTx(); } catch(e){}; unsubTx = null; }
+        if (typeof unsubPlans === 'function') { try { unsubPlans(); } catch(e){}; unsubPlans = null; }
+        firstLoads = { tx: false, plans: false };
+
+        unsubTx = transactionsCollection.onSnapshot(snapshot => {
             let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            data.sort((a, b) => new Date((b.createdAt || b.date) || 0) - new Date((a.createdAt || a.date) || 0));
             transactions = data;
+            firstLoads.tx = true;
             renderAll();
-            loadingOverlay.style.display = 'none';
+            if (firstLoads.tx && firstLoads.plans) loadingOverlay.style.display = 'none';
         }, err => showError("Không thể tải lịch sử giao dịch: " + err.message));
 
-        plansCollection.onSnapshot(snapshot => {
+        unsubPlans = plansCollection.onSnapshot(snapshot => {
             let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            data.sort((a, b) => new Date((b.createdAt || b.date) || 0) - new Date((a.createdAt || a.date) || 0));
             plans = data;
+            firstLoads.plans = true;
             renderAll();
+            if (firstLoads.tx && firstLoads.plans) loadingOverlay.style.display = 'none';
         }, err => showError("Không thể tải danh sách kế hoạch: " + err.message));
     }
     
@@ -534,6 +551,53 @@ document.addEventListener('DOMContentLoaded', () => {
         dateInput.valueAsDate = new Date();
         editingIdInput.value = data.id || '';
         const type = data.type || 'income';
+        const typeInput = formModal.querySelector(`input[name="type"][value="${type}"]`);
+        if (typeInput) typeInput.checked = true;
+
+        // prefill common fields if provided
+        if (data) {
+            if (data.description) descriptionInput.value = data.description;
+            if (data.amount != null && data.amount !== '') amountInput.value = data.amount;
+            if (data.date) dateInput.value = data.date;
+            if (data.customerName) customerNameInput.value = data.customerName;
+            if (data.customerNote) customerNoteInput.value = data.customerNote;
+        }
+
+        switch(mode) {
+            case 'addPlan':
+                modalTitle.textContent = 'Thêm Kế Hoạch Mới';
+                // if data provided, try set category
+                updateCategoryOptions();
+                if (data.category) categorySelect.value = data.category;
+                break;
+            case 'editPlan':
+            case 'editTransaction':
+                modalTitle.textContent = mode === 'editPlan' ? 'Chỉnh Sửa Kế Hoạch' : 'Chỉnh Sửa Giao Dịch';
+                // existing prefill (redundant but safe)
+                descriptionInput.value = data.description || '';
+                amountInput.value = data.amount || '';
+                dateInput.value = data.date || '';
+                customerNameInput.value = data.customerName || '';
+                customerNoteInput.value = data.customerNote || '';
+                updateCategoryOptions();
+                categorySelect.value = data.category || '';
+                break;
+            case 'addTransaction':
+                modalTitle.textContent = 'Thêm Giao Dịch Nhanh';
+                updateCategoryOptions();
+                if (data.category) categorySelect.value = data.category;
+                break;
+        }
+        updateFormFieldsVisibility();
+        if (mode !== 'editPlan' && mode !== 'editTransaction') { updateCategoryOptions(); }
+        formModal.classList.remove('hidden');
+        setTimeout(() => formModal.classList.remove('opacity-0'), 10);
+    }) {
+        currentFormMode = mode;
+        mainForm.reset();
+        dateInput.valueAsDate = new Date();
+        editingIdInput.value = data.id || '';
+        const type = data.type || 'income';
         formModal.querySelector(`input[name="type"][value="${type}"]`).checked = true;
         switch(mode) {
             case 'addPlan': modalTitle.textContent = 'Thêm Kế Hoạch Mới'; break;
@@ -601,7 +665,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const formatCurrency = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
     const showError = (msg) => { console.error(msg); loadingOverlay.innerHTML = `<p class="text-red-500 p-4 text-center">${msg}</p>`; };
     function formatDisplayDateTime(createdAt, date) { const timestamp = createdAt || date; if (!timestamp) return 'Không có ngày'; const d = new Date(timestamp); const dateStr = d.toLocaleDateString('vi-VN'); const timeStr = d.toLocaleTimeString('vi-VN'); return `${dateStr} ${timeStr}`; }
-    function showToast(message, type = "success") { clearTimeout(toastTimeout); toastMessage.textContent = message; toast.className = toast.className.replace(/bg-\w+-500/, ''); toast.classList.add(type === "success" ? "bg-green-500" : "bg-red-500"); toast.classList.remove("opacity-0", "translate-y-10"); toastTimeout = setTimeout(() => { toast.classList.add("opacity-0", "translate-y-10"); }, 3000); }
+    function parseLocalDate(yyyy_mm_dd) {
+        if (!yyyy_mm_dd) return null;
+        const parts = yyyy_mm_dd.split('-').map(n => parseInt(n,10));
+        if (parts.length < 3) return null;
+        const [y,m,d] = parts;
+        return new Date(y, (m||1)-1, d||1);
+    }
+
+    function showToast(message, type = "success") {
+        clearTimeout(toastTimeout);
+        toastMessage.textContent = message;
+        // remove any bg color classes we use
+        toast.classList.remove("bg-green-500", "bg-red-500");
+        toast.classList.add(type === "success" ? "bg-green-500" : "bg-red-500");
+        toast.classList.remove("opacity-0","translate-y-10");
+        toastTimeout = setTimeout(() => {
+            toast.classList.add("opacity-0","translate-y-10");
+        }, 3000);
+    }
     function updateFormFieldsVisibility() { const selectedType = formModal.querySelector('input[name="type"]:checked').value; customerNameField.classList.toggle('hidden', selectedType !== 'income'); }
     function updateCategoryOptions() { const selectedType = formModal.querySelector('input[name="type"]:checked').value; categorySelect.innerHTML = categories[selectedType].map(c => `<option value="${c}">${c}</option>`).join(''); updateFormFieldsVisibility(); }
     function filterData(data, filterType, searchTerm = '') {
@@ -653,8 +735,7 @@ document.addEventListener('DOMContentLoaded', () => {
         aiSpinner.classList.remove('hidden'); e.target.querySelector('button[type="submit"]').disabled = true;
         const prompt = `Analyze the following Vietnamese text describing a financial transaction for a small business. Extract the key information into a JSON object that strictly follows the provided schema. The current date is ${new Date().toLocaleDateString('en-CA')} for context. Infer dates like "hôm qua" (yesterday), "hôm nay" (today). Determine the 'type' as either 'income' or 'expense'. Select the most appropriate 'category' from the provided enum list. Combine any extra details into 'customerNote'. User's text: "${textInput}"`;
         try {
-            const apiKey = "YOUR_API_KEY_HERE";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const apiUrl = '/ai/generate';
             const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { "type": { "type": "STRING", "enum": ["income", "expense"] }, "description": { "type": "STRING" }, "amount": { "type": "NUMBER" }, "category": { "type": "STRING", "enum": [...categories.income, ...categories.expense] }, "date": { "type": "STRING" }, "customerNote": { "type": "STRING" } }, required: ["type", "description", "amount", "category", "date"] } } };
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) { throw new Error(`API call failed with status: ${response.status}`); }
