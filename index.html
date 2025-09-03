@@ -57,6 +57,11 @@
             color: #1f2937;
             align-self: flex-start;
         }
+        .speak-btn .spinner {
+            width: 16px;
+            height: 16px;
+            border-width: 2px;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -133,7 +138,7 @@
                             <nav class="flex justify-around">
                                 <button id="tab-plan" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Kế Hoạch</button>
                                 <button id="tab-history" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Lịch Sử Giao Dịch</button>
-                                <button id="tab-dashboard" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Trợ Lý Phân Tích</button>
+                                <button id="tab-dashboard" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Trợ lý</button>
                             </nav>
                         </div>
 
@@ -163,9 +168,23 @@
                                 <p id="transaction-empty-state" class="text-center text-gray-500 py-8">Chưa có giao dịch nào được ghi nhận.</p>
                             </div>
                             
-                            <!-- TAB BÁO CÁO (CHAT UI) -->
-                            <div id="content-dashboard" class="hidden">
-                               <div class="flex flex-col h-[60vh] bg-white rounded-lg">
+                            <!-- TAB TRỢ LÝ -->
+                            <div id="content-dashboard" class="hidden space-y-6">
+                               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-center mb-2">Cơ Cấu Chi Phí</h3>
+                                        <div class="relative h-64 sm:h-80 w-full">
+                                            <canvas id="expense-pie-chart"></canvas>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-center mb-2">Dòng Tiền Theo Thời Gian</h3>
+                                        <div class="relative h-64 sm:h-80 w-full">
+                                            <canvas id="flow-line-chart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                               <div class="flex flex-col h-[60vh] bg-white rounded-lg border">
                                     <div id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto">
                                         <!-- Chat messages will be appended here -->
                                     </div>
@@ -366,6 +385,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
     const aiThinkingIndicator = document.getElementById('ai-thinking-indicator');
+    let expensePieChart, flowLineChart;
+    const expensePieChartCtx = document.getElementById('expense-pie-chart')?.getContext('2d');
+    const flowLineChartCtx = document.getElementById('flow-line-chart')?.getContext('2d');
 
     let auth, db, geminiApiKey;
     let transactionsCollection, plansCollection;
@@ -473,6 +495,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSummary(dateFilteredTransactions);
         renderTransactionList(searchedTransactions);
         renderPlanList(searchedPlans);
+        if(!contentDashboard.classList.contains('hidden')){
+            updateCharts(dateFilteredTransactions);
+        }
     }
     
     // --- UI Rendering ---
@@ -501,7 +526,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Element Creation ---
     function createPlanElement(plan) {
-        // ... (No change from previous version) ...
         const { id, type, description, amount, category, customerName, customerNote, createdAt, date } = plan;
         const isIncome = type === 'income';
         const item = document.createElement('li');
@@ -535,7 +559,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createTransactionElement(tx) {
-        // ... (No change from previous version) ...
         const { id, type, description, amount, date, category, customerName, customerNote, createdAt } = tx;
         const isIncome = type === 'income';
         const item = document.createElement('li');
@@ -572,7 +595,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Modal & Form Logic ---
     function openFormModal(mode, data = {}) {
-        // ... (No change from previous version) ...
         currentFormMode = mode;
         mainForm.reset();
         
@@ -607,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formModal.classList.remove('hidden');
         setTimeout(() => formModal.classList.remove('opacity-0'), 10);
     }
-    // ... (All other modal/form functions remain the same) ...
+    
     function closeFormModal() { formModal.classList.add('opacity-0'); setTimeout(() => formModal.classList.add('hidden'), 300); }
     function openCompletePlanModal(plan) {
         completePlanIdInput.value = JSON.stringify(plan);
@@ -682,14 +704,69 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             contentDashboard.classList.remove('hidden');
             tabDashboard.classList.add('active');
-            // Initialize chat when switching to this tab for the first time
             if (chatHistory.length === 0) {
                 chatHistory.push({ role: 'model', parts: [{ text: "Chào bạn, tôi là trợ lý phân tích tài chính. Bạn muốn biết điều gì về dữ liệu thu chi trong khoảng thời gian đã chọn?" }] });
             }
             renderChat();
+            renderAll(); // Cần gọi để vẽ biểu đồ
         }
     }
     const handleFilterChange = () => { const isCustom = reportRangeEl.value === 'custom'; customDateRangeDiv.classList.toggle('hidden', !isCustom); customDateRangeDiv.classList.toggle('flex', isCustom); renderAll(); }
+    function updateCharts(source) {
+        if (expensePieChart) expensePieChart.destroy();
+        if (flowLineChart) flowLineChart.destroy();
+    
+        const expenseLabels = [];
+        const expenseData = [];
+        const lineLabels = [];
+        const incomeData = [];
+        const expenseLineData = [];
+
+        const expenses = source.filter(t => t.type === 'expense');
+        if (expenses.length > 0) {
+            const expenseByCategory = expenses.reduce((acc, curr) => {
+                acc[curr.category] = (acc[curr.category] || 0) + (curr.amount || 0);
+                return acc;
+            }, {});
+            expenseLabels.push(...Object.keys(expenseByCategory));
+            expenseData.push(...Object.values(expenseByCategory));
+        }
+        
+        if (source.length > 0) {
+            const dataByDate = source.reduce((acc, curr) => {
+                const date = curr.date.split('T')[0];
+                if (!acc[date]) acc[date] = { income: 0, expense: 0 };
+                acc[date][curr.type] += (curr.amount || 0);
+                return acc;
+            }, {});
+            const sortedDates = Object.keys(dataByDate).sort((a,b) => new Date(a) - new Date(b));
+            lineLabels.push(...sortedDates.map(date => new Date(date).toLocaleDateString('vi-VN')));
+            incomeData.push(...sortedDates.map(date => dataByDate[date].income));
+            expenseLineData.push(...sortedDates.map(date => dataByDate[date].expense));
+        }
+
+        if (expensePieChartCtx && expenseLabels.length > 0) {
+            expensePieChart = new Chart(expensePieChartCtx, {
+                type: 'doughnut',
+                data: { labels: expenseLabels, datasets: [{ data: expenseData, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'] }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+        
+        if (flowLineChartCtx && lineLabels.length > 0) {
+            flowLineChart = new Chart(flowLineChartCtx, {
+                type: 'line',
+                data: {
+                    labels: lineLabels,
+                    datasets: [
+                        { label: 'Tổng Thu', data: incomeData, borderColor: '#16a34a', backgroundColor: '#16a34a20', fill: true, tension: 0.1 },
+                        { label: 'Tổng Chi', data: expenseLineData, borderColor: '#dc2626', backgroundColor: '#dc262620', fill: true, tension: 0.1 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    }
     
     // --- AI LOGIC (Entry & Chat) ---
     const openAiEntryModal = () => { aiInput.value = ''; aiEntryModal.classList.remove('hidden'); setTimeout(() => aiEntryModal.classList.remove('opacity-0'), 10); };
@@ -704,76 +781,142 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistory.forEach(msg => {
             const wrapper = document.createElement('div');
             wrapper.className = `p-3 rounded-lg chat-message ${msg.role === 'user' ? 'user' : 'ai'}`;
-            // Simple markdown-to-html for AI responses
-             if (msg.role === 'model') {
+            
+            if (msg.role === 'model') {
                 let html = msg.parts[0].text
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-                    .replace(/\n/g, '<br>'); // Newlines
-                wrapper.innerHTML = html;
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>');
+                
+                // Add speaker button
+                const speakBtn = document.createElement('button');
+                speakBtn.className = 'speak-btn ml-2 p-1 rounded-full hover:bg-gray-300 transition inline-block align-middle';
+                speakBtn.title = 'Đọc nội dung';
+                speakBtn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"></path></svg>`;
+                speakBtn.dataset.text = msg.parts[0].text;
+
+                const textContainer = document.createElement('span');
+                textContainer.innerHTML = html;
+
+                wrapper.appendChild(textContainer);
+                wrapper.appendChild(speakBtn);
+
             } else {
                 wrapper.textContent = msg.parts[0].text;
             }
             chatMessages.appendChild(wrapper);
         });
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to bottom
+        chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    const handleAiChatSubmit = async (e) => {
-        e.preventDefault();
-        const userInput = chatInput.value.trim();
-        if (!userInput) return;
+    // --- TTS Logic ---
+    function base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
 
-        // Add user message to history and render
-        chatHistory.push({ role: 'user', parts: [{ text: userInput }] });
-        renderChat();
-        chatInput.value = '';
-        aiThinkingIndicator.classList.remove('hidden');
+    function pcmToWav(pcmData, sampleRate) {
+        const numChannels = 1;
+        const bitsPerSample = 16;
+        const blockAlign = (numChannels * bitsPerSample) / 8;
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = pcmData.length * pcmData.BYTES_PER_ELEMENT;
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
 
-        // Prepare data summary for AI context
-        const filteredTx = filterData(transactions, 'date');
-        const dataSummary = `Dữ liệu tóm tắt:
-        - Tổng thu: ${totalIncomeEl.textContent}
-        - Tổng chi: ${totalExpenseEl.textContent}
-        - Lợi nhuận: ${netProfitEl.textContent}
-        - Chi tiết các khoản chi: ${filteredTx.filter(t => t.type === 'expense').map(t => `${t.description} (${t.category}): ${formatCurrency(t.amount)}`).join(', ') || 'Không có khoản chi nào.'}`;
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
 
-        const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thân thiện và chuyên nghiệp. Nhiệm vụ của bạn là trả lời câu hỏi của người dùng dựa trên dữ liệu tóm tắt được cung cấp. Hãy đưa ra câu trả lời rõ ràng, đi thẳng vào vấn đề và nếu có thể, hãy đưa ra lời khuyên hữu ích.`;
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + dataSize, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitsPerSample, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, dataSize, true);
+
+        const pcm16 = new Int16Array(pcmData.buffer);
+        for (let i = 0; i < pcm16.length; i++) {
+            view.setInt16(44 + i * 2, pcm16[i], true);
+        }
+
+        return new Blob([view], { type: 'audio/wav' });
+    }
+
+    async function speakText(textToSpeak, buttonElement) {
+        if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
+            return showToast("Lỗi: API Key của Gemini chưa được thiết lập.", "error");
+        }
         
+        const originalContent = buttonElement.innerHTML;
+        buttonElement.innerHTML = '<div class="spinner"></div>';
+        buttonElement.disabled = true;
+
         try {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
-            
-            // Construct the full payload with history
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey}`;
             const payload = {
-                contents: [
-                    ...chatHistory.map(item => ({ role: item.role, parts: item.parts })),
-                    { role: 'user', parts: [{ text: `Dựa vào dữ liệu này: "${dataSummary}", hãy trả lời câu hỏi sau: "${userInput}"` }] }
-                ],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                }
+                contents: [{ parts: [{ text: `Hãy đọc một cách tự nhiên và rõ ràng: ${textToSpeak}` }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } }
+                    }
+                },
+                model: "gemini-2.5-flash-preview-tts"
             };
-            
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
             
             const result = await response.json();
-            const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
-            
-            if (aiResponse) {
-                chatHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+            const part = result?.candidates?.[0]?.content?.parts?.[0];
+            const audioData = part?.inlineData?.data;
+            const mimeType = part?.inlineData?.mimeType;
+
+            if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                const pcmData = base64ToArrayBuffer(audioData);
+                const pcm16 = new Int16Array(pcmData);
+                const wavBlob = pcmToWav(pcm16, sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+                const audio = new Audio(audioUrl);
+                audio.play();
             } else {
-                 chatHistory.push({ role: 'model', parts: [{ text: "Xin lỗi, tôi chưa thể đưa ra câu trả lời lúc này." }] });
+                throw new Error("No valid audio data received.");
             }
         } catch (error) {
-            console.error('Error with AI chat:', error);
-            chatHistory.push({ role: 'model', parts: [{ text: `Đã xảy ra lỗi: ${error.message}` }] });
+            console.error('Error with TTS:', error);
+            showToast(`Lỗi phát âm thanh: ${error.message}`, "error");
         } finally {
-            aiThinkingIndicator.classList.add('hidden');
-            renderChat();
+            buttonElement.innerHTML = originalContent;
+            buttonElement.disabled = false;
         }
-    };
-
+    }
+    
     // --- EVENT LISTENERS ---
+    chatMessages.addEventListener('click', (e) => {
+        const speakButton = e.target.closest('.speak-btn');
+        if (speakButton) {
+            const text = speakButton.dataset.text;
+            if (text) {
+                speakText(text, speakButton);
+            }
+        }
+    });
+
+    // ... Rest of the event listeners ...
     addPlanBtn.addEventListener('click', () => openFormModal('addPlan'));
     addTransactionBtn.addEventListener('click', () => openFormModal('addTransaction'));
     addAiBtn.addEventListener('click', openAiEntryModal);
@@ -794,7 +937,7 @@ document.addEventListener('DOMContentLoaded', () => {
     customEndEl.addEventListener('change', renderAll);
     searchPlanInput.addEventListener('input', renderAll);
     searchHistoryInput.addEventListener('input', renderAll);
-    exportXlsxBtn.addEventListener('click', ()=>{}); // Placeholder for export
+    exportXlsxBtn.addEventListener('click', ()=>{}); 
     chatForm.addEventListener('submit', handleAiChatSubmit);
 
     // --- INITIAL LOAD ---
