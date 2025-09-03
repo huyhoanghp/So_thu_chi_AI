@@ -264,7 +264,7 @@
              <div id="ai-entry-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
                  <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
                     <h2 class="text-2xl font-bold mb-4 text-purple-700">✨ Nhập Liệu Nhanh với AI</h2>
-                    <p class="text-gray-600 mb-4">Mô tả giao dịch hoặc kế hoạch. Ví dụ: "Dự định ngày mai mua rau củ 150k".</p>
+                    <p class="text-gray-600 mb-4">Mô tả giao dịch hoặc kế hoạch. Ví dụ: "Thu 50k của chị Lan".</p>
                     <form id="ai-entry-form">
                         <textarea id="ai-input" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Nhập mô tả của bạn ở đây..."></textarea>
                         <div class="flex justify-end items-center space-x-3 mt-6">
@@ -537,7 +537,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return item;
     }
     
-    // CẢI TIẾN: Hợp nhất logic điền dữ liệu cho 'addPlan' và 'addTransaction'
     function openFormModal(mode, data = {}) {
         currentFormMode = mode;
         mainForm.reset();
@@ -677,11 +676,18 @@ document.addEventListener('DOMContentLoaded', () => {
         aiSpinner.classList.remove('hidden');
         e.target.querySelector('button[type="submit"]').disabled = true;
 
-        const prompt = `You are an intelligent assistant for a Vietnamese finance app. Your task is to analyze the user's text and determine if it's a "plan" (a future intention) or a "transaction" (a past or present event).
-- Use keywords like "sẽ", "dự định", "kế hoạch", "dự kiến", "ngày mai", "tuần sau" to identify a "plan".
-- If no future keywords are present, assume it is a "transaction".
-- Set the 'entryType' field to "plan" or "transaction" accordingly.
-Then, extract the other details into the JSON object. The current date is ${new Date().toLocaleDateString('en-CA')}.
+        // CẢI TIẾN: Hướng dẫn AI hiểu "customerName"
+        const prompt = `You are an intelligent assistant for a Vietnamese finance app. Your task is to analyze the user's text.
+First, determine if it's a "plan" (future intention) or a "transaction" (past event). Use keywords like "sẽ", "dự định", "kế hoạch" to identify a "plan". Set 'entryType' accordingly.
+Second, extract the following details:
+- 'type': 'income' or 'expense'.
+- 'description': The main subject of the entry.
+- 'amount': The numeric value.
+- 'category': Select the most appropriate category.
+- 'date': The date of the entry in YYYY-MM-DD format. The current date is ${new Date().toLocaleDateString('en-CA')}.
+- 'customerName': If an income entry mentions a person's name (e.g., "thu của chị An", "anh Ba trả tiền"), extract ONLY the name here.
+- 'customerNote': For any other miscellaneous details (e.g., "giao hàng lúc 12h").
+
 Available 'income' categories: ${categories.income.join(', ')}.
 Available 'expense' categories: ${categories.expense.join(', ')}.
 User's text: "${textInput}"`;
@@ -701,6 +707,7 @@ User's text: "${textInput}"`;
                             "amount": { "type": "NUMBER" }, 
                             "category": { "type": "STRING", "enum": [...categories.income, ...categories.expense] }, 
                             "date": { "type": "STRING" }, 
+                            "customerName": { "type": "STRING" }, // THÊM "TỪ VỰNG" MỚI
                             "customerNote": { "type": "STRING" } 
                         }, 
                         required: ["entryType", "type", "description", "amount", "date"] 
