@@ -379,8 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiEntryForm = document.getElementById('ai-entry-form');
     const aiInput = document.getElementById('ai-input');
     const aiSpinner = document.getElementById('ai-spinner');
-    
-    // Chat UI Elements
     const chatMessages = document.getElementById('chat-messages');
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
@@ -402,7 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
         expense: ['Nguyên liệu chính', 'Nguyên liệu phụ', 'Vật tư', 'Chi phí vận hành', 'Chi phí khác']
     };
 
-    // --- Firebase Initialization & Auth Handling ---
     try {
         const firebaseConfig = {
             apiKey: "AIzaSyBkgzeseW1hFbiEiHrK6kXtMgdFE4gdUSI",
@@ -413,31 +410,23 @@ document.addEventListener('DOMContentLoaded', () => {
             appId: "1:537279498834:web:b5277e19fc234d11e36d8b",
             measurementId: "G-XYK5Q974RP"
         };
-
         geminiApiKey = "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc";
-        
         if (!firebaseConfig.apiKey) {
-            loginScreen.innerHTML = `<p class="text-red-500 text-center">Lỗi: Cấu hình Firebase chưa được thiết lập trong mã nguồn.</p>`;
+            loginScreen.innerHTML = `<p class="text-red-500 text-center">Lỗi: Cấu hình Firebase chưa được thiết lập.</p>`;
             return;
         }
-
-        if (typeof firebase === 'undefined') throw new Error("Firebase SDK not loaded.");
-        
         firebase.initializeApp(firebaseConfig);
         auth = firebase.auth();
         db = firebase.firestore();
-
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUserId = user.uid;
                 userName.textContent = user.displayName;
                 userPhoto.src = user.photoURL;
-                
                 const transactionsPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/transactions`;
                 const plansPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/plans`;
                 transactionsCollection = db.collection(transactionsPath);
                 plansCollection = db.collection(plansPath);
-                
                 loginScreen.classList.add('hidden');
                 appContainer.classList.remove('hidden');
                 loadingOverlay.style.display = 'flex';
@@ -454,7 +443,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loginScreen.innerHTML = `<p class="text-red-500 text-center">${err.message}</p>`;
     }
     
-    // --- Sign-in & Sign-out ---
     const signInWithGoogle = () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => alert("Đăng nhập thất bại: " + error.message));
@@ -463,35 +451,23 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.addEventListener('click', signInWithGoogle);
     logoutBtn.addEventListener('click', signOut);
 
-    // --- Data Listeners ---
     function listenForData() {
         if (!transactionsCollection || !plansCollection) return;
-        
         transactionsCollection.onSnapshot(snapshot => {
-            let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-            transactions = data;
+            transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
             renderAll();
             loadingOverlay.style.display = 'none';
         }, err => showError("Không thể tải lịch sử giao dịch: " + err.message));
-
         plansCollection.onSnapshot(snapshot => {
-            let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-            plans = data;
+            plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
             renderAll();
         }, err => showError("Không thể tải danh sách kế hoạch: " + err.message));
     }
     
-    // --- Main Render Logic ---
     function renderAll() {
         const dateFilteredTransactions = filterData(transactions, 'date');
-        const planSearchTerm = searchPlanInput.value;
-        const historySearchTerm = searchHistoryInput.value;
-
-        const searchedPlans = filterData(plans, 'search', planSearchTerm);
-        const searchedTransactions = filterData(dateFilteredTransactions, 'search', historySearchTerm);
-
+        const searchedPlans = filterData(plans, 'search', searchPlanInput.value);
+        const searchedTransactions = filterData(dateFilteredTransactions, 'search', searchHistoryInput.value);
         updateSummary(dateFilteredTransactions);
         renderTransactionList(searchedTransactions);
         renderPlanList(searchedPlans);
@@ -500,19 +476,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- UI Rendering ---
     function renderPlanList(source) {
         planList.innerHTML = '';
         planEmptyState.style.display = source.length === 0 ? 'block' : 'none';
         source.forEach(plan => planList.appendChild(createPlanElement(plan)));
     }
-
     function renderTransactionList(source) {
         transactionList.innerHTML = '';
         transactionEmptyState.style.display = source.length === 0 ? 'block' : 'none';
         source.forEach(tx => transactionList.appendChild(createTransactionElement(tx)));
     }
-
     function updateSummary(source) {
         const totalIncome = source.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
         const totalExpense = source.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
@@ -524,7 +497,6 @@ document.addEventListener('DOMContentLoaded', () => {
         exportXlsxBtn.disabled = source.length === 0;
     }
 
-    // --- Element Creation ---
     function createPlanElement(plan) {
         const { id, type, description, amount, category, customerName, customerNote, createdAt, date } = plan;
         const isIncome = type === 'income';
@@ -557,7 +529,6 @@ document.addEventListener('DOMContentLoaded', () => {
         item.querySelector('button[data-action="delete"]').addEventListener('click', () => deletePlan(id, description));
         return item;
     }
-
     function createTransactionElement(tx) {
         const { id, type, description, amount, date, category, customerName, customerNote, createdAt } = tx;
         const isIncome = type === 'income';
@@ -592,19 +563,15 @@ document.addEventListener('DOMContentLoaded', () => {
         item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteTransaction(id, description));
         return item;
     }
-
-    // --- Modal & Form Logic ---
+    
     function openFormModal(mode, data = {}) {
         currentFormMode = mode;
         mainForm.reset();
-        
         const type = data.type || 'income';
         formModal.querySelector(`input[name="type"][value="${type}"]`).checked = true;
         updateCategoryOptions();
-
         switch(mode) {
-            case 'addPlan':
-            case 'addTransaction':
+            case 'addPlan': case 'addTransaction':
                 modalTitle.textContent = mode === 'addPlan' ? 'Thêm Kế Hoạch Mới' : 'Thêm Giao Dịch Nhanh';
                 descriptionInput.value = data.description || '';
                 amountInput.value = data.amount || '';
@@ -613,8 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 customerNameInput.value = data.customerName || '';
                 customerNoteInput.value = data.customerNote || '';
                 break;
-            case 'editPlan':
-            case 'editTransaction':
+            case 'editPlan': case 'editTransaction':
                 modalTitle.textContent = mode === 'editPlan' ? 'Chỉnh Sửa Kế Hoạch' : 'Chỉnh Sửa Giao Dịch';
                 editingIdInput.value = data.id || '';
                 descriptionInput.value = data.description || '';
@@ -629,7 +595,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formModal.classList.remove('hidden');
         setTimeout(() => formModal.classList.remove('opacity-0'), 10);
     }
-    
+
     function closeFormModal() { formModal.classList.add('opacity-0'); setTimeout(() => formModal.classList.add('hidden'), 300); }
     function openCompletePlanModal(plan) {
         completePlanIdInput.value = JSON.stringify(plan);
@@ -674,8 +640,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function closeConfirmationModal() { confirmationModal.classList.add('opacity-0'); setTimeout(() => confirmationModal.classList.add('hidden'), 300); }
     const deletePlan = (id, description) => { openConfirmationModal(`Bạn có chắc muốn xóa kế hoạch "${description}"?`, async () => { try { await plansCollection.doc(id).delete(); showToast("Đã xóa kế hoạch."); } catch(e) { showToast('Lỗi: '+e.message, "error"); } }); };
     const deleteTransaction = (id, description) => { openConfirmationModal(`Bạn có chắc muốn xóa giao dịch "${description}"?`, async () => { try { await transactionsCollection.doc(id).delete(); showToast("Đã xóa giao dịch."); } catch(e) { showToast('Lỗi: '+e.message, "error"); } }); };
-
-    // --- Utility Functions ---
     const formatCurrency = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
     const showError = (msg) => { console.error(msg); loadingOverlay.innerHTML = `<p class="text-red-500 p-4 text-center">${msg}</p>`; };
     function formatDisplayDateTime(createdAt, date) { const timestamp = createdAt || date; if (!timestamp) return 'Không có ngày'; const d = new Date(timestamp); const dateStr = d.toLocaleDateString('vi-VN'); const timeStr = d.toLocaleTimeString('vi-VN'); return `${dateStr} ${timeStr}`; }
@@ -690,81 +654,34 @@ document.addEventListener('DOMContentLoaded', () => {
         } return data;
     }
     
-    // --- Tab & Chart Logic ---
     function switchTab(tab) {
         [contentPlan, contentHistory, contentDashboard].forEach(c => c.classList.add('hidden'));
         [tabPlan, tabHistory, tabDashboard].forEach(t => t.classList.remove('active'));
-        
-        if (tab === 'plan') {
-            contentPlan.classList.remove('hidden');
-            tabPlan.classList.add('active');
-        } else if (tab === 'history') {
-            contentHistory.classList.remove('hidden');
-            tabHistory.classList.add('active');
-        } else {
+        if (tab === 'plan') { contentPlan.classList.remove('hidden'); tabPlan.classList.add('active'); } 
+        else if (tab === 'history') { contentHistory.classList.remove('hidden'); tabHistory.classList.add('active'); } 
+        else {
             contentDashboard.classList.remove('hidden');
             tabDashboard.classList.add('active');
             if (chatHistory.length === 0) {
                 chatHistory.push({ role: 'model', parts: [{ text: "Chào bạn, tôi là trợ lý phân tích tài chính. Bạn muốn biết điều gì về dữ liệu thu chi trong khoảng thời gian đã chọn?" }] });
             }
             renderChat();
-            renderAll(); // Cần gọi để vẽ biểu đồ
+            renderAll();
         }
     }
-    const handleFilterChange = () => { const isCustom = reportRangeEl.value === 'custom'; customDateRangeDiv.classList.toggle('hidden', !isCustom); customDateRangeDiv.classList.toggle('flex', isCustom); renderAll(); }
+    const handleFilterChange = () => { const isCustom = reportRangeEl.value === 'custom'; customDateRangeDiv.classList.toggle('hidden', !isCustom); customDateRangeDiv.classList.toggle('flex', isCustom); renderAll(); };
     function updateCharts(source) {
         if (expensePieChart) expensePieChart.destroy();
         if (flowLineChart) flowLineChart.destroy();
-    
-        const expenseLabels = [];
-        const expenseData = [];
-        const lineLabels = [];
-        const incomeData = [];
-        const expenseLineData = [];
-
+        const expenseLabels = []; const expenseData = []; const lineLabels = []; const incomeData = []; const expenseLineData = [];
         const expenses = source.filter(t => t.type === 'expense');
-        if (expenses.length > 0) {
-            const expenseByCategory = expenses.reduce((acc, curr) => {
-                acc[curr.category] = (acc[curr.category] || 0) + (curr.amount || 0);
-                return acc;
-            }, {});
-            expenseLabels.push(...Object.keys(expenseByCategory));
-            expenseData.push(...Object.values(expenseByCategory));
-        }
-        
-        if (source.length > 0) {
-            const dataByDate = source.reduce((acc, curr) => {
-                const date = curr.date.split('T')[0];
-                if (!acc[date]) acc[date] = { income: 0, expense: 0 };
-                acc[date][curr.type] += (curr.amount || 0);
-                return acc;
-            }, {});
-            const sortedDates = Object.keys(dataByDate).sort((a,b) => new Date(a) - new Date(b));
-            lineLabels.push(...sortedDates.map(date => new Date(date).toLocaleDateString('vi-VN')));
-            incomeData.push(...sortedDates.map(date => dataByDate[date].income));
-            expenseLineData.push(...sortedDates.map(date => dataByDate[date].expense));
-        }
-
+        if (expenses.length > 0) { const expenseByCategory = expenses.reduce((acc, curr) => { acc[curr.category] = (acc[curr.category] || 0) + (curr.amount || 0); return acc; }, {}); expenseLabels.push(...Object.keys(expenseByCategory)); expenseData.push(...Object.values(expenseByCategory)); }
+        if (source.length > 0) { const dataByDate = source.reduce((acc, curr) => { const date = curr.date.split('T')[0]; if (!acc[date]) acc[date] = { income: 0, expense: 0 }; acc[date][curr.type] += (curr.amount || 0); return acc; }, {}); const sortedDates = Object.keys(dataByDate).sort((a,b) => new Date(a) - new Date(b)); lineLabels.push(...sortedDates.map(date => new Date(date).toLocaleDateString('vi-VN'))); incomeData.push(...sortedDates.map(date => dataByDate[date].income)); expenseLineData.push(...sortedDates.map(date => dataByDate[date].expense)); }
         if (expensePieChartCtx && expenseLabels.length > 0) {
-            expensePieChart = new Chart(expensePieChartCtx, {
-                type: 'doughnut',
-                data: { labels: expenseLabels, datasets: [{ data: expenseData, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'] }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            expensePieChart = new Chart(expensePieChartCtx, { type: 'doughnut', data: { labels: expenseLabels, datasets: [{ data: expenseData, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'] }] }, options: { responsive: true, maintainAspectRatio: false } });
         }
-        
         if (flowLineChartCtx && lineLabels.length > 0) {
-            flowLineChart = new Chart(flowLineChartCtx, {
-                type: 'line',
-                data: {
-                    labels: lineLabels,
-                    datasets: [
-                        { label: 'Tổng Thu', data: incomeData, borderColor: '#16a34a', backgroundColor: '#16a34a20', fill: true, tension: 0.1 },
-                        { label: 'Tổng Chi', data: expenseLineData, borderColor: '#dc2626', backgroundColor: '#dc262620', fill: true, tension: 0.1 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
+            flowLineChart = new Chart(flowLineChartCtx, { type: 'line', data: { labels: lineLabels, datasets: [ { label: 'Tổng Thu', data: incomeData, borderColor: '#16a34a', backgroundColor: '#16a34a20', fill: true, tension: 0.1 }, { label: 'Tổng Chi', data: expenseLineData, borderColor: '#dc2626', backgroundColor: '#dc262620', fill: true, tension: 0.1 } ] }, options: { responsive: true, maintainAspectRatio: false } });
         }
     }
     
@@ -773,7 +690,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeAiEntryModal = () => { aiEntryModal.classList.add('opacity-0'); setTimeout(() => aiEntryModal.classList.add('hidden'), 300); };
     
     const handleAiEntry = async (e) => {
-        // ... (This logic remains the same)
+        e.preventDefault();
+        const textInput = aiInput.value.trim();
+        if (!textInput) { return showToast("Vui lòng nhập mô tả.", "error"); }
+        if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
+             return showToast("Lỗi: API Key của Gemini chưa được thiết lập.", "error");
+        }
+        aiSpinner.classList.remove('hidden');
+        e.target.querySelector('button[type="submit"]').disabled = true;
+
+        const prompt = `You are an intelligent assistant for a Vietnamese finance app. Your task is to analyze the user's text and determine if it's a "plan" (a future intention) or a "transaction" (a past or present event).
+- Use keywords like "sẽ", "dự định", "kế hoạch", "dự kiến", "ngày mai", "tuần sau" to identify a "plan".
+- If no future keywords are present, assume it is a "transaction".
+- Set the 'entryType' field to "plan" or "transaction" accordingly.
+Then, extract the other details into the JSON object. The current date is ${new Date().toLocaleDateString('en-CA')}.
+Available 'income' categories: ${categories.income.join(', ')}.
+Available 'expense' categories: ${categories.expense.join(', ')}.
+User's text: "${textInput}"`;
+
+        try {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
+            const payload = { 
+                contents: [{ parts: [{ text: prompt }] }], 
+                generationConfig: { 
+                    responseMimeType: "application/json", 
+                    responseSchema: { 
+                        type: "OBJECT", 
+                        properties: { 
+                            "entryType": { "type": "STRING", "enum": ["plan", "transaction"] },
+                            "type": { "type": "STRING", "enum": ["income", "expense"] }, 
+                            "description": { "type": "STRING" }, 
+                            "amount": { "type": "NUMBER" }, 
+                            "category": { "type": "STRING", "enum": [...categories.income, ...categories.expense] }, 
+                            "date": { "type": "STRING" }, 
+                            "customerName": { "type": "STRING" }, 
+                            "customerNote": { "type": "STRING" } 
+                        }, 
+                        required: ["entryType", "type", "description", "amount", "date"] 
+                    } 
+                } 
+            };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) { throw new Error(`API call failed with status: ${response.status}`); }
+            const result = await response.json();
+            const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (jsonText) {
+                const parsedData = JSON.parse(jsonText);
+                closeAiEntryModal();
+                if (parsedData.entryType === 'plan') {
+                    openFormModal('addPlan', parsedData);
+                } else {
+                    openFormModal('addTransaction', parsedData);
+                }
+            } else {
+                throw new Error("AI did not return valid data.");
+            }
+        } catch (error) { console.error('Error with AI entry:', error); showToast(`AI không thể xử lý yêu cầu: ${error.message}`, "error"); } finally { aiSpinner.classList.add('hidden'); e.target.querySelector('button[type="submit"]').disabled = false; }
     };
 
     function renderChat() {
@@ -787,11 +760,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                     .replace(/\n/g, '<br>');
                 
-                // Add speaker button
                 const speakBtn = document.createElement('button');
                 speakBtn.className = 'speak-btn ml-2 p-1 rounded-full hover:bg-gray-300 transition inline-block align-middle';
                 speakBtn.title = 'Đọc nội dung';
-                speakBtn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z"></path></svg>`;
+                speakBtn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.5 12a4.5 4.5 0 000-8v8z"></path></svg>`;
                 speakBtn.dataset.text = msg.parts[0].text;
 
                 const textContainer = document.createElement('span');
@@ -808,12 +780,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // --- TTS Logic ---
-    function base64ToArrayBuffer(base64) { /* ... */ }
-    function pcmToWav(pcmData, sampleRate) { /* ... */ }
-    async function speakText(textToSpeak, buttonElement) { /* ... */ }
-    
-    // SỬA LỖI: Bổ sung hàm handleAiChatSubmit còn thiếu
     const handleAiChatSubmit = async (e) => {
         e.preventDefault();
         const userInput = chatInput.value.trim();
@@ -835,7 +801,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
-            
             const payload = {
                 contents: [
                     ...chatHistory.map(item => ({ role: item.role, parts: item.parts })),
@@ -848,7 +813,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-            
             const result = await response.json();
             const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
             
@@ -865,7 +829,125 @@ document.addEventListener('DOMContentLoaded', () => {
             renderChat();
         }
     };
+
+    // --- TTS Logic ---
+    function base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    function pcmToWav(pcmData, sampleRate) {
+        const numChannels = 1;
+        const bitsPerSample = 16;
+        const blockAlign = (numChannels * bitsPerSample) / 8;
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = pcmData.byteLength;
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + dataSize, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitsPerSample, true);
+        writeString(view, 36, 'data');
+        view.setUint32(40, dataSize, true);
+
+        const pcm16 = new Int16Array(pcmData);
+        for (let i = 0; i < pcm16.length; i++) {
+            view.setInt16(44 + i * 2, pcm16[i], true);
+        }
+
+        return new Blob([view], { type: 'audio/wav' });
+    }
+
+    async function speakText(textToSpeak, buttonElement) {
+        if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
+            return showToast("Lỗi: API Key của Gemini chưa được thiết lập.", "error");
+        }
+        
+        const originalContent = buttonElement.innerHTML;
+        buttonElement.innerHTML = '<div class="spinner"></div>';
+        buttonElement.disabled = true;
+
+        try {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: `Hãy đọc một cách tự nhiên và rõ ràng: ${textToSpeak}` }] }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                    speechConfig: {
+                        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } }
+                    }
+                },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            
+            const result = await response.json();
+            const part = result?.candidates?.[0]?.content?.parts?.[0];
+            const audioData = part?.inlineData?.data;
+            const mimeType = part?.inlineData?.mimeType;
+
+            if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                const pcmData = base64ToArrayBuffer(audioData);
+                const wavBlob = pcmToWav(pcmData, sampleRate);
+                const audioUrl = URL.createObjectURL(wavBlob);
+                const audio = new Audio(audioUrl);
+                audio.play();
+            } else {
+                throw new Error("No valid audio data received.");
+            }
+        } catch (error) {
+            console.error('Error with TTS:', error);
+            showToast(`Lỗi phát âm thanh: ${error.message}`, "error");
+        } finally {
+            buttonElement.innerHTML = originalContent;
+            buttonElement.disabled = false;
+        }
+    }
     
+    const exportToXLSX = () => {
+        const source = filterData(transactions, 'date');
+        const sorted = [...source].sort((a,b)=> new Date(a.date)-new Date(b.date));
+        const totalIncome = sorted.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amount||0),0);
+        const totalExpense = sorted.filter(t=>t.type==='expense').reduce((s,t)=>s+(t.amount||0),0);
+        const summaryData = [["BÁO CÁO TỔNG QUAN"], [],["Khoản mục", "Số tiền"],["Tổng Thu", totalIncome],["Tổng Chi", totalExpense],["Lợi Nhuận", totalIncome-totalExpense]];
+        const ws_summary = XLSX.utils.aoa_to_sheet(summaryData);
+        ws_summary['!cols'] = [{wch: 25}, {wch: 20}];
+        const header = ['Ngày', 'Loại', 'Nội dung', 'Số tiền', 'Danh mục', 'Tên khách hàng', 'Ghi chú'];
+        const dataRows = sorted.map(t => ({ 'Ngày': new Date(t.createdAt || t.date), 'Loại': t.type === 'income' ? 'Thu' : 'Chi', 'Nội dung': t.description, 'Số tiền': t.type === 'income' ? t.amount : -t.amount, 'Danh mục': t.category, 'Tên khách hàng': t.customerName || '', 'Ghi chú': t.customerNote || '' }));
+        const ws_details = XLSX.utils.json_to_sheet(dataRows, {header: header});
+        ws_details['!cols'] = [{wch:20},{wch:8},{wch:30},{wch:18},{wch:20},{wch:20},{wch:30}];
+        const totalRowNum = dataRows.length + 2;
+        ws_details[`C${totalRowNum}`] = {t:'s', v:'LỢI NHUẬN TỔNG CỘNG:'};
+        ws_details[`D${totalRowNum}`] = {t:'n', f:`SUM(D2:D${totalRowNum-1})`, z: '#,##0 "₫"'};
+        for(let i = 2; i <= totalRowNum; i++) { if(ws_details[`D${i}`]) ws_details[`D${i}`].z = '#,##0 "₫"'; }
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws_summary, "BaoCaoTongQuan");
+        XLSX.utils.book_append_sheet(wb, ws_details, "GiaoDichChiTiet");
+        XLSX.writeFile(wb, `SoThuChi_BaoCao_${new Date().toISOString().split('T')[0]}.xlsx`);
+    };
+
     // --- EVENT LISTENERS ---
     chatMessages.addEventListener('click', (e) => {
         const speakButton = e.target.closest('.speak-btn');
