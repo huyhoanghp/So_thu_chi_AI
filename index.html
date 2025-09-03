@@ -661,9 +661,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const textInput = aiInput.value.trim();
         if (!textInput) { return showToast("Vui lòng nhập mô tả giao dịch.", "error"); }
+        
+        // SỬA LỖI: Thay thế chuỗi API Key cứng bằng chuỗi mặc định
         if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
              return showToast("Lỗi: API Key của Gemini chưa được thiết lập trong mã nguồn.", "error");
         }
+
         aiSpinner.classList.remove('hidden'); e.target.querySelector('button[type="submit"]').disabled = true;
         const prompt = `Analyze the following Vietnamese text describing a financial transaction for a small business. Extract the key information into a JSON object that strictly follows the provided schema. The current date is ${new Date().toLocaleDateString('en-CA')} for context. Infer dates like "hôm qua" (yesterday), "hôm nay" (today). Determine the 'type' as either 'income' or 'expense'. Select the most appropriate 'category' from the provided enum list. Combine any extra details into 'customerNote'. User's text: "${textInput}"`;
         try {
@@ -705,6 +708,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-
-
 
