@@ -398,6 +398,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let chatHistory = [];
     let audioCache = {};
     let currentAudio = null;
+    let currentlyPlayingButton = null;
+    const playIconSVG = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.5 12a4.5 4.5 0 000-8v8z"></path></svg>`;
+    const stopIconSVG = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><rect width="10" height="10" x="5" y="5" rx="1"></rect></svg>`;
     
     const categories = {
         income: ['Bán tại quán', 'Giao hàng', 'Thu khác'],
@@ -721,17 +724,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- AI LOGIC (Entry & Chat) ---
     const openAiEntryModal = () => { aiInput.value = ''; aiEntryModal.classList.remove('hidden'); setTimeout(() => aiEntryModal.classList.remove('opacity-0'), 10); };
     const closeAiEntryModal = () => { aiEntryModal.classList.add('opacity-0'); setTimeout(() => aiEntryModal.classList.add('hidden'), 300); };
-    
     const handleAiEntry = async (e) => {
         e.preventDefault();
         const textInput = aiInput.value.trim();
         if (!textInput) { return showToast("Vui lòng nhập mô tả.", "error"); }
-        if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
-             return showToast("Lỗi: API Key của Gemini chưa được thiết lập.", "error");
-        }
-        aiSpinner.classList.remove('hidden');
-        e.target.querySelector('button[type="submit"]').disabled = true;
-
+        if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") { return showToast("Lỗi: API Key của Gemini chưa được thiết lập.", "error"); }
+        aiSpinner.classList.remove('hidden'); e.target.querySelector('button[type="submit"]').disabled = true;
         const prompt = `You are an intelligent assistant for a Vietnamese finance app. Your task is to analyze the user's text and determine if it's a "plan" (a future intention) or a "transaction" (a past or present event).
 - Use keywords like "sẽ", "dự định", "kế hoạch", "dự kiến", "ngày mai", "tuần sau" to identify a "plan".
 - If no future keywords are present, assume it is a "transaction".
@@ -740,7 +738,6 @@ Then, extract the other details into the JSON object. The current date is ${new 
 Available 'income' categories: ${categories.income.join(', ')}.
 Available 'expense' categories: ${categories.expense.join(', ')}.
 User's text: "${textInput}"`;
-
         try {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
             const payload = { 
@@ -767,7 +764,6 @@ User's text: "${textInput}"`;
             if (!response.ok) { throw new Error(`API call failed with status: ${response.status}`); }
             const result = await response.json();
             const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-            
             if (jsonText) {
                 const parsedData = JSON.parse(jsonText);
                 closeAiEntryModal();
@@ -776,35 +772,25 @@ User's text: "${textInput}"`;
                 } else {
                     openFormModal('addTransaction', parsedData);
                 }
-            } else {
-                throw new Error("AI did not return valid data.");
-            }
+            } else { throw new Error("AI did not return valid data."); }
         } catch (error) { console.error('Error with AI entry:', error); showToast(`AI không thể xử lý yêu cầu: ${error.message}`, "error"); } finally { aiSpinner.classList.add('hidden'); e.target.querySelector('button[type="submit"]').disabled = false; }
     };
-
     function renderChat() {
         chatMessages.innerHTML = '';
         chatHistory.forEach(msg => {
             const wrapper = document.createElement('div');
             wrapper.className = `p-3 rounded-lg chat-message ${msg.role === 'user' ? 'user' : 'ai'}`;
-            
             if (msg.role === 'model') {
-                let html = msg.parts[0].text
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br>');
-                
+                let html = msg.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
                 const speakBtn = document.createElement('button');
                 speakBtn.className = 'speak-btn ml-2 p-1 rounded-full hover:bg-gray-300 transition inline-block align-middle';
                 speakBtn.title = 'Đọc nội dung';
-                speakBtn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.5 12a4.5 4.5 0 000-8v8z"></path></svg>`;
+                speakBtn.innerHTML = playIconSVG;
                 speakBtn.dataset.text = msg.parts[0].text;
-
                 const textContainer = document.createElement('span');
                 textContainer.innerHTML = html;
-
                 wrapper.appendChild(textContainer);
                 wrapper.appendChild(speakBtn);
-
             } else {
                 wrapper.textContent = msg.parts[0].text;
             }
@@ -812,92 +798,27 @@ User's text: "${textInput}"`;
         });
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-    
-    // --- TTS Logic ---
-    function base64ToArrayBuffer(base64) {
-        const binaryString = window.atob(base64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        return bytes.buffer;
-    }
-
-    function pcmToWav(pcmData, sampleRate) {
-        const numChannels = 1;
-        const bitsPerSample = 16;
-        const blockAlign = (numChannels * bitsPerSample) / 8;
-        const byteRate = sampleRate * blockAlign;
-        const dataSize = pcmData.byteLength;
-        const buffer = new ArrayBuffer(44 + dataSize);
-        const view = new DataView(buffer);
-
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-
-        writeString(view, 0, 'RIFF');
-        view.setUint32(4, 36 + dataSize, true);
-        writeString(view, 8, 'WAVE');
-        writeString(view, 12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, numChannels, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, byteRate, true);
-        view.setUint16(32, blockAlign, true);
-        view.setUint16(34, bitsPerSample, true);
-        writeString(view, 36, 'data');
-        view.setUint32(40, dataSize, true);
-
-        const pcm16 = new Int16Array(pcmData);
-        for (let i = 0; i < pcm16.length; i++) {
-            view.setInt16(44 + i * 2, pcm16[i], true);
-        }
-
-        return new Blob([view], { type: 'audio/wav' });
-    }
-    
     const handleAiChatSubmit = async (e) => {
         e.preventDefault();
         const userInput = chatInput.value.trim();
         if (!userInput) return;
-
         chatHistory.push({ role: 'user', parts: [{ text: userInput }] });
         renderChat();
         chatInput.value = '';
         aiThinkingIndicator.classList.remove('hidden');
-
         const filteredTx = filterData(transactions, 'date');
-        const dataSummary = `Dữ liệu tóm tắt:
-        - Tổng thu: ${totalIncomeEl.textContent}
-        - Tổng chi: ${totalExpenseEl.textContent}
-        - Lợi nhuận: ${netProfitEl.textContent}
-        - Chi tiết các khoản chi: ${filteredTx.filter(t => t.type === 'expense').map(t => `${t.description} (${t.category}): ${formatCurrency(t.amount)}`).join(', ') || 'Không có khoản chi nào.'}`;
-
+        const dataSummary = `Dữ liệu tóm tắt:\n- Tổng thu: ${totalIncomeEl.textContent}\n- Tổng chi: ${totalExpenseEl.textContent}\n- Lợi nhuận: ${netProfitEl.textContent}\n- Chi tiết các khoản chi: ${filteredTx.filter(t => t.type === 'expense').map(t => `${t.description} (${t.category}): ${formatCurrency(t.amount)}`).join(', ') || 'Không có khoản chi nào.'}`;
         const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thân thiện và chuyên nghiệp. Nhiệm vụ của bạn là trả lời câu hỏi của người dùng dựa trên dữ liệu tóm tắt được cung cấp. Hãy đưa ra câu trả lời rõ ràng, đi thẳng vào vấn đề và nếu có thể, hãy đưa ra lời khuyên hữu ích.`;
-        
         try {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
             const payload = {
-                contents: [
-                    ...chatHistory.map(item => ({ role: item.role, parts: item.parts })),
-                    { role: 'user', parts: [{ text: `Dựa vào dữ liệu này: "${dataSummary}", hãy trả lời câu hỏi sau: "${userInput}"` }] }
-                ],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                }
+                contents: [ ...chatHistory.map(item => ({ role: item.role, parts: item.parts })), { role: 'user', parts: [{ text: `Dựa vào dữ liệu này: "${dataSummary}", hãy trả lời câu hỏi sau: "${userInput}"` }] } ],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
             };
-            
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-            
             const result = await response.json();
             const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
-            
             if (aiResponse) {
                 chatHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
             } else {
@@ -912,54 +833,69 @@ User's text: "${textInput}"`;
         }
     };
     
+    // --- TTS Logic ---
+    function base64ToArrayBuffer(base64) {
+        const binaryString = window.atob(base64); const len = binaryString.length; const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+        return bytes.buffer;
+    }
+    function pcmToWav(pcmData, sampleRate) {
+        const numChannels = 1, bitsPerSample = 16;
+        const blockAlign = (numChannels * bitsPerSample) / 8;
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = pcmData.byteLength;
+        const buffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(buffer);
+        function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) { view.setUint8(offset + i, string.charCodeAt(i)); } }
+        writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true); view.setUint32(28, byteRate, true); view.setUint16(32, blockAlign, true); view.setUint16(34, bitsPerSample, true); writeString(view, 36, 'data'); view.setUint32(40, dataSize, true);
+        const pcm16 = new Int16Array(pcmData);
+        for (let i = 0; i < pcm16.length; i++) { view.setInt16(44 + i * 2, pcm16[i], true); }
+        return new Blob([view], { type: 'audio/wav' });
+    }
+    
     async function speakText(textToSpeak, buttonElement) {
-        if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
-            return showToast("Lỗi: API Key của Gemini chưa được thiết lập.", "error");
-        }
-        
+        if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") { return showToast("Lỗi: API Key của Gemini chưa được thiết lập.", "error"); }
         const originalContent = buttonElement.innerHTML;
         buttonElement.innerHTML = '<div class="spinner"></div>';
         buttonElement.disabled = true;
-
         try {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: `Hãy đọc một cách tự nhiên và rõ ràng: ${textToSpeak}` }] }],
-                generationConfig: {
-                    responseModalities: ["AUDIO"],
-                    speechConfig: {
-                        voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } }
-                    }
-                },
-                model: "gemini-2.5-flash-preview-tts"
-            };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-            
-            const result = await response.json();
-            const part = result?.candidates?.[0]?.content?.parts?.[0];
-            const audioData = part?.inlineData?.data;
-            const mimeType = part?.inlineData?.mimeType;
-
-            if (audioData && mimeType && mimeType.startsWith("audio/")) {
-                const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
-                const pcmData = base64ToArrayBuffer(audioData);
-                const wavBlob = pcmToWav(pcmData, sampleRate);
-                const audioUrl = URL.createObjectURL(wavBlob);
-                const audio = new Audio(audioUrl);
-                audio.play();
+            if(audioCache[textToSpeak]) {
+                currentAudio = new Audio(audioCache[textToSpeak]);
             } else {
-                throw new Error("No valid audio data received.");
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${geminiApiKey}`;
+                const payload = { contents: [{ parts: [{ text: `Hãy đọc một cách tự nhiên và rõ ràng: ${textToSpeak}` }] }], generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } }, model: "gemini-2.5-flash-preview-tts" };
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const wavBlob = pcmToWav(pcmData, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    audioCache[textToSpeak] = audioUrl; // Cache the audio
+                    currentAudio = new Audio(audioUrl);
+                } else { throw new Error("No valid audio data received."); }
             }
+            currentAudio.play();
+            buttonElement.innerHTML = stopIconSVG;
+            currentlyPlayingButton = buttonElement;
+            currentAudio.onended = () => {
+                buttonElement.innerHTML = playIconSVG;
+                currentAudio = null;
+                currentlyPlayingButton = null;
+            };
         } catch (error) {
             console.error('Error with TTS:', error);
             showToast(`Lỗi phát âm thanh: ${error.message}`, "error");
-        } finally {
             buttonElement.innerHTML = originalContent;
+        } finally {
             buttonElement.disabled = false;
         }
     }
-    
+
     const exportToXLSX = () => {
         const source = filterData(transactions, 'date');
         const sorted = [...source].sort((a,b)=> new Date(a.date)-new Date(b.date));
@@ -988,7 +924,18 @@ User's text: "${textInput}"`;
         if (speakButton) {
             const text = speakButton.dataset.text;
             if (text) {
-                speakText(text, speakButton);
+                if (currentlyPlayingButton === speakButton && currentAudio) {
+                    currentAudio.pause();
+                    currentAudio = null;
+                    speakButton.innerHTML = playIconSVG;
+                    currentlyPlayingButton = null;
+                } else {
+                    if (currentAudio) {
+                        currentAudio.pause();
+                        if (currentlyPlayingButton) currentlyPlayingButton.innerHTML = playIconSVG;
+                    }
+                    speakText(text, speakButton);
+                }
             }
         }
     });
