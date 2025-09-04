@@ -379,6 +379,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiEntryForm = document.getElementById('ai-entry-form');
     const aiInput = document.getElementById('ai-input');
     const aiSpinner = document.getElementById('ai-spinner');
+    
+    // Chat UI Elements
     const chatMessages = document.getElementById('chat-messages');
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
@@ -394,12 +396,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let toastTimeout;
     let confirmAction = null;
     let chatHistory = [];
+    let audioCache = {};
+    let currentAudio = null;
     
     const categories = {
         income: ['Bán tại quán', 'Giao hàng', 'Thu khác'],
         expense: ['Nguyên liệu chính', 'Nguyên liệu phụ', 'Vật tư', 'Chi phí vận hành', 'Chi phí khác']
     };
 
+    // --- Firebase Initialization & Auth Handling ---
     try {
         const firebaseConfig = {
             apiKey: "AIzaSyBkgzeseW1hFbiEiHrK6kXtMgdFE4gdUSI",
@@ -410,23 +415,31 @@ document.addEventListener('DOMContentLoaded', () => {
             appId: "1:537279498834:web:b5277e19fc234d11e36d8b",
             measurementId: "G-XYK5Q974RP"
         };
+
         geminiApiKey = "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc";
+        
         if (!firebaseConfig.apiKey) {
-            loginScreen.innerHTML = `<p class="text-red-500 text-center">Lỗi: Cấu hình Firebase chưa được thiết lập.</p>`;
+            loginScreen.innerHTML = `<p class="text-red-500 text-center">Lỗi: Cấu hình Firebase chưa được thiết lập trong mã nguồn.</p>`;
             return;
         }
+
+        if (typeof firebase === 'undefined') throw new Error("Firebase SDK not loaded.");
+        
         firebase.initializeApp(firebaseConfig);
         auth = firebase.auth();
         db = firebase.firestore();
+
         auth.onAuthStateChanged(user => {
             if (user) {
                 currentUserId = user.uid;
                 userName.textContent = user.displayName;
                 userPhoto.src = user.photoURL;
+                
                 const transactionsPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/transactions`;
                 const plansPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/plans`;
                 transactionsCollection = db.collection(transactionsPath);
                 plansCollection = db.collection(plansPath);
+                
                 loginScreen.classList.add('hidden');
                 appContainer.classList.remove('hidden');
                 loadingOverlay.style.display = 'flex';
@@ -443,6 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loginScreen.innerHTML = `<p class="text-red-500 text-center">${err.message}</p>`;
     }
     
+    // --- Sign-in & Sign-out ---
     const signInWithGoogle = () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => alert("Đăng nhập thất bại: " + error.message));
@@ -451,23 +465,35 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.addEventListener('click', signInWithGoogle);
     logoutBtn.addEventListener('click', signOut);
 
+    // --- Data Listeners ---
     function listenForData() {
         if (!transactionsCollection || !plansCollection) return;
+        
         transactionsCollection.onSnapshot(snapshot => {
-            transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            transactions = data;
             renderAll();
             loadingOverlay.style.display = 'none';
         }, err => showError("Không thể tải lịch sử giao dịch: " + err.message));
+
         plansCollection.onSnapshot(snapshot => {
-            plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            plans = data;
             renderAll();
         }, err => showError("Không thể tải danh sách kế hoạch: " + err.message));
     }
     
+    // --- Main Render Logic ---
     function renderAll() {
         const dateFilteredTransactions = filterData(transactions, 'date');
-        const searchedPlans = filterData(plans, 'search', searchPlanInput.value);
-        const searchedTransactions = filterData(dateFilteredTransactions, 'search', searchHistoryInput.value);
+        const planSearchTerm = searchPlanInput.value;
+        const historySearchTerm = searchHistoryInput.value;
+
+        const searchedPlans = filterData(plans, 'search', planSearchTerm);
+        const searchedTransactions = filterData(dateFilteredTransactions, 'search', historySearchTerm);
+
         updateSummary(dateFilteredTransactions);
         renderTransactionList(searchedTransactions);
         renderPlanList(searchedPlans);
@@ -476,16 +502,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // --- UI Rendering ---
     function renderPlanList(source) {
         planList.innerHTML = '';
         planEmptyState.style.display = source.length === 0 ? 'block' : 'none';
         source.forEach(plan => planList.appendChild(createPlanElement(plan)));
     }
+
     function renderTransactionList(source) {
         transactionList.innerHTML = '';
         transactionEmptyState.style.display = source.length === 0 ? 'block' : 'none';
         source.forEach(tx => transactionList.appendChild(createTransactionElement(tx)));
     }
+
     function updateSummary(source) {
         const totalIncome = source.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
         const totalExpense = source.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
@@ -497,6 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
         exportXlsxBtn.disabled = source.length === 0;
     }
 
+    // --- Element Creation ---
     function createPlanElement(plan) {
         const { id, type, description, amount, category, customerName, customerNote, createdAt, date } = plan;
         const isIncome = type === 'income';
@@ -529,6 +559,7 @@ document.addEventListener('DOMContentLoaded', () => {
         item.querySelector('button[data-action="delete"]').addEventListener('click', () => deletePlan(id, description));
         return item;
     }
+
     function createTransactionElement(tx) {
         const { id, type, description, amount, date, category, customerName, customerNote, createdAt } = tx;
         const isIncome = type === 'income';
@@ -571,7 +602,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formModal.querySelector(`input[name="type"][value="${type}"]`).checked = true;
         updateCategoryOptions();
         switch(mode) {
-            case 'addPlan': case 'addTransaction':
+            case 'addPlan':
+            case 'addTransaction':
                 modalTitle.textContent = mode === 'addPlan' ? 'Thêm Kế Hoạch Mới' : 'Thêm Giao Dịch Nhanh';
                 descriptionInput.value = data.description || '';
                 amountInput.value = data.amount || '';
@@ -580,7 +612,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 customerNameInput.value = data.customerName || '';
                 customerNoteInput.value = data.customerNote || '';
                 break;
-            case 'editPlan': case 'editTransaction':
+            case 'editPlan':
+            case 'editTransaction':
                 modalTitle.textContent = mode === 'editPlan' ? 'Chỉnh Sửa Kế Hoạch' : 'Chỉnh Sửa Giao Dịch';
                 editingIdInput.value = data.id || '';
                 descriptionInput.value = data.description || '';
@@ -779,57 +812,7 @@ User's text: "${textInput}"`;
         });
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
-
-    const handleAiChatSubmit = async (e) => {
-        e.preventDefault();
-        const userInput = chatInput.value.trim();
-        if (!userInput) return;
-
-        chatHistory.push({ role: 'user', parts: [{ text: userInput }] });
-        renderChat();
-        chatInput.value = '';
-        aiThinkingIndicator.classList.remove('hidden');
-
-        const filteredTx = filterData(transactions, 'date');
-        const dataSummary = `Dữ liệu tóm tắt:
-        - Tổng thu: ${totalIncomeEl.textContent}
-        - Tổng chi: ${totalExpenseEl.textContent}
-        - Lợi nhuận: ${netProfitEl.textContent}
-        - Chi tiết các khoản chi: ${filteredTx.filter(t => t.type === 'expense').map(t => `${t.description} (${t.category}): ${formatCurrency(t.amount)}`).join(', ') || 'Không có khoản chi nào.'}`;
-
-        const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thân thiện và chuyên nghiệp. Nhiệm vụ của bạn là trả lời câu hỏi của người dùng dựa trên dữ liệu tóm tắt được cung cấp. Hãy đưa ra câu trả lời rõ ràng, đi thẳng vào vấn đề và nếu có thể, hãy đưa ra lời khuyên hữu ích.`;
-        
-        try {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
-            const payload = {
-                contents: [
-                    ...chatHistory.map(item => ({ role: item.role, parts: item.parts })),
-                    { role: 'user', parts: [{ text: `Dựa vào dữ liệu này: "${dataSummary}", hãy trả lời câu hỏi sau: "${userInput}"` }] }
-                ],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                }
-            };
-            
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
-            const result = await response.json();
-            const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
-            
-            if (aiResponse) {
-                chatHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
-            } else {
-                 chatHistory.push({ role: 'model', parts: [{ text: "Xin lỗi, tôi chưa thể đưa ra câu trả lời lúc này." }] });
-            }
-        } catch (error) {
-            console.error('Error with AI chat:', error);
-            chatHistory.push({ role: 'model', parts: [{ text: `Đã xảy ra lỗi: ${error.message}` }] });
-        } finally {
-            aiThinkingIndicator.classList.add('hidden');
-            renderChat();
-        }
-    };
-
+    
     // --- TTS Logic ---
     function base64ToArrayBuffer(base64) {
         const binaryString = window.atob(base64);
@@ -877,7 +860,58 @@ User's text: "${textInput}"`;
 
         return new Blob([view], { type: 'audio/wav' });
     }
+    
+    const handleAiChatSubmit = async (e) => {
+        e.preventDefault();
+        const userInput = chatInput.value.trim();
+        if (!userInput) return;
 
+        chatHistory.push({ role: 'user', parts: [{ text: userInput }] });
+        renderChat();
+        chatInput.value = '';
+        aiThinkingIndicator.classList.remove('hidden');
+
+        const filteredTx = filterData(transactions, 'date');
+        const dataSummary = `Dữ liệu tóm tắt:
+        - Tổng thu: ${totalIncomeEl.textContent}
+        - Tổng chi: ${totalExpenseEl.textContent}
+        - Lợi nhuận: ${netProfitEl.textContent}
+        - Chi tiết các khoản chi: ${filteredTx.filter(t => t.type === 'expense').map(t => `${t.description} (${t.category}): ${formatCurrency(t.amount)}`).join(', ') || 'Không có khoản chi nào.'}`;
+
+        const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thân thiện và chuyên nghiệp. Nhiệm vụ của bạn là trả lời câu hỏi của người dùng dựa trên dữ liệu tóm tắt được cung cấp. Hãy đưa ra câu trả lời rõ ràng, đi thẳng vào vấn đề và nếu có thể, hãy đưa ra lời khuyên hữu ích.`;
+        
+        try {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
+            const payload = {
+                contents: [
+                    ...chatHistory.map(item => ({ role: item.role, parts: item.parts })),
+                    { role: 'user', parts: [{ text: `Dựa vào dữ liệu này: "${dataSummary}", hãy trả lời câu hỏi sau: "${userInput}"` }] }
+                ],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                }
+            };
+            
+            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            
+            const result = await response.json();
+            const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (aiResponse) {
+                chatHistory.push({ role: 'model', parts: [{ text: aiResponse }] });
+            } else {
+                 chatHistory.push({ role: 'model', parts: [{ text: "Xin lỗi, tôi chưa thể đưa ra câu trả lời lúc này." }] });
+            }
+        } catch (error) {
+            console.error('Error with AI chat:', error);
+            chatHistory.push({ role: 'model', parts: [{ text: `Đã xảy ra lỗi: ${error.message}` }] });
+        } finally {
+            aiThinkingIndicator.classList.add('hidden');
+            renderChat();
+        }
+    };
+    
     async function speakText(textToSpeak, buttonElement) {
         if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") {
             return showToast("Lỗi: API Key của Gemini chưa được thiết lập.", "error");
