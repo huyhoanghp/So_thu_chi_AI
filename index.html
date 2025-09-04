@@ -440,10 +440,10 @@ document.addEventListener('DOMContentLoaded', () => {
             measurementId: "G-XYK5Q974RP"
         };
 
-        geminiApiKey = "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc"; // TODO: PASTE YOUR GEMINI API KEY HERE
+        geminiApiKey = "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc";
         
         if (!firebaseConfig.apiKey) {
-            loginScreen.innerHTML = `<p class="text-red-500 text-center">Lỗi: Cấu hình Firebase chưa được thiết lập trong mã nguồn.</p>`;
+            loginScreen.innerHTML = `<p class="text-red-500 text-center">Lỗi: Cấu hình Firebase chưa được thiết lập.</p>`;
             return;
         }
 
@@ -480,6 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loginScreen.innerHTML = `<p class="text-red-500 text-center">${err.message}</p>`;
     }
     
+    // --- Sign-in & Sign-out ---
     const signInWithGoogle = () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => alert("Đăng nhập thất bại: " + error.message));
@@ -488,6 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.addEventListener('click', signInWithGoogle);
     logoutBtn.addEventListener('click', signOut);
 
+    // --- Data Listeners ---
     function listenForData() {
         if (!transactionsCollection || !plansCollection) return;
         
@@ -503,6 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, err => showError("Không thể tải danh sách kế hoạch: " + err.message));
     }
     
+    // --- Main Render Logic ---
     function renderAll() {
         const dateFilteredTransactions = filterData(transactions, 'date');
         const searchedPlans = filterData(plans, 'search', searchPlanInput.value);
@@ -515,6 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // --- UI Rendering ---
     function renderPlanList(source) {
         planList.innerHTML = '';
         planEmptyState.style.display = source.length === 0 ? 'block' : 'none';
