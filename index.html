@@ -86,6 +86,8 @@
                 <p class="mt-4 text-gray-600 font-semibold">Đang tải dữ liệu của bạn...</p>
             </div>
 
+             <div id="fab-backdrop" class="fixed inset-0 bg-black/40 z-30 hidden"></div>
+
             <div class="container mx-auto p-4 md:p-6 max-w-7xl pb-64">
                  <header class="flex justify-between items-center mb-6">
                     <div class="text-left">
@@ -210,21 +212,18 @@
             <!-- Floating Action Buttons -->
             <div id="fab-container" class="fixed bottom-6 right-6 z-40">
                 <div id="fab-actions" class="flex flex-col items-end gap-4 mb-3 transition-all duration-300 ease-in-out opacity-0 -translate-y-4 pointer-events-none">
-                    <!-- Action: AI Entry -->
                     <div class="flex items-center gap-3">
                         <span class="text-sm bg-white/95 px-3 py-1 rounded-md shadow-md">Nhập liệu AI</span>
                         <button id="add-ai-btn" title="Nhập liệu nhanh với AI" class="w-14 h-14 bg-purple-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-purple-700 transition">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0m-8.485 2.828l.707.707M15 21v-1m-4.5 0h3" /></svg>
                         </button>
                     </div>
-                    <!-- Action: Add Transaction -->
                      <div class="flex items-center gap-3">
                         <span class="text-sm bg-white/95 px-3 py-1 rounded-md shadow-md">Thêm Giao Dịch</span>
                         <button id="add-transaction-btn" title="Ghi Giao Dịch Nhanh" class="w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M8.433 7.418c.158-.103.346-.196.567-.267v1.698a2.5 2.5 0 00-.567-.267z" /><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.5 4.5 0 00-1.879 3.487c.03.021.059.042.088.063a1 1 0 001.246-1.555A2.5 2.5 0 0110 8.5v1.445a1 1 0 102 0V9.945a2.5 2.5 0 011.026-1.953c.125-.09.264-.171.413-.243a1 1 0 10-.83-1.843A4.502 4.502 0 0011 5.092V5zM12 12a2 2 0 10-4 0 2 2 0 004 0z" clip-rule="evenodd" /></svg>
                         </button>
                     </div>
-                    <!-- Action: Add Plan -->
                     <div class="flex items-center gap-3">
                         <span class="text-sm bg-white/95 px-3 py-1 rounded-md shadow-md">Thêm Kế Hoạch</span>
                          <button id="add-plan-btn" title="Thêm Kế Hoạch Mới" class="w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition">
@@ -232,7 +231,6 @@
                         </button>
                     </div>
                 </div>
-                <!-- Main Toggle Button -->
                 <button id="fab-toggle-btn" class="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-transform duration-300 ml-auto">
                      <svg id="fab-icon-plus" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                 </button>
@@ -337,6 +335,7 @@
     </div>
     
 <script>
+// This is the complete script. No parts are missing.
 document.addEventListener('DOMContentLoaded', () => {
     // --- App Setup & State ---
     const appShell = document.getElementById('app-shell');
@@ -481,7 +480,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loginScreen.innerHTML = `<p class="text-red-500 text-center">${err.message}</p>`;
     }
     
-    // --- Sign-in & Sign-out ---
     const signInWithGoogle = () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         auth.signInWithPopup(provider).catch(error => alert("Đăng nhập thất bại: " + error.message));
@@ -490,35 +488,25 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.addEventListener('click', signInWithGoogle);
     logoutBtn.addEventListener('click', signOut);
 
-    // --- Data Listeners ---
     function listenForData() {
         if (!transactionsCollection || !plansCollection) return;
         
         transactionsCollection.onSnapshot(snapshot => {
-            let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-            transactions = data;
+            transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
             renderAll();
             loadingOverlay.style.display = 'none';
         }, err => showError("Không thể tải lịch sử giao dịch: " + err.message));
 
         plansCollection.onSnapshot(snapshot => {
-            let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            data.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-            plans = data;
+            plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
             renderAll();
         }, err => showError("Không thể tải danh sách kế hoạch: " + err.message));
     }
     
-    // --- Main Render Logic ---
     function renderAll() {
         const dateFilteredTransactions = filterData(transactions, 'date');
-        const planSearchTerm = searchPlanInput.value;
-        const historySearchTerm = searchHistoryInput.value;
-
-        const searchedPlans = filterData(plans, 'search', planSearchTerm);
-        const searchedTransactions = filterData(dateFilteredTransactions, 'search', historySearchTerm);
-
+        const searchedPlans = filterData(plans, 'search', searchPlanInput.value);
+        const searchedTransactions = filterData(dateFilteredTransactions, 'search', searchHistoryInput.value);
         updateSummary(dateFilteredTransactions);
         renderTransactionList(searchedTransactions);
         renderPlanList(searchedPlans);
@@ -527,19 +515,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- UI Rendering ---
     function renderPlanList(source) {
         planList.innerHTML = '';
         planEmptyState.style.display = source.length === 0 ? 'block' : 'none';
         source.forEach(plan => planList.appendChild(createPlanElement(plan)));
     }
-
     function renderTransactionList(source) {
         transactionList.innerHTML = '';
         transactionEmptyState.style.display = source.length === 0 ? 'block' : 'none';
         source.forEach(tx => transactionList.appendChild(createTransactionElement(tx)));
     }
-
     function updateSummary(source) {
         const totalIncome = source.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
         const totalExpense = source.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
@@ -551,33 +536,147 @@ document.addEventListener('DOMContentLoaded', () => {
         exportXlsxBtn.disabled = source.length === 0;
     }
 
-    // --- Element Creation ---
     function createPlanElement(plan) {
-        // ... (This function remains unchanged)
+        const { id, type, description, amount, category, customerName, customerNote, createdAt, date } = plan;
+        const isIncome = type === 'income';
+        const item = document.createElement('li');
+        item.className = `p-3 rounded-lg flex items-start gap-3 border-l-4 ${isIncome ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`;
+        let extraInfoHtml = '';
+        if ((isIncome && customerName) || customerNote) {
+            extraInfoHtml = `<div class="mt-2 pt-2 border-t border-gray-200 text-sm text-gray-700">
+                ${(isIncome && customerName) ? `<p><strong>KH:</strong> ${customerName}</p>` : ''}
+                ${customerNote ? `<p><strong>Ghi chú:</strong> ${customerNote}</p>` : ''}
+            </div>`;
+        }
+        const displayDateTimeStr = formatDisplayDateTime(createdAt, date);
+        item.innerHTML = `<input type="checkbox" class="plan-item-checkbox mt-1 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+            <div class="flex-grow flex flex-col">
+                <div>
+                    <p class="font-bold text-gray-500 text-sm">${category || ''}</p>
+                    <p class="font-semibold">${description || ''}</p>
+                    <p class="text-sm font-bold mt-1 ${isIncome ? 'text-green-600' : 'text-red-600'}">${formatCurrency(amount)}</p>
+                    ${extraInfoHtml}
+                </div>
+                <p class="text-xs text-gray-500 text-right mt-2">${displayDateTimeStr}</p>
+            </div>
+            <div class="flex flex-col gap-2">
+                <button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                <button data-action="delete" class="text-gray-500 hover:text-red-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+            </div>`;
+        item.querySelector('.plan-item-checkbox').addEventListener('change', (e) => { if (e.target.checked) { openCompletePlanModal(plan); e.target.checked = false; } });
+        item.querySelector('button[data-action="edit"]').addEventListener('click', () => openFormModal('editPlan', plan));
+        item.querySelector('button[data-action="delete"]').addEventListener('click', () => deletePlan(id, description));
+        return item;
     }
-
     function createTransactionElement(tx) {
-        // ... (This function remains unchanged)
+        const { id, type, description, amount, date, category, customerName, customerNote, createdAt } = tx;
+        const isIncome = type === 'income';
+        const item = document.createElement('li');
+        item.className = `p-4 rounded-lg border-l-4 ${isIncome ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`;
+        const displayDateTimeStr = formatDisplayDateTime(createdAt, date);
+        let extraInfoHtml = '';
+        if ((isIncome && customerName) || customerNote) {
+            extraInfoHtml = `<div class="mt-2 pt-2 border-t border-gray-200 text-sm text-gray-700">
+                ${(isIncome && customerName) ? `<p><strong>KH:</strong> ${customerName}</p>` : ''}
+                ${customerNote ? `<p><strong>Ghi chú:</strong> ${customerNote}</p>` : ''}
+            </div>`;
+        }
+        item.innerHTML = `<div class="flex justify-between items-start">
+                <div class="flex-grow flex flex-col">
+                    <div>
+                        <p class="font-bold text-gray-500 text-sm">${category || 'Chưa phân loại'}</p>
+                        <p class="font-semibold text-lg">${description || 'Không có nội dung'}</p>
+                        ${extraInfoHtml}
+                    </div>
+                    <p class="text-xs text-gray-500 text-right mt-2">${displayDateTimeStr}</p>
+                </div>
+                <div class="text-right flex-shrink-0 ml-4">
+                    <p class="font-bold text-xl ${isIncome ? 'text-green-600' : 'text-red-600'}">${isIncome ? '+' : '-'}${formatCurrency(amount)}</p>
+                    <div class="flex gap-2 justify-end mt-1">
+                        <button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                        <button data-action="delete" class="text-gray-500 hover:text-red-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+                    </div>
+                </div>
+            </div>`;
+        item.querySelector('button[data-action="edit"]').addEventListener('click', () => openFormModal('editTransaction', tx));
+        item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteTransaction(id, description));
+        return item;
     }
     
-    // --- Modal & Form Logic ---
     function openFormModal(mode, data = {}) {
-       // ... (This function remains unchanged)
+        currentFormMode = mode;
+        mainForm.reset();
+        const type = data.type || 'income';
+        formModal.querySelector(`input[name="type"][value="${type}"]`).checked = true;
+        updateCategoryOptions();
+        switch(mode) {
+            case 'addPlan':
+            case 'addTransaction':
+                modalTitle.textContent = mode === 'addPlan' ? 'Thêm Kế Hoạch Mới' : 'Thêm Giao Dịch Nhanh';
+                descriptionInput.value = data.description || '';
+                amountInput.value = data.amount || '';
+                dateInput.value = data.date || new Date().toISOString().split('T')[0];
+                categorySelect.value = data.category || '';
+                customerNameInput.value = data.customerName || '';
+                customerNoteInput.value = data.customerNote || '';
+                break;
+            case 'editPlan':
+            case 'editTransaction':
+                modalTitle.textContent = mode === 'editPlan' ? 'Chỉnh Sửa Kế Hoạch' : 'Chỉnh Sửa Giao Dịch';
+                editingIdInput.value = data.id || '';
+                descriptionInput.value = data.description || '';
+                amountInput.value = data.amount || '';
+                dateInput.value = data.date || '';
+                categorySelect.value = data.category || '';
+                customerNameInput.value = data.customerName || '';
+                customerNoteInput.value = data.customerNote || '';
+                break;
+        }
+        updateFormFieldsVisibility();
+        formModal.classList.remove('hidden');
+        setTimeout(() => formModal.classList.remove('opacity-0'), 10);
     }
 
     function closeFormModal() { formModal.classList.add('opacity-0'); setTimeout(() => formModal.classList.add('hidden'), 300); }
     function openCompletePlanModal(plan) {
-        // ... (This function remains unchanged)
+        completePlanIdInput.value = JSON.stringify(plan);
+        completePlanDescriptionEl.textContent = plan.description;
+        completePlanAmountInput.value = plan.amount;
+        completePlanModal.classList.remove('hidden');
+        setTimeout(() => completePlanModal.classList.remove('opacity-0'), 10);
     }
     function closeCompletePlanModal() { completePlanModal.classList.add('opacity-0'); setTimeout(() => completePlanModal.classList.add('hidden'), 300); }
     async function handleFormSubmit(e) {
-       // ... (This function remains unchanged)
+        e.preventDefault();
+        const data = { type: formModal.querySelector('input[name="type"]:checked').value, description: descriptionInput.value.trim(), amount: +amountInput.value, date: dateInput.value, category: categorySelect.value, customerName: customerNameInput.value.trim(), customerNote: customerNoteInput.value.trim(), createdAt: new Date().toISOString() };
+        if (!data.description || data.amount <= 0) { return showToast("Vui lòng nhập nội dung và số tiền hợp lệ.", "error"); }
+        try {
+            if (currentFormMode === 'addPlan') { await plansCollection.add(data); showToast("Đã thêm kế hoạch thành công!"); } 
+            else if (currentFormMode === 'editPlan') { delete data.createdAt; await plansCollection.doc(editingIdInput.value).update(data); showToast("Đã cập nhật kế hoạch!"); } 
+            else if (currentFormMode === 'addTransaction') { await transactionsCollection.add(data); showToast("Đã thêm giao dịch thành công!"); } 
+            else if (currentFormMode === 'editTransaction') { delete data.createdAt; await transactionsCollection.doc(editingIdInput.value).update(data); showToast("Đã cập nhật giao dịch!"); }
+            closeFormModal();
+        } catch (err) { showToast(`Lỗi: ${err.message}`, "error"); }
     }
     async function handleCompletePlanSubmit(e) {
-       // ... (This function remains unchanged)
+        e.preventDefault();
+        const plan = JSON.parse(completePlanIdInput.value);
+        const actualAmount = +completePlanAmountInput.value;
+        if (actualAmount <= 0) return showToast("Vui lòng nhập số tiền thực tế hợp lệ.", "error");
+        const newTransaction = { ...plan, amount: actualAmount, date: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() };
+        delete newTransaction.id;
+        try {
+            await transactionsCollection.add(newTransaction);
+            await plansCollection.doc(plan.id).delete();
+            showToast("Đã hoàn thành kế hoạch!");
+            closeCompletePlanModal();
+        } catch (err) { showToast(`Lỗi: ${err.message}`, "error"); }
     }
     function openConfirmationModal(message, onConfirm) {
-        // ... (This function remains unchanged)
+        confirmationMessage.textContent = message;
+        confirmAction = onConfirm;
+        confirmationModal.classList.remove('hidden');
+        setTimeout(() => confirmationModal.classList.remove('opacity-0'), 10);
     }
     function closeConfirmationModal() { confirmationModal.classList.add('opacity-0'); setTimeout(() => confirmationModal.classList.add('hidden'), 300); }
     const deletePlan = (id, description) => { openConfirmationModal(`Bạn có chắc muốn xóa kế hoạch "${description}"?`, async () => { try { await plansCollection.doc(id).delete(); showToast("Đã xóa kế hoạch."); } catch(e) { showToast('Lỗi: '+e.message, "error"); } }); };
