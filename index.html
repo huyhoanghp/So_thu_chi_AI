@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sổ Thu Chi (với Trợ lý AI)</title>
+    <title>Sổ Thu Chi Pro (Quản lý Bán hàng & AI)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -30,7 +30,7 @@
         }
         .loader { width: 48px; height: 48px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .tab-button.active { 
+        .tab-button.active, .report-tab-button.active { 
             border-color: #4f46e5; 
             color: #4f46e5; 
             background-color: #eef2ff; 
@@ -91,8 +91,8 @@
             <div class="container mx-auto p-4 md:p-6 max-w-7xl pb-64">
                  <header class="flex justify-between items-center mb-6">
                     <div class="text-left">
-                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Sổ Thu Chi</h1>
-                        <p class="text-gray-600 mt-1">Quản lý thu chi và kế hoạch cá nhân.</p>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Sổ Thu Chi Pro</h1>
+                        <p class="text-gray-600 mt-1">Quản lý bán hàng, thu chi và kế hoạch.</p>
                     </div>
                     <div id="user-profile" class="flex items-center gap-3">
                         <span id="user-name" class="font-semibold hidden sm:block"></span>
@@ -139,8 +139,10 @@
                         <div class="border-b border-gray-200 mb-4">
                             <nav class="flex justify-around">
                                 <button id="tab-plan" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Kế Hoạch</button>
+                                <button id="tab-products" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Sản phẩm</button>
                                 <button id="tab-history" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Lịch Sử Giao Dịch</button>
-                                <button id="tab-dashboard" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Trợ lý</button>
+                                <button id="tab-promotions" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Khuyến mại</button>
+                                <button id="tab-dashboard" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Báo cáo</button>
                             </nav>
                         </div>
 
@@ -154,6 +156,18 @@
                                     <ul id="plan-list" class="space-y-3"></ul>
                                 </div>
                                 <p id="plan-empty-state" class="text-center text-gray-500 py-8">Chưa có kế hoạch nào.</p>
+                            </div>
+
+                            <!-- TAB SẢN PHẨM -->
+                            <div id="content-products" class="hidden">
+                                <div class="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-4">
+                                    <input type="search" id="search-products" placeholder="Tìm kiếm sản phẩm..." class="w-full md:w-1/2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                    <button id="add-product-btn" class="w-full md:w-auto bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">Thêm Sản Phẩm Mới</button>
+                                </div>
+                                <div id="product-list-container" class="max-h-[500px] overflow-y-auto">
+                                    <ul id="product-list" class="space-y-3"></ul>
+                                </div>
+                                <p id="product-empty-state" class="text-center text-gray-500 py-8">Chưa có sản phẩm nào.</p>
                             </div>
 
                             <!-- TAB LỊCH SỬ -->
@@ -170,39 +184,102 @@
                                 <p id="transaction-empty-state" class="text-center text-gray-500 py-8">Chưa có giao dịch nào được ghi nhận.</p>
                             </div>
                             
-                            <!-- TAB TRỢ LÝ -->
-                            <div id="content-dashboard" class="hidden space-y-6">
-                               <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-center mb-2">Cơ Cấu Chi Phí</h3>
-                                        <div class="relative h-64 sm:h-80 w-full">
-                                            <canvas id="expense-pie-chart"></canvas>
-                                        </div>
+                            <!-- TAB KHUYẾN MẠI -->
+                            <div id="content-promotions" class="hidden">
+                                <div class="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-4">
+                                    <input type="search" id="search-promotions" placeholder="Tìm kiếm khuyến mại..." class="w-full md:w-1/2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                    <button id="add-promotion-btn" class="w-full md:w-auto bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-purple-700 transition">Thêm Khuyến mại</button>
+                                </div>
+                                <div id="promotion-list-container" class="max-h-[500px] overflow-y-auto">
+                                    <ul id="promotion-list" class="space-y-3"></ul>
+                                </div>
+                                <p id="promotion-empty-state" class="text-center text-gray-500 py-8">Chưa có chương trình khuyến mại.</p>
+                            </div>
+
+                            <!-- TAB BÁO CÁO -->
+                            <div id="content-dashboard" class="hidden">
+                                <!-- Report Sub-tabs -->
+                                <div class="mb-4 border-b border-gray-200">
+                                    <nav class="flex -mb-px">
+                                        <button data-report="overview" class="report-tab-button whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">Tổng quan</button>
+                                        <button data-report="products" class="report-tab-button whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">Sản phẩm</button>
+                                        <button data-report="inventory" class="report-tab-button whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">Tồn kho</button>
+                                        <button data-report="ai_assistant" class="report-tab-button whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">Trợ lý AI</button>
+                                    </nav>
+                                </div>
+
+                                <!-- Report Content: Overview -->
+                                <div id="report-content-overview" class="space-y-6">
+                                    <div id="comparison-section" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <!-- Comparison cards will be inserted here by JS -->
                                     </div>
                                     <div>
-                                        <h3 class="text-lg font-semibold text-center mb-2">Dòng Tiền Theo Thời Gian</h3>
-                                        <div class="relative h-64 sm:h-80 w-full">
-                                            <canvas id="flow-line-chart"></canvas>
+                                        <h3 class="text-lg font-semibold text-center mb-2">Hiệu quả Khuyến mại</h3>
+                                        <div id="promotion-report-table" class="overflow-x-auto"></div>
+                                    </div>
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-center mb-2">Cơ Cấu Chi Phí</h3>
+                                            <div class="relative h-64 sm:h-80 w-full"><canvas id="expense-pie-chart"></canvas></div>
+                                        </div>
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-center mb-2">Dòng tiền theo thời gian</h3>
+                                            <div class="relative h-64 sm:h-80 w-full"><canvas id="cashflow-trend-chart"></canvas></div>
                                         </div>
                                     </div>
                                 </div>
-                               <div class="flex flex-col h-[60vh] bg-white rounded-lg border">
-                                    <div id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto">
-                                        <!-- Chat messages will be appended here -->
-                                    </div>
-                                    <div id="ai-thinking-indicator" class="px-4 pb-2 hidden">
-                                        <div class="flex items-center gap-2 text-gray-500">
-                                            <div class="spinner w-5 h-5"></div>
-                                            <span>Trợ lý đang suy nghĩ...</span>
+
+                                <!-- Report Content: Products -->
+                                <div id="report-content-products" class="hidden space-y-6">
+                                     <div>
+                                        <label for="product-report-filter" class="block text-sm font-medium text-gray-700 mb-2">Lọc theo sản phẩm (chọn một hoặc nhiều):</label>
+                                        <select multiple id="product-report-filter" class="w-full p-2 border border-gray-300 rounded-lg h-32"></select>
+                                     </div>
+                                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-center mb-2">Top 5 Sản phẩm Bán chạy</h3>
+                                            <div id="top-selling-products" class="space-y-2"></div>
+                                        </div>
+                                         <div>
+                                            <h3 class="text-lg font-semibold text-center mb-2">Top 5 Sản phẩm Lợi nhuận cao</h3>
+                                            <div id="top-profit-products" class="space-y-2"></div>
                                         </div>
                                     </div>
-                                    <div class="p-4 border-t">
-                                        <form id="chat-form" class="flex gap-2">
-                                            <input type="text" id="chat-input" placeholder="Hỏi trợ lý về dữ liệu của bạn..." class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                            <button type="submit" class="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition">Gửi</button>
-                                        </form>
+                                    <div id="product-chart-container" class="hidden">
+                                        <h3 class="text-lg font-semibold text-center mb-2">Doanh thu sản phẩm theo ngày</h3>
+                                        <div class="relative h-64 sm:h-80 w-full">
+                                            <canvas id="product-sales-trend-chart"></canvas>
+                                        </div>
                                     </div>
-                               </div>
+                                </div>
+
+                                <!-- Report Content: Inventory -->
+                                <div id="report-content-inventory" class="hidden space-y-4">
+                                    <div class="flex items-center gap-2">
+                                        <label for="low-stock-threshold" class="font-medium text-sm">Cảnh báo khi tồn kho dưới:</label>
+                                        <input type="number" id="low-stock-threshold" value="10" class="w-20 px-2 py-1 border rounded-md">
+                                    </div>
+                                    <div id="inventory-report-table" class="overflow-x-auto"></div>
+                                </div>
+                                
+                                <!-- Report Content: AI Assistant -->
+                                <div id="report-content-ai_assistant" class="hidden">
+                                   <div class="flex flex-col h-[60vh] bg-white rounded-lg border">
+                                        <div id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto"></div>
+                                        <div id="ai-thinking-indicator" class="px-4 pb-2 hidden">
+                                            <div class="flex items-center gap-2 text-gray-500">
+                                                <div class="spinner w-5 h-5"></div>
+                                                <span>Trợ lý đang suy nghĩ...</span>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 border-t">
+                                            <form id="chat-form" class="flex gap-2">
+                                                <input type="text" id="chat-input" placeholder="Hỏi trợ lý về dữ liệu của bạn..." class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                                <button type="submit" class="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition">Gửi</button>
+                                            </form>
+                                        </div>
+                                   </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -211,7 +288,7 @@
 
             <!-- Floating Action Buttons -->
             <div id="fab-container" class="fixed bottom-6 right-6 z-40 pointer-events-none">
-                <div id="fab-actions" class="flex flex-col items-end gap-4 mb-3 transition-all duration-300 ease-in-out opacity-0 -translate-y-4 invisible">
+                 <div id="fab-actions" class="flex flex-col items-end gap-4 mb-3 transition-all duration-300 ease-in-out opacity-0 -translate-y-4 invisible">
                     <div class="flex items-center gap-3">
                         <span class="text-sm bg-white/95 px-3 py-1 rounded-md shadow-md">Nhập liệu AI</span>
                         <button id="add-ai-btn" title="Nhập liệu nhanh với AI" class="w-14 h-14 bg-purple-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-purple-700 transition pointer-events-auto">
@@ -249,6 +326,42 @@
                                 <label class="flex items-center"><input type="radio" name="type" value="expense" class="form-radio text-red-500"> <span class="ml-2">Khoản Chi</span></label>
                             </div>
                         </div>
+
+                        <!-- Product Selection Section (Sales) -->
+                        <div id="product-section" class="hidden space-y-4 mb-4 border-t pt-4 mt-4">
+                            <h3 class="font-semibold text-gray-700">Thông tin bán hàng</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="product-select" class="block font-semibold mb-2 text-sm">Chọn sản phẩm</label>
+                                    <select id="product-select" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="">-- Ghi nhận thủ công --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="transaction-quantity" class="block font-semibold mb-2 text-sm">Số lượng bán</label>
+                                    <input type="number" id="transaction-quantity" value="1" min="1" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Import Section (Purchases) -->
+                        <div id="import-section" class="hidden space-y-4 mb-4 border-t pt-4 mt-4">
+                            <h3 class="font-semibold text-gray-700">Thông tin nhập hàng</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="import-product-select" class="block font-semibold mb-2 text-sm">Chọn sản phẩm</label>
+                                    <select id="import-product-select" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="">-- Chọn sản phẩm --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="import-quantity" class="block font-semibold mb-2 text-sm">Số lượng nhập</label>
+                                    <input type="number" id="import-quantity" value="1" min="1" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label for="description" class="block font-semibold mb-2">Nội dung</label>
@@ -287,6 +400,42 @@
                     </form>
                 </div>
             </div>
+            
+            <!-- Product Modal -->
+            <div id="product-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
+                <div class="bg-white rounded-lg shadow-xl p-6 md:p-8 w-full max-w-lg transform transition-transform duration-300 scale-95 max-h-[90vh] overflow-y-auto">
+                    <h2 id="product-modal-title" class="text-2xl font-bold mb-4">Thêm Sản Phẩm Mới</h2>
+                    <form id="product-form">
+                        <input type="hidden" id="editing-product-id">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="product-name" class="block font-semibold mb-2">Tên sản phẩm</label>
+                                <input type="text" id="product-name" placeholder="VD: Bún Bò" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="product-cost-price" class="block font-semibold mb-2">Giá vốn</label>
+                                    <input type="number" id="product-cost-price" placeholder="Giá nhập hàng" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                     <label for="product-selling-price" class="block font-semibold mb-2">Giá bán</label>
+                                    <input type="number" id="product-selling-price" placeholder="Giá bán cho khách" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="product-stock" class="block font-semibold mb-2">Tồn kho</label>
+                                <input type="number" id="product-stock" placeholder="Số lượng hiện có" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            </div>
+                        </div>
+                        <div class="flex justify-end space-x-3 mt-6">
+                            <button type="button" class="cancel-btn bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400 transition">Hủy</button>
+                            <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Lưu Sản Phẩm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
             <div id="complete-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
                     <h2 class="text-xl font-bold mb-4">Xác nhận hoàn thành</h2>
@@ -353,11 +502,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const transactionEmptyState = document.getElementById('transaction-empty-state');
     const planList = document.getElementById('plan-list');
     const planEmptyState = document.getElementById('plan-empty-state');
+    const productList = document.getElementById('product-list');
+    const productEmptyState = document.getElementById('product-empty-state');
+
     const addPlanBtn = document.getElementById('add-plan-btn');
     const addTransactionBtn = document.getElementById('add-transaction-btn');
+    const addProductBtn = document.getElementById('add-product-btn');
+    
     const exportXlsxBtn = document.getElementById('export-xlsx-btn');
     const searchPlanInput = document.getElementById('search-plan');
     const searchHistoryInput = document.getElementById('search-history');
+    const searchProductsInput = document.getElementById('search-products');
+
+    // Modals
     const formModal = document.getElementById('form-modal');
     const modalTitle = document.getElementById('modal-title');
     const mainForm = document.getElementById('main-form');
@@ -370,21 +527,56 @@ document.addEventListener('DOMContentLoaded', () => {
     const customerNameField = document.getElementById('customer-name-field');
     const customerNameInput = document.getElementById('customerName');
     const customerNoteInput = document.getElementById('customerNote');
+    
+    // Product Section in Transaction Form
+    const productSection = document.getElementById('product-section');
+    const productSelect = document.getElementById('product-select');
+    const transactionQuantityInput = document.getElementById('transaction-quantity');
+    
+    // Import Section in Transaction Form
+    const importSection = document.getElementById('import-section');
+    const importProductSelect = document.getElementById('import-product-select');
+    const importQuantityInput = document.getElementById('import-quantity');
+
+
+    // Product Modal
+    const productModal = document.getElementById('product-modal');
+    const productModalTitle = document.getElementById('product-modal-title');
+    const productForm = document.getElementById('product-form');
+    const editingProductIdInput = document.getElementById('editing-product-id');
+    const productNameInput = document.getElementById('product-name');
+    const productCostPriceInput = document.getElementById('product-cost-price');
+    const productSellingPriceInput = document.getElementById('product-selling-price');
+    const productStockInput = document.getElementById('product-stock');
+
+
     const completePlanModal = document.getElementById('complete-plan-modal');
     const completePlanForm = document.getElementById('complete-plan-form');
     const completePlanIdInput = document.getElementById('complete-plan-id');
     const completePlanDescriptionEl = document.getElementById('complete-plan-description');
     const completePlanAmountInput = document.getElementById('complete-plan-amount');
     const confirmationModal = document.getElementById('confirmation-modal');
+    const confirmationTitle = document.getElementById('confirmation-title');
     const confirmationMessage = document.getElementById('confirmation-message');
     const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
     const confirmActionBtn = document.getElementById('confirm-action-btn');
+
+    // Tabs
     const tabPlan = document.getElementById('tab-plan');
+    const tabProducts = document.getElementById('tab-products');
     const tabHistory = document.getElementById('tab-history');
+    const tabPromotions = document.getElementById('tab-promotions');
     const tabDashboard = document.getElementById('tab-dashboard');
     const contentPlan = document.getElementById('content-plan');
+    const contentProducts = document.getElementById('content-products');
     const contentHistory = document.getElementById('content-history');
+    const contentPromotions = document.getElementById('content-promotions');
     const contentDashboard = document.getElementById('content-dashboard');
+
+    // Report Elements
+    const productReportFilter = document.getElementById('product-report-filter');
+
+
     const reportRangeEl = document.getElementById('report-range');
     const customDateRangeDiv = document.getElementById('custom-date-range');
     const customStartEl = document.getElementById('custom-start');
@@ -403,16 +595,22 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Chat UI Elements
     const chatMessages = document.getElementById('chat-messages');
+    // Promotions Elements
+    const promotionList = document.getElementById('promotion-list');
+    const promotionEmptyState = document.getElementById('promotion-empty-state');
+    const addPromotionBtn = document.getElementById('add-promotion-btn');
+    const searchPromotionsInput = document.getElementById('search-promotions');
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
     const aiThinkingIndicator = document.getElementById('ai-thinking-indicator');
-    let expensePieChart, flowLineChart;
+    let expensePieChart, cashflowTrendChart, productSalesTrendChart;
     const expensePieChartCtx = document.getElementById('expense-pie-chart')?.getContext('2d');
-    const flowLineChartCtx = document.getElementById('flow-line-chart')?.getContext('2d');
+    const cashflowTrendChartCtx = document.getElementById('cashflow-trend-chart')?.getContext('2d');
+    const productSalesTrendChartCtx = document.getElementById('product-sales-trend-chart')?.getContext('2d');
 
     let auth, db, geminiApiKey;
-    let transactionsCollection, plansCollection;
-    let transactions = [], plans = [];
+    let transactionsCollection, plansCollection, productsCollection, promotionsCollection;
+    let transactions = [], plans = [], products = [], promotions = [];
     let currentUserId = null;
     let toastTimeout;
     let confirmAction = null;
@@ -420,12 +618,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let audioCache = {};
     let currentAudio = null;
     let currentlyPlayingButton = null;
+    let currentEditingTransaction = null;
     const playIconSVG = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.5 12a4.5 4.5 0 000-8v8z"></path></svg>`;
     const stopIconSVG = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><rect width="10" height="10" x="5" y="5" rx="1"></rect></svg>`;
     
     const categories = {
-        income: ['Bán tại quán', 'Giao hàng', 'Thu khác'],
-        expense: ['Nguyên liệu chính', 'Nguyên liệu phụ', 'Vật tư', 'Chi phí vận hành', 'Mua để bán lại', 'Chi phí khác']
+        income: ['Bán hàng', 'Thu khác'],
+        expense: ['Nhập hàng', 'Nguyên liệu chính', 'Nguyên liệu phụ', 'Vật tư', 'Chi phí vận hành', 'Chi phí khác']
     };
 
     // --- Firebase Initialization & Auth Handling ---
@@ -440,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
             measurementId: "G-XYK5Q974RP"
         };
 
-        geminiApiKey = "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc"; // TODO: PASTE YOUR GEMINI API KEY HERE
+        geminiApiKey = "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc"; 
         
         if (!firebaseConfig.apiKey) {
             loginScreen.innerHTML = `<p class="text-red-500 text-center">Lỗi: Cấu hình Firebase chưa được thiết lập trong mã nguồn.</p>`;
@@ -459,10 +658,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 userName.textContent = user.displayName;
                 userPhoto.src = user.photoURL;
                 
-                const transactionsPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/transactions`;
-                const plansPath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}/plans`;
-                transactionsCollection = db.collection(transactionsPath);
-                plansCollection = db.collection(plansPath);
+                const basePath = `/artifacts/${firebaseConfig.projectId}/users/${currentUserId}`;
+                transactionsCollection = db.collection(`${basePath}/transactions`);
+                plansCollection = db.collection(`${basePath}/plans`);
+                productsCollection = db.collection(`${basePath}/products`);
+                promotionsCollection = db.collection(`${basePath}/promotions`);
                 
                 loginScreen.classList.add('hidden');
                 appContainer.classList.remove('hidden');
@@ -470,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 listenForData();
             } else {
                 currentUserId = null;
-                transactions = []; plans = [];
+                transactions = []; plans = []; products = [];
                 renderAll();
                 appContainer.classList.add('hidden');
                 loginScreen.classList.remove('hidden');
@@ -489,7 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', signOut);
 
     function listenForData() {
-        if (!transactionsCollection || !plansCollection) return;
+        if (!transactionsCollection || !plansCollection || !productsCollection || !promotionsCollection) return;
         
         transactionsCollection.onSnapshot(snapshot => {
             transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
@@ -501,19 +701,112 @@ document.addEventListener('DOMContentLoaded', () => {
             plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
             renderAll();
         }, err => showError("Không thể tải danh sách kế hoạch: " + err.message));
+        
+        productsCollection.onSnapshot(snapshot => {
+            products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => a.name.localeCompare(b.name));
+            renderAll();
+            populateProductReportFilter();
+        }, err => showError("Không thể tải danh sách sản phẩm: " + err.message));
+
+        promotionsCollection.onSnapshot(snapshot => {
+            promotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => a.name.localeCompare(b.name));
+            renderPromotions();
+        }, err => showError("Không thể tải danh sách khuyến mại: " + err.message));
     }
     
     function renderAll() {
-        const dateFilteredTransactions = filterData(transactions, 'date');
+        const { currentPeriodData } = getReportData();
         const searchedPlans = filterData(plans, 'search', searchPlanInput.value);
-        const searchedTransactions = filterData(dateFilteredTransactions, 'search', searchHistoryInput.value);
-        updateSummary(dateFilteredTransactions);
+        const searchedTransactions = filterData(transactions, 'search', searchHistoryInput.value);
+        const searchedProducts = filterData(products, 'search', searchProductsInput.value);
+        
+        updateSummary(currentPeriodData);
         renderTransactionList(searchedTransactions);
         renderPlanList(searchedPlans);
+        renderProductList(searchedProducts);
+        renderPromotions();
+
         if(!contentDashboard.classList.contains('hidden')){
-            updateCharts(dateFilteredTransactions);
+            renderReports();
         }
     }
+
+    function renderPromotions() {
+        if (!promotionList) return;
+        const term = (searchPromotionsInput?.value || '').toLowerCase().trim();
+        const source = promotions.filter(pm => {
+            if (!term) return true;
+            return [pm.name, pm.type, pm.productName].some(v => String(v||'').toLowerCase().includes(term));
+        });
+        promotionList.innerHTML = '';
+        promotionEmptyState.style.display = source.length === 0 ? 'block' : 'none';
+        source.forEach(pm => promotionList.appendChild(createPromotionElement(pm)));
+    }
+
+    function createPromotionElement(pm) {
+        const productInfo = products.find(p => p.id === pm.productId);
+        const wrapper = document.createElement('li');
+        wrapper.className = 'p-4 bg-white rounded-lg shadow flex items-start justify-between gap-4';
+        const typeLabel = pm.type === 'percent' ? `${pm.value}%` : pm.type === 'fixed' ? `${formatCurrency(pm.value)}` : `Mua ${pm.buy} tặng ${pm.get}`;
+        const dateRange = `${pm.startDate || ''} - ${pm.endDate || ''}`;
+        wrapper.innerHTML = `
+            <div>
+                <h4 class="font-semibold text-base">${pm.name || 'Khuyến mại'}</h4>
+                <p class="text-sm text-gray-600">SP: ${productInfo ? productInfo.name : 'Tất cả/Không xác định'}</p>
+                <p class="text-sm">Hình thức: <span class="font-medium">${typeLabel}</span> • Hiệu lực: ${dateRange}</p>
+                <p class="text-xs ${pm.enabled ? 'text-green-600' : 'text-gray-400'}">${pm.enabled ? 'Đang bật' : 'Đang tắt'}</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="px-3 py-1 rounded bg-indigo-600 text-white text-sm" data-action="edit">Sửa</button>
+                <button class="px-3 py-1 rounded bg-red-600 text-white text-sm" data-action="delete">Xóa</button>
+                <button class="px-3 py-1 rounded ${pm.enabled ? 'bg-gray-500' : 'bg-green-600'} text-white text-sm" data-action="toggle">${pm.enabled ? 'Tắt' : 'Bật'}</button>
+            </div>
+        `;
+        wrapper.querySelector('[data-action="edit"]').addEventListener('click', () => openPromotionModal(pm));
+        wrapper.querySelector('[data-action="delete"]').addEventListener('click', () => deletePromotion(pm));
+        wrapper.querySelector('[data-action="toggle"]').addEventListener('click', () => togglePromotion(pm));
+        return wrapper;
+    }
+
+    function openPromotionModal(pm = null) {
+        // Reuse existing modal infra: use formModal with lightweight fields via prompt for now
+        const name = prompt('Tên chương trình', pm?.name || '');
+        if (name === null) return;
+        const type = prompt('Loại (percent|fixed|bxgy)', pm?.type || 'percent');
+        if (type === null) return;
+        let value = pm?.value || 0, buy = pm?.buy || 0, get = pm?.get || 0;
+        if (type === 'percent' || type === 'fixed') {
+            const v = prompt('Giá trị (%, hoặc số tiền cố định)', String(value));
+            if (v === null) return; value = +v;
+        } else if (type === 'bxgy') {
+            const bx = prompt('Mua X', String(buy)); if (bx === null) return; buy = +bx;
+            const gy = prompt('Tặng Y', String(get)); if (gy === null) return; get = +gy;
+        }
+        const productId = prompt('ID sản phẩm áp dụng (để trống nếu chưa)', pm?.productId || '') || '';
+        const startDate = prompt('Ngày bắt đầu (YYYY-MM-DD)', pm?.startDate || '') || '';
+        const endDate = prompt('Ngày kết thúc (YYYY-MM-DD)', pm?.endDate || '') || '';
+        const enabled = confirm('Bật khuyến mại này?');
+        const data = { name, type, value, buy, get, productId, startDate, endDate, enabled };
+        if (pm?.id) {
+            promotionsCollection.doc(pm.id).update(data).then(()=>showToast('Đã cập nhật khuyến mại!')).catch(e=>showError(e.message));
+        } else {
+            promotionsCollection.add(data).then(()=>showToast('Đã tạo khuyến mại!')).catch(e=>showError(e.message));
+        }
+    }
+
+    function deletePromotion(pm){
+        openConfirmationModal(`Xóa khuyến mại "${pm.name}"?`, async () => {
+            await promotionsCollection.doc(pm.id).delete();
+            showToast('Đã xóa khuyến mại.');
+        });
+    }
+
+    function togglePromotion(pm){
+        promotionsCollection.doc(pm.id).update({ enabled: !pm.enabled }).catch(e=>showError(e.message));
+    }
+
+    addPromotionBtn?.addEventListener('click', () => openPromotionModal());
+    searchPromotionsInput?.addEventListener('input', renderPromotions);
     
     function renderPlanList(source) {
         planList.innerHTML = '';
@@ -525,6 +818,12 @@ document.addEventListener('DOMContentLoaded', () => {
         transactionEmptyState.style.display = source.length === 0 ? 'block' : 'none';
         source.forEach(tx => transactionList.appendChild(createTransactionElement(tx)));
     }
+    function renderProductList(source) {
+        productList.innerHTML = '';
+        productEmptyState.style.display = source.length === 0 ? 'block' : 'none';
+        source.forEach(product => productList.appendChild(createProductElement(product)));
+    }
+
     function updateSummary(source) {
         const totalIncome = source.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
         const totalExpense = source.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
@@ -537,7 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createPlanElement(plan) {
-        const { id, type, description, amount, category, customerName, customerNote, createdAt, date } = plan;
+        const { id, type, description, amount, category, customerName, customerNote, createdAt, date, productId, quantity } = plan;
         const isIncome = type === 'income';
         const item = document.createElement('li');
         item.className = `p-3 rounded-lg flex items-start gap-3 border-l-4 ${isIncome ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`;
@@ -563,7 +862,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
                 <button data-action="delete" class="text-gray-500 hover:text-red-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
             </div>`;
-        item.querySelector('.plan-item-checkbox').addEventListener('change', (e) => { if (e.target.checked) { openCompletePlanModal(plan); e.target.checked = false; } });
+        item.querySelector('.plan-item-checkbox').addEventListener('change', (e) => { 
+            if (e.target.checked) { 
+                const planData = { id, type, description, amount, date, category, customerName, customerNote, productId, quantity };
+                openCompletePlanModal(planData); 
+                e.target.checked = false; 
+            } 
+        });
         item.querySelector('button[data-action="edit"]').addEventListener('click', () => openFormModal('editPlan', plan));
         item.querySelector('button[data-action="delete"]').addEventListener('click', () => deletePlan(id, description));
         return item;
@@ -599,26 +904,74 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>`;
         item.querySelector('button[data-action="edit"]').addEventListener('click', () => openFormModal('editTransaction', tx));
-        item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteTransaction(id, description));
+        item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteTransaction(tx));
+        return item;
+    }
+     function createProductElement(product) {
+        const { id, name, costPrice, sellingPrice, stock } = product;
+        const item = document.createElement('li');
+        item.className = 'p-4 rounded-lg bg-white border border-gray-200 shadow-sm';
+        
+        const stockColor = stock > 10 ? 'text-green-600' : (stock > 0 ? 'text-orange-500' : 'text-red-600');
+
+        item.innerHTML = `
+            <div class="flex flex-col sm:flex-row justify-between items-start gap-3">
+                <div class="flex-grow">
+                    <p class="font-bold text-lg text-blue-800">${name}</p>
+                    <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 mt-1">
+                        <span>Giá bán: <strong class="text-green-700">${formatCurrency(sellingPrice)}</strong></span>
+                        <span>Giá vốn: <strong class="text-red-700">${formatCurrency(costPrice)}</strong></span>
+                        <span>Tồn kho: <strong class="${stockColor}">${stock}</strong></span>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 flex items-center gap-2 w-full sm:w-auto">
+                    <button data-action="sell" class="w-1/2 sm:w-auto text-sm bg-green-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-green-700 transition">Bán</button>
+                    <button data-action="edit" class="w-1/4 sm:w-auto text-gray-500 hover:text-blue-600 transition p-2 rounded-lg hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                    <button data-action="delete" class="w-1/4 sm:w-auto text-gray-500 hover:text-red-600 transition p-2 rounded-lg hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+                </div>
+            </div>`;
+        item.querySelector('button[data-action="sell"]').addEventListener('click', () => {
+            openFormModal('addTransaction', {
+                type: 'income',
+                category: 'Bán hàng',
+                productId: product.id // Pass product data to pre-fill the form
+            });
+        });
+        item.querySelector('button[data-action="edit"]').addEventListener('click', () => openProductModal('edit', product));
+        item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteProduct(id, name));
         return item;
     }
     
     function openFormModal(mode, data = {}) {
         currentFormMode = mode;
         mainForm.reset();
+        descriptionInput.readOnly = false;
+        productSelect.value = '';
+        importProductSelect.value = '';
+
         const type = data.type || 'income';
         formModal.querySelector(`input[name="type"][value="${type}"]`).checked = true;
         updateCategoryOptions();
+
+        if (mode === 'editTransaction') {
+            currentEditingTransaction = transactions.find(t => t.id === data.id) || null;
+        } else {
+            currentEditingTransaction = null;
+        }
+
         switch(mode) {
             case 'addPlan':
             case 'addTransaction':
                 modalTitle.textContent = mode === 'addPlan' ? 'Thêm Kế Hoạch Mới' : 'Thêm Giao Dịch Nhanh';
+                editingIdInput.value = '';
                 descriptionInput.value = data.description || '';
                 amountInput.value = data.amount || '';
                 dateInput.value = data.date || new Date().toISOString().split('T')[0];
-                categorySelect.value = data.category || '';
+                categorySelect.value = data.category || (type === 'income' ? 'Bán hàng' : 'Chi phí khác');
                 customerNameInput.value = data.customerName || '';
                 customerNoteInput.value = data.customerNote || '';
+                transactionQuantityInput.value = data.quantity || 1;
+                importQuantityInput.value = data.quantity || 1;
                 break;
             case 'editPlan':
             case 'editTransaction':
@@ -630,14 +983,216 @@ document.addEventListener('DOMContentLoaded', () => {
                 categorySelect.value = data.category || '';
                 customerNameInput.value = data.customerName || '';
                 customerNoteInput.value = data.customerNote || '';
+                transactionQuantityInput.value = data.quantity || 1;
+                importQuantityInput.value = data.quantity || 1;
                 break;
         }
+
         updateFormFieldsVisibility();
+
+        // Handle product selection logic
+        if (data.productId) {
+            if (type === 'income') {
+                productSelect.value = data.productId;
+                handleProductSelection(true); // Pass true to indicate it's from AI
+            } else if (type === 'expense' && categorySelect.value === 'Nhập hàng') {
+                importProductSelect.value = data.productId;
+                handleImportProductSelection(true);
+            }
+        }
+        
         formModal.classList.remove('hidden');
         setTimeout(() => formModal.classList.remove('opacity-0'), 10);
     }
 
     function closeFormModal() { formModal.classList.add('opacity-0'); setTimeout(() => formModal.classList.add('hidden'), 300); }
+    
+    function openProductModal(mode, data = {}) {
+        productForm.reset();
+        if (mode === 'edit') {
+            productModalTitle.textContent = 'Chỉnh Sửa Sản Phẩm';
+            editingProductIdInput.value = data.id;
+            productNameInput.value = data.name;
+            productCostPriceInput.value = data.costPrice;
+            productSellingPriceInput.value = data.sellingPrice;
+            productStockInput.value = data.stock;
+        } else {
+            productModalTitle.textContent = 'Thêm Sản Phẩm Mới';
+            editingProductIdInput.value = '';
+        }
+        productModal.classList.remove('hidden');
+        setTimeout(() => productModal.classList.remove('opacity-0'), 10);
+    }
+
+    function closeProductModal() { productModal.classList.add('opacity-0'); setTimeout(() => productModal.classList.add('hidden'), 300); }
+    
+    async function handleProductFormSubmit(e) {
+        e.preventDefault();
+        const data = {
+            name: productNameInput.value.trim(),
+            costPrice: +productCostPriceInput.value || 0,
+            sellingPrice: +productSellingPriceInput.value,
+            stock: +productStockInput.value,
+        };
+        if (!data.name || data.sellingPrice <= 0) { 
+            return showToast("Vui lòng nhập tên và giá bán hợp lệ.", "error"); 
+        }
+        
+        const saveProduct = async () => {
+            const editingId = editingProductIdInput.value;
+            try {
+                if (editingId) {
+                    await productsCollection.doc(editingId).update(data);
+                    showToast("Đã cập nhật sản phẩm!");
+                } else {
+                    await productsCollection.add(data);
+                    showToast("Đã thêm sản phẩm thành công!");
+                }
+                closeProductModal();
+            } catch (err) { 
+                showToast(`Lỗi: ${err.message}`, "error"); 
+            }
+        };
+
+        if (data.costPrice <= 0) {
+            openConfirmationModal(
+                "Giá vốn đang bị bỏ trống hoặc bằng 0. Bạn có chắc muốn lưu không?",
+                saveProduct,
+                "Vẫn lưu"
+            );
+        } else {
+            saveProduct();
+        }
+    }
+
+
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const type = formModal.querySelector('input[name="type"]:checked').value;
+        const category = categorySelect.value;
+        
+        let productId = null;
+        let quantity = null;
+
+        if (type === 'income' && productSelect.value) {
+            productId = productSelect.value;
+            quantity = +transactionQuantityInput.value;
+        } else if (type === 'expense' && category === 'Nhập hàng' && importProductSelect.value) {
+            productId = importProductSelect.value;
+            quantity = +importQuantityInput.value;
+        }
+
+        const data = { 
+            type: type, 
+            description: descriptionInput.value.trim(), 
+            amount: +amountInput.value,
+            promoId: amountInput.dataset.promoId || null,
+            discountAmount: +(amountInput.dataset.discountAmount || 0),
+            date: dateInput.value, 
+            category: category, 
+            customerName: customerNameInput.value.trim(), 
+            customerNote: customerNoteInput.value.trim(), 
+            createdAt: new Date().toISOString(),
+            productId: productId,
+            quantity: quantity
+        };
+
+        if (!data.description || data.amount < 0) { return showToast("Vui lòng nhập nội dung và số tiền hợp lệ.", "error"); }
+        
+        const executeSave = async () => {
+            try {
+                if (currentFormMode === 'addPlan') {
+                    await plansCollection.add(data); 
+                    showToast("Đã thêm kế hoạch thành công!");
+                } else if (currentFormMode === 'addTransaction') {
+                    await transactionsCollection.add(data);
+                    if (data.productId && data.quantity > 0) {
+                        const stockChange = data.type === 'income' ? -data.quantity : data.quantity;
+                        await productsCollection.doc(data.productId).update({ stock: firebase.firestore.FieldValue.increment(stockChange) });
+                    }
+                    showToast("Đã thêm giao dịch thành công!");
+                } else if (currentFormMode === 'editPlan') {
+                    delete data.createdAt;
+                    await plansCollection.doc(editingIdInput.value).update(data); 
+                    showToast("Đã cập nhật kế hoạch!");
+                } else if (currentFormMode === 'editTransaction') {
+                    const beforeTx = currentEditingTransaction;
+                    const afterTxData = data;
+                    const txDocRef = transactionsCollection.doc(editingIdInput.value);
+
+                    const oldProductId = beforeTx ? beforeTx.productId : null;
+                    const oldQuantity = beforeTx ? beforeTx.quantity || 0 : 0;
+                    const oldType = beforeTx ? beforeTx.type : null;
+                    const newProductId = afterTxData.productId;
+                    const newQuantity = afterTxData.quantity || 0;
+                    const newType = afterTxData.type;
+
+                    const batch = db.batch();
+                    batch.update(txDocRef, afterTxData);
+
+                    if (oldProductId !== newProductId || oldQuantity !== newQuantity || oldType !== newType) {
+                        // Revert old stock change
+                        if (oldProductId && oldQuantity > 0) {
+                            const oldStockChange = oldType === 'income' ? oldQuantity : -oldQuantity;
+                            batch.update(productsCollection.doc(oldProductId), { stock: firebase.firestore.FieldValue.increment(oldStockChange) });
+                        }
+                        // Apply new stock change
+                        if (newProductId && newQuantity > 0) {
+                            const newStockChange = newType === 'income' ? -newQuantity : newQuantity;
+                            batch.update(productsCollection.doc(newProductId), { stock: firebase.firestore.FieldValue.increment(newStockChange) });
+                        }
+                    }
+                    await batch.commit();
+                    showToast("Đã cập nhật giao dịch và kho hàng!");
+                }
+                closeFormModal();
+            } catch (err) { 
+                showToast(`Lỗi: ${err.message}`, "error"); 
+            }
+        };
+        
+        if (currentFormMode === 'addTransaction' && data.productId && data.quantity > 0 && data.type === 'income') {
+            const product = products.find(p => p.id === data.productId);
+            if (product && data.quantity > product.stock) {
+                openConfirmationModal(
+                    `Số lượng bán (${data.quantity}) vượt quá tồn kho (${product.stock}). Bạn có chắc muốn tiếp tục?`,
+                    executeSave,
+                    "Tiếp tục"
+                );
+            } else {
+                await executeSave();
+            }
+        } else {
+            await executeSave();
+        }
+    }
+
+    const deleteProduct = (id, name) => { 
+        openConfirmationModal(`Bạn có chắc muốn xóa sản phẩm "${name}"? Thao tác này không thể hoàn tác.`, async () => { 
+            try { 
+                await productsCollection.doc(id).delete(); 
+                showToast("Đã xóa sản phẩm."); 
+            } catch(e) { 
+                showToast('Lỗi: '+e.message, "error"); 
+            } 
+        }); 
+    };
+    const deletePlan = (id, description) => { openConfirmationModal(`Bạn có chắc muốn xóa kế hoạch "${description}"?`, async () => { try { await plansCollection.doc(id).delete(); showToast("Đã xóa kế hoạch."); } catch(e) { showToast('Lỗi: '+e.message, "error"); } }); };
+    const deleteTransaction = (tx) => { 
+        openConfirmationModal(`Bạn có chắc muốn xóa giao dịch "${tx.description}"?`, async () => { 
+            try { 
+                await transactionsCollection.doc(tx.id).delete();
+                if (tx.productId && tx.quantity > 0) {
+                    const stockChange = tx.type === 'income' ? tx.quantity : -tx.quantity;
+                    await productsCollection.doc(tx.productId).update({ stock: firebase.firestore.FieldValue.increment(stockChange) });
+                }
+                showToast("Đã xóa giao dịch."); 
+            } catch(e) { 
+                showToast('Lỗi: '+e.message, "error"); 
+            } 
+        }); 
+    };
+
     function openCompletePlanModal(plan) {
         completePlanIdInput.value = JSON.stringify(plan);
         completePlanDescriptionEl.textContent = plan.description;
@@ -646,85 +1201,557 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => completePlanModal.classList.remove('opacity-0'), 10);
     }
     function closeCompletePlanModal() { completePlanModal.classList.add('opacity-0'); setTimeout(() => completePlanModal.classList.add('hidden'), 300); }
-    async function handleFormSubmit(e) {
-        e.preventDefault();
-        const data = { type: formModal.querySelector('input[name="type"]:checked').value, description: descriptionInput.value.trim(), amount: +amountInput.value, date: dateInput.value, category: categorySelect.value, customerName: customerNameInput.value.trim(), customerNote: customerNoteInput.value.trim(), createdAt: new Date().toISOString() };
-        if (!data.description || data.amount <= 0) { return showToast("Vui lòng nhập nội dung và số tiền hợp lệ.", "error"); }
-        try {
-            if (currentFormMode === 'addPlan') { await plansCollection.add(data); showToast("Đã thêm kế hoạch thành công!"); } 
-            else if (currentFormMode === 'editPlan') { delete data.createdAt; await plansCollection.doc(editingIdInput.value).update(data); showToast("Đã cập nhật kế hoạch!"); } 
-            else if (currentFormMode === 'addTransaction') { await transactionsCollection.add(data); showToast("Đã thêm giao dịch thành công!"); } 
-            else if (currentFormMode === 'editTransaction') { delete data.createdAt; await transactionsCollection.doc(editingIdInput.value).update(data); showToast("Đã cập nhật giao dịch!"); }
-            closeFormModal();
-        } catch (err) { showToast(`Lỗi: ${err.message}`, "error"); }
-    }
     async function handleCompletePlanSubmit(e) {
         e.preventDefault();
         const plan = JSON.parse(completePlanIdInput.value);
         const actualAmount = +completePlanAmountInput.value;
-        if (actualAmount <= 0) return showToast("Vui lòng nhập số tiền thực tế hợp lệ.", "error");
+        if (actualAmount <= 0 && plan.type !== 'expense') return showToast("Vui lòng nhập số tiền thực tế hợp lệ.", "error");
+        
         const newTransaction = { ...plan, amount: actualAmount, date: new Date().toISOString().split('T')[0], createdAt: new Date().toISOString() };
         delete newTransaction.id;
+        
         try {
-            await transactionsCollection.add(newTransaction);
-            await plansCollection.doc(plan.id).delete();
+            const batch = db.batch();
+            
+            const newTxRef = transactionsCollection.doc();
+            batch.set(newTxRef, newTransaction);
+            
+            if (newTransaction.productId && newTransaction.quantity > 0) {
+                const stockChange = newTransaction.type === 'income' ? -newTransaction.quantity : newTransaction.quantity;
+                const productRef = productsCollection.doc(newTransaction.productId);
+                batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(stockChange) });
+            }
+            
+            const planRef = plansCollection.doc(plan.id);
+            batch.delete(planRef);
+            
+            await batch.commit();
+            
             showToast("Đã hoàn thành kế hoạch!");
             closeCompletePlanModal();
         } catch (err) { showToast(`Lỗi: ${err.message}`, "error"); }
     }
-    function openConfirmationModal(message, onConfirm) {
+    
+    function openConfirmationModal(message, onConfirm, confirmText = "Xóa") {
         confirmationMessage.textContent = message;
         confirmAction = onConfirm;
+        confirmActionBtn.textContent = confirmText;
+        confirmActionBtn.className = 'font-bold py-2 px-4 rounded-lg transition text-white ';
+        if (confirmText === "Xóa") {
+            confirmActionBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        } else {
+            confirmActionBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+        }
         confirmationModal.classList.remove('hidden');
         setTimeout(() => confirmationModal.classList.remove('opacity-0'), 10);
     }
     function closeConfirmationModal() { confirmationModal.classList.add('opacity-0'); setTimeout(() => confirmationModal.classList.add('hidden'), 300); }
-    const deletePlan = (id, description) => { openConfirmationModal(`Bạn có chắc muốn xóa kế hoạch "${description}"?`, async () => { try { await plansCollection.doc(id).delete(); showToast("Đã xóa kế hoạch."); } catch(e) { showToast('Lỗi: '+e.message, "error"); } }); };
-    const deleteTransaction = (id, description) => { openConfirmationModal(`Bạn có chắc muốn xóa giao dịch "${description}"?`, async () => { try { await transactionsCollection.doc(id).delete(); showToast("Đã xóa giao dịch."); } catch(e) { showToast('Lỗi: '+e.message, "error"); } }); };
+    
     const formatCurrency = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
     const showError = (msg) => { console.error(msg); loadingOverlay.innerHTML = `<p class="text-red-500 p-4 text-center">${msg}</p>`; };
     function formatDisplayDateTime(createdAt, date) { const timestamp = createdAt || date; if (!timestamp) return 'Không có ngày'; const d = new Date(timestamp); const dateStr = d.toLocaleDateString('vi-VN'); const timeStr = d.toLocaleTimeString('vi-VN'); return `${dateStr} ${timeStr}`; }
     function showToast(message, type = "success") { clearTimeout(toastTimeout); toastMessage.textContent = message; toast.className = toast.className.replace(/bg-\w+-500/, ''); toast.classList.add(type === "success" ? "bg-green-500" : "bg-red-500"); toast.classList.remove("opacity-0", "translate-y-10"); toastTimeout = setTimeout(() => { toast.classList.add("opacity-0", "translate-y-10"); }, 3000); }
-    function updateFormFieldsVisibility() { const selectedType = formModal.querySelector('input[name="type"]:checked').value; customerNameField.classList.toggle('hidden', selectedType !== 'income'); }
-    function updateCategoryOptions() { const selectedType = formModal.querySelector('input[name="type"]:checked').value; categorySelect.innerHTML = categories[selectedType].map(c => `<option value="${c}">${c}</option>`).join(''); updateFormFieldsVisibility(); }
-    function filterData(data, filterType, searchTerm = '') {
-        if (filterType === 'search') { const term = searchTerm.toLowerCase().trim(); if (!term) return data; return data.filter(item => Object.values(item).some(value => String(value).toLowerCase().includes(term))); }
-        if (filterType === 'date') { const range = reportRangeEl.value; if (range === 'all') return data.slice(); const today = new Date(); today.setHours(0, 0, 0, 0); let start, end = new Date(); end.setHours(23, 59, 59, 999);
-            switch(range) { case 'day': start = new Date(today); break; case 'week': start = new Date(today.setDate(today.getDate() - (today.getDay() || 7) + 1)); break; case 'month': start = new Date(today.getFullYear(), today.getMonth(), 1); break; case 'year': start = new Date(today.getFullYear(), 0, 1); break; case 'custom': start = customStartEl.value ? new Date(customStartEl.value) : null; end = customEndEl.value ? new Date(customEndEl.value) : null; if(start) start.setHours(0,0,0,0); if(end) end.setHours(23, 59, 59, 999); break; default: start = end = null; }
-            return data.filter(t => { if (!t.date) return false; const d = new Date(t.date); return (!start || d >= start) && (!end || d <= end); });
-        } return data;
+    
+    function populateProductDropdown(selectElement) {
+        const currentVal = selectElement.value;
+        let options = `<option value="">${selectElement.id === 'product-select' ? '-- Ghi nhận thủ công --' : '-- Chọn sản phẩm --'}</option>`;
+        products.forEach(p => {
+            options += `<option value="${p.id}">${p.name} (Tồn: ${p.stock})</option>`;
+        });
+        selectElement.innerHTML = options;
+        selectElement.value = currentVal;
+    }
+
+    function populateProductReportFilter() {
+        let options = '';
+        products.forEach(p => {
+            options += `<option value="${p.id}">${p.name}</option>`;
+        });
+        productReportFilter.innerHTML = options;
+    }
+
+    function handleProductSelection(fromAI = false) {
+        const selectedId = productSelect.value;
+        if (selectedId) {
+            const product = products.find(p => p.id === selectedId);
+            if (product) {
+                if (!fromAI) {
+                    transactionQuantityInput.value = 1;
+                }
+                descriptionInput.value = product.name;
+                descriptionInput.readOnly = true;
+                handleQuantityChange();
+            }
+        } else {
+            descriptionInput.readOnly = false;
+        }
     }
     
+    function handleQuantityChange() {
+        const selectedId = productSelect.value;
+        if (selectedId) {
+            const product = products.find(p => p.id === selectedId);
+            const quantity = +transactionQuantityInput.value;
+            if (product && quantity > 0) {
+                // Apply promotions if available
+                const now = new Date();
+                const applicablePromos = (promotions || []).filter(pm => {
+                    if (!pm.enabled) return false;
+                    if (pm.productId !== selectedId) return false;
+                    const startOk = pm.startDate ? new Date(pm.startDate) <= now : true;
+                    const endOk = pm.endDate ? new Date(pm.endDate) >= now : true;
+                    return startOk && endOk;
+                });
+
+                let unitPrice = product.sellingPrice;
+                let discountTotal = 0;
+                let appliedPromoId = null;
+
+                if (applicablePromos.length > 0) {
+                    const pm = applicablePromos[0]; // pick first for now
+                    appliedPromoId = pm.id;
+                    if (pm.type === 'percent') {
+                        const discountPerUnit = Math.max(0, Math.min(100, pm.value || 0)) * unitPrice / 100;
+                        discountTotal = discountPerUnit * quantity;
+                    } else if (pm.type === 'fixed') {
+                        const discountPerUnit = Math.max(0, pm.value || 0);
+                        discountTotal = discountPerUnit * quantity;
+                    } else if (pm.type === 'bxgy') { // buy X get Y
+                        const x = Math.max(1, pm.buy || 0);
+                        const y = Math.max(0, pm.get || 0);
+                        const group = x + y;
+                        if (group > 0) {
+                            const fullGroups = Math.floor(quantity / group);
+                            const freeItems = fullGroups * y;
+                            discountTotal = freeItems * unitPrice;
+                        }
+                    }
+                }
+
+                const total = unitPrice * quantity - discountTotal;
+                amountInput.value = Math.max(0, Math.round(total));
+                // store for later save
+                amountInput.dataset.promoId = appliedPromoId || '';
+                amountInput.dataset.discountAmount = String(Math.max(0, Math.round(discountTotal)));
+                descriptionInput.value = quantity > 1 ? `${quantity} ${product.name}` : product.name;
+            }
+        }
+    }
+    
+    function handleImportProductSelection(fromAI = false) {
+        const selectedId = importProductSelect.value;
+        if (selectedId) {
+            const product = products.find(p => p.id === selectedId);
+            if (product) {
+                if (!fromAI) {
+                   importQuantityInput.value = 1;
+                }
+                descriptionInput.value = `Nhập hàng: ${product.name}`;
+                if (product.costPrice > 0) {
+                    amountInput.value = product.costPrice * (+importQuantityInput.value);
+                }
+            }
+        }
+    }
+
+    function handleImportQuantityChange() {
+        const selectedId = importProductSelect.value;
+         if (selectedId) {
+            const product = products.find(p => p.id === selectedId);
+            const quantity = +importQuantityInput.value;
+            if (product && quantity > 0 && product.costPrice > 0) {
+                amountInput.value = product.costPrice * quantity;
+            }
+        }
+    }
+
+
+    function updateFormFieldsVisibility() { 
+        const selectedType = formModal.querySelector('input[name="type"]:checked').value; 
+        const selectedCategory = categorySelect.value;
+
+        customerNameField.classList.toggle('hidden', selectedType !== 'income'); 
+        productSection.classList.toggle('hidden', selectedType !== 'income');
+        importSection.classList.toggle('hidden', !(selectedType === 'expense' && selectedCategory === 'Nhập hàng'));
+        
+        if (selectedType === 'income') {
+            populateProductDropdown(productSelect);
+        } else if (selectedType === 'expense' && selectedCategory === 'Nhập hàng') {
+            populateProductDropdown(importProductSelect);
+        }
+    }
+    function updateCategoryOptions() { 
+        const selectedType = formModal.querySelector('input[name="type"]:checked').value; 
+        const currentCategory = categorySelect.value;
+        categorySelect.innerHTML = categories[selectedType].map(c => `<option value="${c}">${c}</option>`).join(''); 
+        if (categories[selectedType].includes(currentCategory)) {
+            categorySelect.value = currentCategory;
+        }
+        updateFormFieldsVisibility(); 
+    }
+    
+    function filterData(data, filterType, searchTerm = '') {
+        const term = searchTerm.toLowerCase().trim();
+        if (!term) return data;
+        return data.filter(item => Object.values(item).some(value => String(value).toLowerCase().includes(term)));
+    }
+    
+    function getPreviousPeriodRange(currentStart, currentEnd) {
+        if (!currentStart || !currentEnd) return null;
+        const duration = currentEnd.getTime() - currentStart.getTime();
+        if(duration <= 0) return null;
+        
+        const prevEnd = new Date(currentStart.getTime() - 1);
+        const prevStart = new Date(prevEnd.getTime() - duration);
+        
+        prevStart.setHours(0,0,0,0);
+        prevEnd.setHours(23,59,59,999);
+
+        return { start: prevStart, end: prevEnd };
+    }
+
+    function filterDataByDateRange(data, start, end) {
+        if (!start || !end) return [];
+        return data.filter(t => {
+            if (!t.date) return false;
+            const d = new Date(t.date);
+            return d >= start && d <= end;
+        });
+    }
+
     function switchTab(tab) {
-        [contentPlan, contentHistory, contentDashboard].forEach(c => c.classList.add('hidden'));
-        [tabPlan, tabHistory, tabDashboard].forEach(t => t.classList.remove('active'));
+        [contentPlan, contentProducts, contentHistory, contentPromotions, contentDashboard].forEach(c => c.classList.add('hidden'));
+        [tabPlan, tabProducts, tabHistory, tabPromotions, tabDashboard].forEach(t => t.classList.remove('active'));
+        
         if (tab === 'plan') { contentPlan.classList.remove('hidden'); tabPlan.classList.add('active'); } 
+        else if (tab === 'products') { contentProducts.classList.remove('hidden'); tabProducts.classList.add('active'); } 
         else if (tab === 'history') { contentHistory.classList.remove('hidden'); tabHistory.classList.add('active'); } 
+        else if (tab === 'promotions') { contentPromotions.classList.remove('hidden'); tabPromotions.classList.add('active'); }
         else {
             contentDashboard.classList.remove('hidden');
             tabDashboard.classList.add('active');
+            switchReportTab('overview');
+            renderReports();
             if (chatHistory.length === 0) {
                 chatHistory.push({ role: 'model', parts: [{ text: "Chào bạn, tôi là trợ lý phân tích tài chính. Bạn muốn biết điều gì về dữ liệu thu chi trong khoảng thời gian đã chọn?" }] });
+                renderChat();
             }
-            renderChat();
-            renderAll();
         }
     }
+
+    function switchReportTab(tab) {
+        document.querySelectorAll('.report-tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`.report-tab-button[data-report="${tab}"]`).classList.add('active');
+        
+        document.querySelectorAll('[id^="report-content-"]').forEach(content => content.classList.add('hidden'));
+        document.getElementById(`report-content-${tab}`).classList.remove('hidden');
+    }
+    
+    function renderReports() {
+        const { currentPeriodData, previousPeriodData } = getReportData();
+        renderOverviewReport(currentPeriodData, previousPeriodData);
+        renderProductPerformanceReports(currentPeriodData);
+        renderInventoryReport();
+    }
+    
+    function getReportData() {
+        const range = reportRangeEl.value;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let currentStart, currentEnd;
+
+        switch(range) {
+            case 'day':
+                currentStart = new Date(today);
+                currentEnd = new Date(today);
+                break;
+            case 'week':
+                currentStart = new Date(today);
+                currentStart.setDate(currentStart.getDate() - (currentStart.getDay() || 7) + 1);
+                currentEnd = new Date(currentStart);
+                currentEnd.setDate(currentEnd.getDate() + 6);
+                break;
+            case 'month':
+                currentStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                currentEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                break;
+            case 'year':
+                currentStart = new Date(today.getFullYear(), 0, 1);
+                currentEnd = new Date(today.getFullYear(), 11, 31);
+                break;
+            case 'custom':
+                currentStart = customStartEl.value ? new Date(customStartEl.value) : null;
+                currentEnd = customEndEl.value ? new Date(customEndEl.value) : null;
+                break;
+            default: // all
+                currentStart = null;
+                currentEnd = null;
+        }
+
+        if(currentEnd) currentEnd.setHours(23, 59, 59, 999);
+        
+        const currentPeriodData = currentStart ? filterDataByDateRange(transactions, currentStart, currentEnd) : transactions;
+        
+        const previousPeriodRange = getPreviousPeriodRange(currentStart, currentEnd);
+        const previousPeriodData = previousPeriodRange ? filterDataByDateRange(transactions, previousPeriodRange.start, previousPeriodRange.end) : [];
+        
+        return { currentPeriodData, previousPeriodData };
+    }
+
+    function createComparisonCardHTML(title, currentValue, previousValue, isExpense) {
+        let percentageChange = 0;
+        let changeText;
+        let isPositive;
+
+        if (previousValue === 0) {
+            percentageChange = currentValue > 0 ? Infinity : 0;
+        } else {
+            percentageChange = ((currentValue - previousValue) / previousValue) * 100;
+        }
+
+        if (isExpense) {
+            isPositive = percentageChange <= 0; // Decrease is good for expenses
+        } else {
+            isPositive = percentageChange >= 0; // Increase is good for income/profit
+        }
+
+        let colorClass = 'text-gray-500';
+        let arrowSVG = '';
+
+        if (percentageChange === Infinity) {
+            changeText = 'Mới';
+            colorClass = 'text-green-600';
+            arrowSVG = `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>`;
+        } else if (Math.abs(percentageChange) > 0) {
+            colorClass = isPositive ? 'text-green-600' : 'text-red-600';
+            arrowSVG = isPositive 
+                ? `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>` 
+                : `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`;
+            changeText = `${Math.abs(percentageChange).toFixed(0)}%`;
+        } else {
+             changeText = `0%`;
+        }
+
+        return `
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-sm font-medium text-gray-500">${title}</h3>
+                <div class="mt-1 flex items-baseline justify-between">
+                    <p class="text-2xl font-semibold text-gray-900">${formatCurrency(currentValue)}</p>
+                    <span class="flex items-center text-sm font-semibold ${colorClass}">
+                        ${arrowSVG}
+                        ${changeText}
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderOverviewReport(currentData, previousData) {
+        // --- Comparison Cards ---
+        const currentIncome = currentData.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+        const currentExpense = currentData.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+        const currentProfit = currentIncome - currentExpense;
+
+        const previousIncome = previousData.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+        const previousExpense = previousData.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+        const previousProfit = previousIncome - previousExpense;
+        
+        const comparisonSection = document.getElementById('comparison-section');
+        if(reportRangeEl.value !== 'all' && reportRangeEl.value !== 'custom') {
+            comparisonSection.innerHTML = `
+                ${createComparisonCardHTML('Doanh thu', currentIncome, previousIncome, false)}
+                ${createComparisonCardHTML('Chi phí', currentExpense, previousExpense, true)}
+                ${createComparisonCardHTML('Lợi nhuận', currentProfit, previousProfit, false)}
+                ${createComparisonCardHTML('Tổng tiền đã giảm giá', currentData.reduce((s,t)=>s+(t.discountAmount||0),0), previousData.reduce((s,t)=>s+(t.discountAmount||0),0), true)}
+            `;
+        } else {
+            comparisonSection.innerHTML = '';
+        }
+
+
+        // --- Charts ---
+        if (expensePieChart) expensePieChart.destroy();
+        if (cashflowTrendChart) cashflowTrendChart.destroy();
+        
+        const expenses = currentData.filter(t => t.type === 'expense');
+        if (expensePieChartCtx && expenses.length > 0) {
+            const expenseByCategory = expenses.reduce((acc, curr) => { 
+                acc[curr.category] = (acc[curr.category] || 0) + (curr.amount || 0); return acc; 
+            }, {});
+            expensePieChart = new Chart(expensePieChartCtx, { type: 'doughnut', data: { labels: Object.keys(expenseByCategory), datasets: [{ data: Object.values(expenseByCategory), backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+        }
+
+        if (cashflowTrendChartCtx && currentData.length > 0) {
+             const dataByDate = currentData.reduce((acc, curr) => { 
+                const date = curr.date.split('T')[0]; 
+                if (!acc[date]) acc[date] = { income: 0, expense: 0 }; 
+                acc[date][curr.type] += (curr.amount || 0); 
+                return acc; 
+            }, {});
+            const sortedDates = Object.keys(dataByDate).sort((a,b) => new Date(a) - new Date(b));
+            const incomeData = sortedDates.map(date => dataByDate[date].income);
+            const expenseData = sortedDates.map(date => dataByDate[date].expense);
+
+            cashflowTrendChart = new Chart(cashflowTrendChartCtx, { type: 'line', data: { labels: sortedDates, datasets: [
+                { label: 'Doanh thu', data: incomeData, borderColor: '#16a34a', backgroundColor: '#16a34a20', fill: true, tension: 0.1 },
+                { label: 'Chi phí', data: expenseData, borderColor: '#dc2626', backgroundColor: '#dc262620', fill: true, tension: 0.1 }
+            ] }, options: { responsive: true, maintainAspectRatio: false } });
+        }
+
+        // --- Promotion Effectiveness Table ---
+        const promoAgg = currentData.reduce((acc, tx) => {
+            if (!tx.promoId || !tx.discountAmount) return acc;
+            if (!acc[tx.promoId]) acc[tx.promoId] = { count: 0, discount: 0 };
+            acc[tx.promoId].count += 1;
+            acc[tx.promoId].discount += tx.discountAmount;
+            return acc;
+        }, {});
+        const rows = Object.entries(promoAgg).map(([pid, s]) => {
+            const promo = promotions.find(p => p.id === pid);
+            return `<tr>
+                <td class="px-4 py-2 border">${promo ? promo.name : pid}</td>
+                <td class="px-4 py-2 border text-center">${s.count}</td>
+                <td class="px-4 py-2 border text-right">${formatCurrency(s.discount)}</td>
+            </tr>`;
+        }).join('');
+        const tableHTML = `<table class="min-w-full bg-white rounded shadow overflow-hidden">
+            <thead><tr>
+                <th class="px-4 py-2 border text-left">Chương trình</th>
+                <th class="px-4 py-2 border text-center">Số lần áp dụng</th>
+                <th class="px-4 py-2 border text-right">Tổng tiền giảm</th>
+            </tr></thead>
+            <tbody>${rows || `<tr><td class='px-4 py-3 text-center text-gray-500' colspan='3'>Chưa có dữ liệu khuyến mại</td></tr>`}</tbody>
+        </table>`;
+        const promoTableDiv = document.getElementById('promotion-report-table');
+        if (promoTableDiv) promoTableDiv.innerHTML = tableHTML;
+    }
+    
+    function renderProductPerformanceReports(source) {
+        const selectedProductIds = [...productReportFilter.selectedOptions].map(opt => opt.value);
+        let sales = source.filter(tx => tx.type === 'income' && tx.productId && tx.quantity > 0);
+        
+        if (selectedProductIds.length > 0) {
+            sales = sales.filter(tx => selectedProductIds.includes(tx.productId));
+        }
+
+        const productStats = {};
+
+        sales.forEach(sale => {
+            if (!productStats[sale.productId]) {
+                const productInfo = products.find(p => p.id === sale.productId);
+                productStats[sale.productId] = {
+                    name: productInfo ? productInfo.name : 'Sản phẩm không xác định',
+                    costPrice: productInfo ? productInfo.costPrice : 0,
+                    quantity: 0,
+                    totalRevenue: 0,
+                };
+            }
+            productStats[sale.productId].quantity += sale.quantity;
+            productStats[sale.productId].totalRevenue += sale.amount;
+        });
+
+        const statsArray = Object.values(productStats).map(p => ({
+            ...p,
+            profit: p.totalRevenue - (p.costPrice * p.quantity)
+        }));
+
+        // Top Selling
+        const topSelling = [...statsArray].sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+        document.getElementById('top-selling-products').innerHTML = topSelling.map(p => `<div class="p-2 bg-gray-50 rounded-md"><strong>${p.name}</strong>: đã bán ${p.quantity}</div>`).join('') || '<p class="text-center text-gray-500">Không có dữ liệu.</p>';
+
+        // Top Profit
+        const topProfit = [...statsArray].sort((a, b) => b.profit - a.profit).slice(0, 5);
+        document.getElementById('top-profit-products').innerHTML = topProfit.map(p => `<div class="p-2 bg-gray-50 rounded-md"><strong>${p.name}</strong>: ${formatCurrency(p.profit)}</div>`).join('') || '<p class="text-center text-gray-500">Không có dữ liệu.</p>';
+    
+        // --- NEW CHART LOGIC ---
+        if (productSalesTrendChart) productSalesTrendChart.destroy();
+        const chartContainer = document.getElementById('product-chart-container');
+
+        if (selectedProductIds.length > 0 && sales.length > 0) {
+            chartContainer.classList.remove('hidden');
+
+            const allDates = [...new Set(sales.map(s => s.date.split('T')[0]))].sort((a, b) => new Date(a) - new Date(b));
+
+            const datasets = selectedProductIds.map((productId, index) => {
+                const product = products.find(p => p.id === productId);
+                const salesForThisProduct = sales.filter(s => s.productId === productId);
+                
+                const revenueByDate = salesForThisProduct.reduce((acc, sale) => {
+                    const date = sale.date.split('T')[0];
+                    acc[date] = (acc[date] || 0) + sale.amount;
+                    return acc;
+                }, {});
+
+                const data = allDates.map(date => revenueByDate[date] || 0);
+                
+                const chartColors = ['#3b82f6', '#10b981', '#f97316', '#8b5cf6', '#ef4444', '#eab308', '#06b6d4', '#d946ef'];
+                const color = chartColors[index % chartColors.length];
+
+                return {
+                    label: product ? product.name : 'Unknown',
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: `${color}20`,
+                    fill: true,
+                    tension: 0.1
+                };
+            });
+
+            if (productSalesTrendChartCtx) {
+                productSalesTrendChart = new Chart(productSalesTrendChartCtx, {
+                    type: 'line',
+                    data: {
+                        labels: allDates,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        } else {
+             chartContainer.classList.add('hidden');
+        }
+    }
+    
+    function renderInventoryReport() {
+        const threshold = +document.getElementById('low-stock-threshold').value;
+        let tableHTML = `<table class="w-full text-sm text-left text-gray-500">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                <tr>
+                    <th scope="col" class="px-4 py-3">Sản phẩm</th>
+                    <th scope="col" class="px-4 py-3 text-right">Tồn kho</th>
+                    <th scope="col" class="px-4 py-3 text-right">Giá trị kho</th>
+                </tr>
+            </thead>
+            <tbody>`;
+        
+        if(products.length === 0) {
+            tableHTML += '<tr><td colspan="3" class="text-center p-4">Chưa có sản phẩm nào.</td></tr>';
+        } else {
+            products.forEach(p => {
+                const stockValue = p.stock * p.costPrice;
+                const isLowStock = p.stock < threshold;
+                tableHTML += `<tr class="border-b ${isLowStock ? 'bg-red-50 text-red-700 font-medium' : 'bg-white'}">
+                    <td class="px-4 py-3">${p.name}</td>
+                    <td class="px-4 py-3 text-right">${p.stock}</td>
+                    <td class="px-4 py-3 text-right">${formatCurrency(stockValue)}</td>
+                </tr>`;
+            });
+        }
+        
+        tableHTML += '</tbody></table>';
+        document.getElementById('inventory-report-table').innerHTML = tableHTML;
+    }
+
+
     const handleFilterChange = () => { const isCustom = reportRangeEl.value === 'custom'; customDateRangeDiv.classList.toggle('hidden', !isCustom); customDateRangeDiv.classList.toggle('flex', isCustom); renderAll(); };
-    function updateCharts(source) {
-       if (expensePieChart) expensePieChart.destroy();
-        if (flowLineChart) flowLineChart.destroy();
-        const expenseLabels = []; const expenseData = []; const lineLabels = []; const incomeData = []; const expenseLineData = [];
-        const expenses = source.filter(t => t.type === 'expense');
-        if (expenses.length > 0) { const expenseByCategory = expenses.reduce((acc, curr) => { acc[curr.category] = (acc[curr.category] || 0) + (curr.amount || 0); return acc; }, {}); expenseLabels.push(...Object.keys(expenseByCategory)); expenseData.push(...Object.values(expenseByCategory)); }
-        if (source.length > 0) { const dataByDate = source.reduce((acc, curr) => { const date = curr.date.split('T')[0]; if (!acc[date]) acc[date] = { income: 0, expense: 0 }; acc[date][curr.type] += (curr.amount || 0); return acc; }, {}); const sortedDates = Object.keys(dataByDate).sort((a,b) => new Date(a) - new Date(b)); lineLabels.push(...sortedDates.map(date => new Date(date).toLocaleDateString('vi-VN'))); incomeData.push(...sortedDates.map(date => dataByDate[date].income)); expenseLineData.push(...sortedDates.map(date => dataByDate[date].expense)); }
-        if (expensePieChartCtx && expenseLabels.length > 0) {
-            expensePieChart = new Chart(expensePieChartCtx, { type: 'doughnut', data: { labels: expenseLabels, datasets: [{ data: expenseData, backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'] }] }, options: { responsive: true, maintainAspectRatio: false } });
-        }
-        if (flowLineChartCtx && lineLabels.length > 0) {
-            flowLineChart = new Chart(flowLineChartCtx, { type: 'line', data: { labels: lineLabels, datasets: [ { label: 'Tổng Thu', data: incomeData, borderColor: '#16a34a', backgroundColor: '#16a34a20', fill: true, tension: 0.1 }, { label: 'Tổng Chi', data: expenseLineData, borderColor: '#dc2626', backgroundColor: '#dc262620', fill: true, tension: 0.1 } ] }, options: { responsive: true, maintainAspectRatio: false } });
-        }
-    }
     
     // --- AI LOGIC (Entry & Chat) ---
     const openAiEntryModal = () => { aiInput.value = ''; aiEntryModal.classList.remove('hidden'); setTimeout(() => aiEntryModal.classList.remove('opacity-0'), 10); };
@@ -735,15 +1762,52 @@ document.addEventListener('DOMContentLoaded', () => {
         const textInput = aiInput.value.trim();
         if (!textInput) { return showToast("Vui lòng nhập mô tả.", "error"); }
         if (geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") { return showToast("Lỗi: API Key của Gemini chưa được thiết lập.", "error"); }
-        aiSpinner.classList.remove('hidden'); e.target.querySelector('button[type="submit"]').disabled = true;
-        const prompt = `You are an intelligent assistant for a Vietnamese finance app. Your task is to analyze the user's text and determine if it's a "plan" (a future intention) or a "transaction" (a past or present event).
-- Use keywords like "sẽ", "dự định", "kế hoạch", "dự kiến", "ngày mai", "tuần sau" to identify a "plan".
-- If no future keywords are present, assume it is a "transaction".
-- Set the 'entryType' field to "plan" or "transaction" accordingly.
-Then, extract the other details into the JSON object. The current date is ${new Date().toLocaleDateString('en-CA')}.
-Available 'income' categories: ${categories.income.join(', ')}.
-Available 'expense' categories: ${categories.expense.join(', ')}.
-User's text: "${textInput}"`;
+        
+        aiSpinner.classList.remove('hidden'); 
+        e.target.querySelector('button[type="submit"]').disabled = true;
+
+        const productNames = products.map(p => p.name);
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dateInTwoDays = new Date(today);
+        dateInTwoDays.setDate(dateInTwoDays.getDate() + 2);
+
+        const todayStr = today.toISOString().split('T')[0];
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        const dateInTwoDaysStr = dateInTwoDays.toISOString().split('T')[0];
+        
+        const expenseCategoriesStr = categories.expense.join(', ');
+        const prompt = `You are an expert Vietnamese financial assistant. Your task is to extract detailed information from a user's text and format it into a JSON object.
+
+CONTEXT:
+- The current date is: ${todayStr}.
+- Available product names (for sales/income): [${productNames.join(', ')}].
+- Available expense categories: [${expenseCategoriesStr}].
+
+RULES & EXAMPLES:
+1.  **entryType**: MUST be "plan" for future intent, otherwise "transaction".
+    - "ngày mai bán", "2 ngày nữa giao" -> "plan"
+    - "bán hôm qua", "thu tiền", "mua rau" -> "transaction"
+2.  **date**: MUST determine the exact date based on the current date and return it in YYYY-MM-DD format.
+    - "hôm nay" -> "${todayStr}"
+    - "ngày mai" -> "${tomorrowStr}"
+    - "2 ngày nữa" -> "${dateInTwoDaysStr}"
+    - If no date is mentioned, use today's date: "${todayStr}".
+3.  **type**: MUST be "income" for sales ('bán', 'thu'), or "expense" for purchases ('mua', 'chi', 'trả tiền').
+4.  **If type is "income" and a product is mentioned**:
+    - **productName**: MUST find the closest product name from the 'Available Products' list.
+    - **quantity** (CRITICAL): MUST extract the quantity. The number just before the productName is the quantity. Default to 1. ("bán 10 ly kem" -> 10).
+    - **discountPercentage**: MUST extract any percentage discount ("chiết khấu 15%" -> 15).
+5.  **If type is "expense" or it's a simple income without a product**:
+    - **description**: MUST be the main subject of the transaction. ("mua rau 20k" -> "mua rau").
+    - **amount**: MUST extract the monetary value. ("20k" -> 20000, "50.000d" -> 50000).
+    - **category**: For expenses, try to match the description to one of the available expense categories.
+6.  **customerName**: Extract the customer's name ("giao cho chị Nhung" -> "chị Nhung").
+7.  **customerNote**: Extract all other relevant details ("giao 16h tại nhà khách" -> "Giao 16h tại nhà khách").
+
+USER TEXT: "${textInput}"`;
+
         try {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
             const payload = { 
@@ -753,16 +1817,19 @@ User's text: "${textInput}"`;
                     responseSchema: { 
                         type: "OBJECT", 
                         properties: { 
-                            "entryType": { "type": "STRING", "enum": ["plan", "transaction"] },
-                            "type": { "type": "STRING", "enum": ["income", "expense"] }, 
-                            "description": { "type": "STRING" }, 
-                            "amount": { "type": "NUMBER" }, 
-                            "category": { "type": "STRING", "enum": [...categories.income, ...categories.expense] }, 
-                            "date": { "type": "STRING" }, 
-                            "customerName": { "type": "STRING" }, 
-                            "customerNote": { "type": "STRING" } 
-                        }, 
-                        required: ["entryType", "type", "description", "amount", "date"] 
+                            "entryType": { "type": "STRING" },
+                            "date": { "type": "STRING", "format": "date" },
+                            "type": { "type": "STRING" },
+                            "description": { "type": "STRING" },
+                            "amount": { "type": "NUMBER" },
+                            "category": {"type": "STRING"},
+                            "productName": { "type": "STRING" },
+                            "quantity": { "type": "NUMBER" },
+                            "discountPercentage": { "type": "NUMBER" },
+                            "customerName": { "type": "STRING" },
+                            "customerNote": { "type": "STRING" }
+                        },
+                         "required": ["entryType", "date", "type"]
                     } 
                 } 
             };
@@ -770,8 +1837,28 @@ User's text: "${textInput}"`;
             if (!response.ok) { throw new Error(`API call failed with status: ${response.status}`); }
             const result = await response.json();
             const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
             if (jsonText) {
                 const parsedData = JSON.parse(jsonText);
+                
+                // If it's a product sale, calculate the final amount
+                if (parsedData.productName && parsedData.type === 'income') {
+                    const product = products.find(p => p.name === parsedData.productName);
+                    if (product) {
+                        parsedData.productId = product.id;
+                        const quantity = parsedData.quantity || 1;
+                        parsedData.quantity = quantity;
+                        let finalAmount = product.sellingPrice * quantity;
+                        if (parsedData.discountPercentage > 0) {
+                            finalAmount *= (1 - parsedData.discountPercentage / 100);
+                        }
+                        if (!parsedData.amount) {
+                           parsedData.amount = finalAmount;
+                        }
+                        parsedData.description = parsedData.description || `${quantity} ${product.name}`;
+                    }
+                }
+                
                 closeAiEntryModal();
                 if (parsedData.entryType === 'plan') {
                     openFormModal('addPlan', parsedData);
@@ -812,8 +1899,8 @@ User's text: "${textInput}"`;
         renderChat();
         chatInput.value = '';
         aiThinkingIndicator.classList.remove('hidden');
-        const filteredTx = filterData(transactions, 'date');
-        const dataSummary = `Dữ liệu tóm tắt:\n- Tổng thu: ${totalIncomeEl.textContent}\n- Tổng chi: ${totalExpenseEl.textContent}\n- Lợi nhuận: ${netProfitEl.textContent}\n- Chi tiết các khoản chi: ${filteredTx.filter(t => t.type === 'expense').map(t => `${t.description} (${t.category}): ${formatCurrency(t.amount)}`).join(', ') || 'Không có khoản chi nào.'}`;
+        const { currentPeriodData } = getReportData();
+        const dataSummary = `Dữ liệu tóm tắt:\n- Tổng thu: ${totalIncomeEl.textContent}\n- Tổng chi: ${totalExpenseEl.textContent}\n- Lợi nhuận: ${netProfitEl.textContent}\n- Chi tiết các khoản chi: ${currentPeriodData.filter(t => t.type === 'expense').map(t => `${t.description} (${t.category}): ${formatCurrency(t.amount)}`).join(', ') || 'Không có khoản chi nào.'}`;
         const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thân thiện và chuyên nghiệp. Nhiệm vụ của bạn là trả lời câu hỏi của người dùng dựa trên dữ liệu tóm tắt được cung cấp. Hãy đưa ra câu trả lời rõ ràng, đi thẳng vào vấn đề và nếu có thể, hãy đưa ra lời khuyên hữu ích.`;
         try {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
@@ -903,8 +1990,8 @@ User's text: "${textInput}"`;
     }
 
     const exportToXLSX = () => {
-        const source = filterData(transactions, 'date');
-        const sorted = [...source].sort((a,b)=> new Date(a.date)-new Date(b.date));
+        const { currentPeriodData } = getReportData();
+        const sorted = [...currentPeriodData].sort((a,b)=> new Date(a.date)-new Date(b.date));
         const totalIncome = sorted.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amount||0),0);
         const totalExpense = sorted.filter(t=>t.type==='expense').reduce((s,t)=>s+(t.amount||0),0);
         const summaryData = [["BÁO CÁO TỔNG QUAN"], [],["Khoản mục", "Số tiền"],["Tổng Thu", totalIncome],["Tổng Chi", totalExpense],["Lợi Nhuận", totalIncome-totalExpense]];
@@ -948,26 +2035,52 @@ User's text: "${textInput}"`;
 
     addPlanBtn.addEventListener('click', () => openFormModal('addPlan'));
     addTransactionBtn.addEventListener('click', () => openFormModal('addTransaction'));
+    addProductBtn.addEventListener('click', () => openProductModal('add'));
+    
     addAiBtn.addEventListener('click', openAiEntryModal);
     aiEntryModal.querySelector('.cancel-btn').addEventListener('click', closeAiEntryModal);
     aiEntryForm.addEventListener('submit', handleAiEntry);
+    
     mainForm.addEventListener('submit', handleFormSubmit);
+    productForm.addEventListener('submit', handleProductFormSubmit);
+    
     completePlanForm.addEventListener('submit', handleCompletePlanSubmit);
+    
     formModal.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', closeFormModal));
+    productModal.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', closeProductModal));
     completePlanModal.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', closeCompletePlanModal));
+    
     confirmCancelBtn.addEventListener('click', closeConfirmationModal);
     confirmActionBtn.addEventListener('click', () => { if(confirmAction) confirmAction(); closeConfirmationModal(); });
+    
     typeRadios.forEach(r => r.addEventListener('change', updateCategoryOptions));
+    categorySelect.addEventListener('change', updateFormFieldsVisibility);
+
     tabPlan.addEventListener('click', () => switchTab('plan'));
+    tabProducts.addEventListener('click', () => switchTab('products'));
     tabHistory.addEventListener('click', () => switchTab('history'));
+    tabPromotions.addEventListener('click', () => switchTab('promotions'));
     tabDashboard.addEventListener('click', () => switchTab('dashboard'));
+    
     reportRangeEl.addEventListener('change', handleFilterChange);
     customStartEl.addEventListener('change', renderAll);
     customEndEl.addEventListener('change', renderAll);
     searchPlanInput.addEventListener('input', renderAll);
     searchHistoryInput.addEventListener('input', renderAll);
+    searchProductsInput.addEventListener('input', renderAll);
     exportXlsxBtn.addEventListener('click', exportToXLSX); 
     chatForm.addEventListener('submit', handleAiChatSubmit);
+    
+    productSelect.addEventListener('change', () => handleProductSelection(false));
+    transactionQuantityInput.addEventListener('input', handleQuantityChange);
+    importProductSelect.addEventListener('change', () => handleImportProductSelection(false));
+    importQuantityInput.addEventListener('input', handleImportQuantityChange);
+    document.getElementById('low-stock-threshold').addEventListener('input', renderInventoryReport);
+    document.querySelectorAll('.report-tab-button').forEach(button => {
+        button.addEventListener('click', (e) => switchReportTab(e.target.dataset.report));
+    });
+    productReportFilter.addEventListener('change', renderReports);
+
     const fabToggle = () => {
         fabActions.classList.toggle('opacity-0');
         fabActions.classList.toggle('-translate-y-4');
@@ -980,9 +2093,10 @@ User's text: "${textInput}"`;
 
     // --- INITIAL LOAD ---
     reportRangeEl.value = 'week';
-    switchTab('plan');
+    switchTab('products'); // Default to the new products tab
     handleFilterChange();
 });
 </script>
 </body>
 </html>
+
