@@ -62,6 +62,18 @@
             height: 16px;
             border-width: 2px;
         }
+        /* New Compact Layout */
+        .new-ui .app-grid { display: grid; grid-template-columns: 240px 1fr; gap: 0; min-height: 100vh; }
+        .new-ui .sidebar { background: #0f172a; color: #cbd5e1; padding: 16px; position: sticky; top: 0; height: 100vh; }
+        .new-ui .sidebar .logo { font-weight: 700; font-size: 18px; color: #fff; margin-bottom: 16px; }
+        .new-ui .sidebar .nav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: #cbd5e1; }
+        .new-ui .sidebar .nav a.active, .new-ui .sidebar .nav a:hover { background: #1e293b; color: #fff; }
+        .new-ui .topbar { background: #0b1224; border-bottom: 1px solid #1f2937; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .new-ui .content { padding: 16px; }
+        .new-ui .card { background: #0f172a; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; }
+        .new-ui .kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .new-ui .kpi .card h2 { color: #94a3b8; font-size: 12px; }
+        .new-ui .kpi .card p { color: #e2e8f0; font-weight: 700; font-size: 20px; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -312,6 +324,7 @@
                      <svg id="fab-icon-plus" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                 </button>
             </div>
+            <button id="toggle-ui-fixed" class="fixed bottom-6 left-6 z-40 px-4 py-2 rounded-lg bg-gray-900 text-white shadow-lg hover:bg-black/80">Giao diện</button>
             
              <!-- MODALs -->
             <div id="form-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
@@ -592,6 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fabToggleBtn = document.getElementById('fab-toggle-btn');
     const fabActions = document.getElementById('fab-actions');
     const fabBackdrop = document.getElementById('fab-backdrop');
+    const toggleUiFixedBtn = document.getElementById('toggle-ui-fixed');
     
     // Chat UI Elements
     const chatMessages = document.getElementById('chat-messages');
@@ -2094,6 +2108,68 @@ USER TEXT: "${textInput}"`;
     // --- INITIAL LOAD ---
     reportRangeEl.value = 'week';
     switchTab('products'); // Default to the new products tab
+
+    // --- New UI Toggle ---
+    const applyNewUi = (enable) => {
+        const root = document.documentElement;
+        const body = document.body;
+        if (enable) {
+            body.classList.add('new-ui');
+            // Hide old header/nav, wrap content into app-grid
+            try {
+                const container = document.querySelector('#app-container > .container');
+                if (container && !container.classList.contains('app-grid')) {
+                    container.classList.add('app-grid');
+                    // Build sidebar and topbar shells
+                    const sidebar = document.createElement('aside');
+                    sidebar.className = 'sidebar';
+                    sidebar.innerHTML = `
+                        <div class="logo">Sổ Thu Chi</div>
+                        <nav class="nav space-y-1">
+                            <a href="#" data-tab="plan">Kế hoạch</a>
+                            <a href="#" data-tab="products">Sản phẩm</a>
+                            <a href="#" data-tab="history">Lịch sử</a>
+                            <a href="#" data-tab="promotions">Khuyến mại</a>
+                            <a href="#" data-tab="dashboard">Báo cáo</a>
+                        </nav>`;
+                    const mainWrap = document.createElement('div');
+                    mainWrap.className = 'flex flex-col';
+                    const topbar = document.createElement('div');
+                    topbar.className = 'topbar';
+                    topbar.innerHTML = `<div class="font-semibold">Giao diện mới</div><div class="text-sm text-slate-400">${new Date().toLocaleDateString('vi-VN')}</div>`;
+                    const content = document.createElement('div');
+                    content.className = 'content';
+                    // move all children of container to content
+                    while (container.firstChild) content.appendChild(container.firstChild);
+                    mainWrap.appendChild(topbar);
+                    mainWrap.appendChild(content);
+                    container.appendChild(sidebar);
+                    container.appendChild(mainWrap);
+                    // hide old tabs bar inside content
+                    const oldTabs = content.querySelector('nav.flex.justify-around')?.parentElement;
+                    if (oldTabs) oldTabs.classList.add('hidden');
+                    // wire sidebar links
+                    sidebar.querySelectorAll('a[data-tab]').forEach(a => {
+                        a.addEventListener('click', (e)=>{ e.preventDefault(); switchTab(a.dataset.tab); sidebar.querySelectorAll('a').forEach(x=>x.classList.remove('active')); a.classList.add('active'); });
+                    });
+                }
+            } catch {}
+        } else {
+            body.classList.remove('new-ui');
+            // Reload to restore original DOM quickly
+            location.reload();
+        }
+        localStorage.setItem('use_new_ui', enable ? '1' : '0');
+    };
+
+    if (localStorage.getItem('use_new_ui') === '1') {
+        applyNewUi(true);
+    }
+
+    toggleUiFixedBtn?.addEventListener('click', ()=>{
+        const enable = !document.body.classList.contains('new-ui');
+        applyNewUi(enable);
+    });
     handleFilterChange();
 });
 </script>
