@@ -74,6 +74,12 @@
         .new-ui .kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
         .new-ui .kpi .card h2 { color: #94a3b8; font-size: 12px; }
         .new-ui .kpi .card p { color: #e2e8f0; font-weight: 700; font-size: 20px; }
+        /* Stackbar */
+        .new-ui .stackbar { display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-bottom: 1px solid #1f2937; background: #0b1224; position: sticky; top: 0; z-index: 10; overflow-x: auto; }
+        .new-ui .stack-btn { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid #334155; background: #0f172a; color: #cbd5e1; border-radius: 8px; white-space: nowrap; }
+        .new-ui .stack-btn.active { border-color: #6366f1; color: #fff; background: #111827; }
+        .new-ui .stack-btn .close { color: #94a3b8; }
+        .new-ui .stack-btn .close:hover { color: #e5e7eb; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -2137,20 +2143,51 @@ USER TEXT: "${textInput}"`;
                     const topbar = document.createElement('div');
                     topbar.className = 'topbar';
                     topbar.innerHTML = `<div class="font-semibold">Giao diện mới</div><div class="text-sm text-slate-400">${new Date().toLocaleDateString('vi-VN')}</div>`;
+                    const stackbar = document.createElement('div');
+                    stackbar.className = 'stackbar';
+                    stackbar.id = 'stackbar';
                     const content = document.createElement('div');
                     content.className = 'content';
                     // move all children of container to content
                     while (container.firstChild) content.appendChild(container.firstChild);
                     mainWrap.appendChild(topbar);
+                    mainWrap.appendChild(stackbar);
                     mainWrap.appendChild(content);
                     container.appendChild(sidebar);
                     container.appendChild(mainWrap);
                     // hide old tabs bar inside content
                     const oldTabs = content.querySelector('nav.flex.justify-around')?.parentElement;
                     if (oldTabs) oldTabs.classList.add('hidden');
-                    // wire sidebar links
+                    // wire sidebar links to open stacks
+                    const openStack = (tab) => {
+                        const stackbarEl = document.getElementById('stackbar');
+                        const id = `stack-${tab}`;
+                        if (!document.getElementById(id)) {
+                            const btn = document.createElement('button');
+                            btn.className = 'stack-btn';
+                            btn.id = id;
+                            btn.innerHTML = `${tab}<span class="close">✕</span>`;
+                            btn.addEventListener('click', ()=> activateStack(tab));
+                            btn.querySelector('.close').addEventListener('click', (ev)=>{ ev.stopPropagation(); closeStack(tab); });
+                            stackbarEl.appendChild(btn);
+                        }
+                        activateStack(tab);
+                    };
+                    const activateStack = (tab) => {
+                        sidebar.querySelectorAll('a').forEach(x=>x.classList.remove('active'));
+                        sidebar.querySelector(`a[data-tab="${tab}"]`)?.classList.add('active');
+                        document.querySelectorAll('.stack-btn').forEach(x=>x.classList.remove('active'));
+                        document.getElementById(`stack-${tab}`)?.classList.add('active');
+                        switchTab(tab);
+                    };
+                    const closeStack = (tab) => {
+                        const el = document.getElementById(`stack-${tab}`);
+                        if (el) el.remove();
+                        // if closing active, fallback to products
+                        if (!document.querySelector('.stack-btn.active')) activateStack('products');
+                    };
                     sidebar.querySelectorAll('a[data-tab]').forEach(a => {
-                        a.addEventListener('click', (e)=>{ e.preventDefault(); switchTab(a.dataset.tab); sidebar.querySelectorAll('a').forEach(x=>x.classList.remove('active')); a.classList.add('active'); });
+                        a.addEventListener('click', (e)=>{ e.preventDefault(); openStack(a.dataset.tab); });
                     });
                 }
             } catch {}
