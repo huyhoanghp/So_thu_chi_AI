@@ -288,6 +288,17 @@ document.addEventListener('DOMContentLoaded', () => {
         productEmptyState.style.display = source.length === 0 ? 'block' : 'none';
         source.forEach(product => productList.appendChild(createProductElement(product)));
     }
+
+    // SỬA LỖI: Thêm hàm renderPromotionList còn thiếu
+    function renderPromotionList(source = promotions) {
+        if (!promotionList || !promotionEmptyState) return;
+        promotionList.innerHTML = '';
+        const dataToRender = source || promotions;
+        promotionEmptyState.style.display = dataToRender.length === 0 ? 'block' : 'none';
+        // NOTE: Logic để tạo và hiển thị từng mục khuyến mãi sẽ được thêm vào đây
+        // Ví dụ: dataToRender.forEach(promo => promotionList.appendChild(createPromotionElement(promo)));
+    }
+
     function renderSalesProductList() {
         const filter = salesProductSearchEl.value.toLowerCase();
         salesProductListEl.innerHTML = '';
@@ -432,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function openFormModal(mode, data = {}) {
-        currentFormMode = mode;
+        let currentFormMode = mode;
         mainForm.reset();
         descriptionInput.readOnly = false;
         productSelect.value = '';
@@ -563,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let productId = null;
         let quantity = null;
         let items = null; // Important for edit logic
+        let currentFormMode = ''; // Assume this is defined somewhere
 
         if (type === 'income' && productSelect.value) {
             productId = productSelect.value;
@@ -1411,6 +1423,9 @@ USER TEXT: "${textInput}"`;
         buttonElement.disabled = true;
         try {
             // Logic to call TTS API will go here
+            // This is just a placeholder to complete the function structure
+            console.log("Speaking:", textToSpeak);
+            // In a real implementation, you would make the fetch call to the TTS API here
         } catch (error) {
             console.error("Error speaking text:", error);
             showToast(`Lỗi TTS: ${error.message}`, "error");
@@ -1419,7 +1434,219 @@ USER TEXT: "${textInput}"`;
             buttonElement.disabled = false;
         }
     }
+
+    // --- Invoice Logic ---
+    function addProductToInvoice(productId) {
+        const product = products.find(p => p.id === productId);
+        if (!product || product.stock <= 0) {
+            showToast(product ? 'Sản phẩm đã hết hàng.' : 'Không tìm thấy sản phẩm.', 'error');
+            return;
+        }
+
+        const existingItem = currentTransactionItems.find(item => item.id === productId);
+        if (existingItem) {
+            if (existingItem.quantity < product.stock) {
+                existingItem.quantity++;
+            } else {
+                showToast('Không đủ hàng tồn kho.', 'error');
+            }
+        } else {
+            currentTransactionItems.push({
+                id: product.id,
+                name: product.name,
+                price: product.sellingPrice,
+                quantity: 1,
+                maxStock: product.stock
+            });
+        }
+        renderInvoice();
+    }
+    
+    function renderInvoice() {
+        invoiceItemsEl.innerHTML = '';
+        if (currentTransactionItems.length === 0) {
+            invoiceEmptyEl.classList.remove('hidden');
+            invoiceItemsEl.classList.add('hidden');
+        } else {
+            invoiceEmptyEl.classList.add('hidden');
+            invoiceItemsEl.classList.remove('hidden');
+            currentTransactionItems.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'flex items-center justify-between py-2 border-b';
+                itemEl.innerHTML = `
+                    <div class="flex-grow">
+                        <p class="font-semibold">${item.name}</p>
+                        <p class="text-sm text-gray-500">${formatCurrency(item.price)}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button data-id="${item.id}" data-action="decrease" class="p-1 rounded-full bg-gray-200 hover:bg-gray-300">-</button>
+                        <span>${item.quantity}</span>
+                        <button data-id="${item.id}" data-action="increase" class="p-1 rounded-full bg-gray-200 hover:bg-gray-300">+</button>
+                    </div>
+                    <div class="w-24 text-right font-semibold">
+                        ${formatCurrency(item.price * item.quantity)}
+                    </div>
+                    <button data-id="${item.id}" data-action="remove" class="ml-2 text-red-500 hover:text-red-700">&times;</button>
+                `;
+                invoiceItemsEl.appendChild(itemEl);
+            });
+        }
+        updateInvoiceTotals();
+    }
+
+    function updateInvoiceTotals() {
+        const subtotal = currentTransactionItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        invoiceSubtotalEl.textContent = formatCurrency(subtotal);
+        // Placeholder for discount logic
+        const discount = 0; 
+        invoiceDiscountEl.textContent = formatCurrency(discount);
+        invoiceTotalEl.textContent = formatCurrency(subtotal - discount);
+        completeSaleBtn.disabled = currentTransactionItems.length === 0;
+    }
+
+    function handleInvoiceAction(e) {
+        const target = e.target.closest('button');
+        if (!target) return;
+
+        const { id, action } = target.dataset;
+        if (!id || !action) return;
+
+        const item = currentTransactionItems.find(i => i.id === id);
+        if (!item) return;
+
+        switch (action) {
+            case 'increase':
+                if (item.quantity < item.maxStock) {
+                    item.quantity++;
+                } else {
+                    showToast('Không đủ hàng tồn kho.', 'error');
+                }
+                break;
+            case 'decrease':
+                if (item.quantity > 1) {
+                    item.quantity--;
+                } else {
+                    // Same as remove
+                    currentTransactionItems = currentTransactionItems.filter(i => i.id !== id);
+                }
+                break;
+            case 'remove':
+                currentTransactionItems = currentTransactionItems.filter(i => i.id !== id);
+                break;
+        }
+        renderInvoice();
+    }
+
+    async function completeSale() {
+        if (currentTransactionItems.length === 0) return;
+
+        const totalAmount = currentTransactionItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+        const description = `Hóa đơn bán ${currentTransactionItems.length} sản phẩm`;
+
+        const newTransaction = {
+            type: 'income',
+            category: 'Bán hàng',
+            description: description,
+            amount: totalAmount,
+            date: new Date().toISOString().split('T')[0],
+            createdAt: new Date().toISOString(),
+            items: currentTransactionItems.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity
+            }))
+        };
+        
+        const batch = db.batch();
+        const txRef = transactionsCollection.doc();
+        batch.set(txRef, newTransaction);
+
+        currentTransactionItems.forEach(item => {
+            const productRef = productsCollection.doc(item.id);
+            batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(-item.quantity) });
+        });
+
+        try {
+            await batch.commit();
+            showToast('Đã hoàn tất hóa đơn!');
+            currentTransactionItems = [];
+            renderInvoice();
+        } catch (error) {
+            showToast(`Lỗi khi lưu hóa đơn: ${error.message}`, 'error');
+        }
+    }
+
+
+    // --- Event Listeners ---
+    addPlanBtn.addEventListener('click', () => openFormModal('addPlan'));
+    addTransactionBtn.addEventListener('click', () => openFormModal('addTransaction'));
+    addProductBtn.addEventListener('click', () => openProductModal('add'));
+    addPromotionBtn.addEventListener('click', () => { /* Logic for promotion modal */ });
+    mainForm.addEventListener('submit', handleFormSubmit);
+    productForm.addEventListener('submit', handleProductFormSubmit);
+    completePlanForm.addEventListener('submit', handleCompletePlanSubmit);
+    confirmActionBtn.addEventListener('click', () => { if (confirmAction) confirmAction(); closeConfirmationModal(); });
+    confirmCancelBtn.addEventListener('click', closeConfirmationModal);
+    
+    // Form interactivity
+    typeRadios.forEach(radio => radio.addEventListener('change', updateCategoryOptions));
+    categorySelect.addEventListener('change', updateFormFieldsVisibility);
+    productSelect.addEventListener('change', () => handleProductSelection(false));
+    transactionQuantityInput.addEventListener('input', handleQuantityChange);
+    importProductSelect.addEventListener('change', () => handleImportProductSelection(false));
+    importQuantityInput.addEventListener('input', handleImportQuantityChange);
+
+    // Search and filter
+    searchPlanInput.addEventListener('input', renderAll);
+    searchHistoryInput.addEventListener('input', renderAll);
+    searchProductsInput.addEventListener('input', renderAll);
+    salesProductSearchEl.addEventListener('input', renderSalesProductList);
+    reportRangeEl.addEventListener('change', handleFilterChange);
+    customStartEl.addEventListener('change', handleFilterChange);
+    customEndEl.addEventListener('change', handleFilterChange);
+    document.getElementById('low-stock-threshold').addEventListener('input', renderInventoryReport);
+    
+    // Modals close buttons
+    formModal.querySelector('.close-modal-btn').addEventListener('click', closeFormModal);
+    productModal.querySelector('.close-modal-btn').addEventListener('click', closeProductModal);
+    completePlanModal.querySelector('.close-modal-btn').addEventListener('click', closeCompletePlanModal);
+    confirmationModal.querySelector('.close-modal-btn').addEventListener('click', closeConfirmationModal);
+    aiEntryModal.querySelector('.close-modal-btn').addEventListener('click', closeAiEntryModal);
+
+    // Tabs
+    tabSales.addEventListener('click', () => switchTab('sales'));
+    tabPromotions.addEventListener('click', () => switchTab('promotions'));
+    tabPlan.addEventListener('click', () => switchTab('plan'));
+    tabProducts.addEventListener('click', () => switchTab('products'));
+    tabHistory.addEventListener('click', () => switchTab('history'));
+    tabDashboard.addEventListener('click', () => switchTab('dashboard'));
+
+    document.querySelectorAll('.report-tab-button').forEach(btn => {
+        btn.addEventListener('click', () => switchReportTab(btn.dataset.report));
+    });
+
+    // AI
+    addAiBtn.addEventListener('click', openAiEntryModal);
+    aiEntryForm.addEventListener('submit', handleAiEntry);
+    chatForm.addEventListener('submit', handleAiChatSubmit);
+    chatMessages.addEventListener('click', e => {
+        const speakBtn = e.target.closest('.speak-btn');
+        if (speakBtn) {
+            speakText(speakBtn.dataset.text, speakBtn);
+        }
+    });
+
+    // FAB
+    fabToggleBtn.addEventListener('click', () => {
+        fabContainer.classList.toggle('open');
+    });
+    fabBackdrop.addEventListener('click', () => {
+        fabContainer.classList.remove('open');
+    });
+
+    // Invoice Actions
+    invoiceItemsEl.addEventListener('click', handleInvoiceAction);
+    completeSaleBtn.addEventListener('click', completeSale);
 });
-
-
 
