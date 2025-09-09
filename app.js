@@ -1410,4 +1410,15 @@ USER TEXT: "${textInput}"`;
         buttonElement.innerHTML = '<div class="spinner"></div>';
         buttonElement.disabled = true;
         try {
+            // Logic to call TTS API will go here
+        } catch (error) {
+            console.error("Error speaking text:", error);
+            showToast(`Lỗi TTS: ${error.message}`, "error");
+        } finally {
+            buttonElement.innerHTML = originalContent;
+            buttonElement.disabled = false;
+        }
+    }
+});
+}
 
