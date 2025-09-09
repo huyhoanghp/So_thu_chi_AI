@@ -4,8 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sổ Thu Chi Pro (Quản lý Bán hàng & AI)</title>
+    <!-- Link đến tệp manifest -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Thêm màu sắc chủ đề cho trình duyệt trên mobile -->
+    <meta name="theme-color" content="#4f46e5">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -62,24 +69,6 @@
             height: 16px;
             border-width: 2px;
         }
-        /* New Compact Layout */
-        .new-ui .app-grid { display: grid; grid-template-columns: 240px 1fr; gap: 0; min-height: 100vh; }
-        .new-ui .sidebar { background: #0f172a; color: #cbd5e1; padding: 16px; position: sticky; top: 0; height: 100vh; }
-        .new-ui .sidebar .logo { font-weight: 700; font-size: 18px; color: #fff; margin-bottom: 16px; }
-        .new-ui .sidebar .nav a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: #cbd5e1; }
-        .new-ui .sidebar .nav a.active, .new-ui .sidebar .nav a:hover { background: #1e293b; color: #fff; }
-        .new-ui .topbar { background: #0b1224; border-bottom: 1px solid #1f2937; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
-        .new-ui .content { padding: 16px; }
-        .new-ui .card { background: #0f172a; border: 1px solid #1f2937; border-radius: 12px; padding: 16px; }
-        .new-ui .kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-        .new-ui .kpi .card h2 { color: #94a3b8; font-size: 12px; }
-        .new-ui .kpi .card p { color: #e2e8f0; font-weight: 700; font-size: 20px; }
-        /* Stackbar */
-        .new-ui .stackbar { display: flex; align-items: center; gap: 8px; padding: 8px 8px; border-bottom: 1px solid #1f2937; background: #0b1224; position: sticky; top: 0; z-index: 10; overflow-x: auto; }
-        .new-ui .stack-btn { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid #334155; background: #0f172a; color: #cbd5e1; border-radius: 8px; white-space: nowrap; }
-        .new-ui .stack-btn.active { border-color: #6366f1; color: #fff; background: #111827; }
-        .new-ui .stack-btn .close { color: #94a3b8; }
-        .new-ui .stack-btn .close:hover { color: #e5e7eb; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -155,16 +144,68 @@
                         </div>
 
                         <div class="border-b border-gray-200 mb-4">
-                            <nav class="flex justify-around">
-                                <button id="tab-plan" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Kế Hoạch</button>
-                                <button id="tab-products" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Sản phẩm</button>
-                                <button id="tab-history" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Lịch Sử Giao Dịch</button>
-                                <button id="tab-promotions" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Khuyến mại</button>
-                                <button id="tab-dashboard" class="w-full text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Báo cáo</button>
+                             <nav class="flex justify-around flex-wrap">
+                                <button id="tab-sales" class="w-1/2 sm:w-auto text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Bán Hàng</button>
+                                <button id="tab-products" class="w-1/2 sm:w-auto text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Sản phẩm</button>
+                                <button id="tab-promotions" class="w-1/2 sm:w-auto text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Khuyến Mại</button>
+                                <button id="tab-plan" class="w-1/2 sm:w-auto text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Kế Hoạch</button>
+                                <button id="tab-history" class="w-1/2 sm:w-auto text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 transition">Lịch Sử</button>
+                                <button id="tab-dashboard" class="w-1/2 sm:w-auto text-center tab-button text-sm sm:text-lg font-semibold px-2 py-3 sm:px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition">Báo cáo</button>
                             </nav>
                         </div>
 
                         <div>
+                            <!-- TAB BÁN HÀNG (MỚI) -->
+                            <div id="content-sales" class="hidden">
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <!-- Left Panel: Product List for Sale -->
+                                    <div class="bg-gray-50 rounded-lg p-4">
+                                        <h3 class="text-lg font-bold mb-2">Chọn sản phẩm</h3>
+                                        <input type="text" id="sales-product-search" placeholder="Tìm kiếm sản phẩm..." class="w-full p-2 border rounded-lg mb-2">
+                                        <div id="sales-product-list" class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                                            <!-- Product items for sale will be loaded here -->
+                                        </div>
+                                    </div>
+                                    <!-- Right Panel: Invoice -->
+                                    <div class="bg-gray-50 rounded-lg p-4 flex flex-col">
+                                        <h3 class="text-lg font-bold mb-2">Hóa đơn</h3>
+                                        <div id="invoice-items" class="flex-grow space-y-2 overflow-y-auto max-h-60 min-h-[100px]">
+                                            <p id="invoice-empty" class="text-center text-gray-500 mt-4">Chọn sản phẩm để bắt đầu</p>
+                                        </div>
+                                        <div class="border-t mt-4 pt-4">
+                                            <div class="flex justify-between text-sm text-gray-600">
+                                                <span>Tạm tính:</span>
+                                                <span id="invoice-subtotal">0 ₫</span>
+                                            </div>
+                                            <div class="flex justify-between text-sm text-green-600">
+                                                <span>Khuyến mại (<span id="invoice-promo-name">Không có</span>):</span>
+                                                <span>- <span id="invoice-discount">0 ₫</span></span>
+                                            </div>
+                                            <div class="flex justify-between font-bold text-lg mt-2">
+                                                <span>Tổng cộng:</span>
+                                                <span id="invoice-total">0 ₫</span>
+                                            </div>
+                                        </div>
+                                        <button id="complete-sale-btn" class="w-full bg-indigo-600 text-white p-3 rounded-lg mt-4 hover:bg-indigo-700 disabled:bg-gray-400 font-semibold">
+                                           Hoàn tất & Ghi sổ
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- TAB KHUYẾN MẠI (MỚI) -->
+                             <div id="content-promotions" class="hidden">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-xl font-bold">Quản lý khuyến mại</h3>
+                                    <button id="add-promotion-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition">Tạo khuyến mại</button>
+                                </div>
+                                <div id="promotion-list-container" class="max-h-[500px] overflow-y-auto">
+                                    <ul id="promotion-list" class="space-y-3"></ul>
+                                </div>
+                                <p id="promotion-empty-state" class="text-center text-gray-500 py-8">Chưa có chương trình khuyến mại nào.</p>
+                            </div>
+
+
                             <!-- TAB KẾ HOẠCH -->
                             <div id="content-plan">
                                 <div class="mb-4">
@@ -202,18 +243,6 @@
                                 <p id="transaction-empty-state" class="text-center text-gray-500 py-8">Chưa có giao dịch nào được ghi nhận.</p>
                             </div>
                             
-                            <!-- TAB KHUYẾN MẠI -->
-                            <div id="content-promotions" class="hidden">
-                                <div class="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-4">
-                                    <input type="search" id="search-promotions" placeholder="Tìm kiếm khuyến mại..." class="w-full md:w-1/2 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                                    <button id="add-promotion-btn" class="w-full md:w-auto bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-purple-700 transition">Thêm Khuyến mại</button>
-                                </div>
-                                <div id="promotion-list-container" class="max-h-[500px] overflow-y-auto">
-                                    <ul id="promotion-list" class="space-y-3"></ul>
-                                </div>
-                                <p id="promotion-empty-state" class="text-center text-gray-500 py-8">Chưa có chương trình khuyến mại.</p>
-                            </div>
-
                             <!-- TAB BÁO CÁO -->
                             <div id="content-dashboard" class="hidden">
                                 <!-- Report Sub-tabs -->
@@ -231,10 +260,6 @@
                                     <div id="comparison-section" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <!-- Comparison cards will be inserted here by JS -->
                                     </div>
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-center mb-2">Hiệu quả Khuyến mại</h3>
-                                        <div id="promotion-report-table" class="overflow-x-auto"></div>
-                                    </div>
                                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <div>
                                             <h3 class="text-lg font-semibold text-center mb-2">Cơ Cấu Chi Phí</h3>
@@ -250,8 +275,10 @@
                                 <!-- Report Content: Products -->
                                 <div id="report-content-products" class="hidden space-y-6">
                                      <div>
-                                        <label for="product-report-filter" class="block text-sm font-medium text-gray-700 mb-2">Lọc theo sản phẩm (chọn một hoặc nhiều):</label>
-                                        <select multiple id="product-report-filter" class="w-full p-2 border border-gray-300 rounded-lg h-32"></select>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Lọc theo sản phẩm (chọn một hoặc nhiều):</label>
+                                        <div id="product-report-filter-container" class="max-h-40 overflow-y-auto border rounded-lg p-2 bg-white">
+                                            <!-- Product checkboxes for report will be rendered here -->
+                                        </div>
                                      </div>
                                      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <div>
@@ -330,7 +357,6 @@
                      <svg id="fab-icon-plus" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
                 </button>
             </div>
-            <button id="toggle-ui-fixed" class="fixed bottom-6 left-6 z-40 px-4 py-2 rounded-lg bg-gray-900 text-white shadow-lg hover:bg-black/80">Giao diện</button>
             
              <!-- MODALs -->
             <div id="form-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
@@ -454,6 +480,78 @@
                 </div>
             </div>
 
+            <!-- Promotion Modal (MỚI) -->
+            <div id="promotion-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
+                <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg transform transition-transform duration-300 scale-95 max-h-[90vh] overflow-y-auto">
+                    <h3 id="promotion-modal-title" class="text-xl font-bold mb-4">Tạo khuyến mại mới</h3>
+                    <form id="promotion-form" class="space-y-4">
+                        <input type="hidden" id="promoId">
+                        <div>
+                            <label for="promoNameInput" class="block text-sm font-medium text-gray-700">Tên chương trình</label>
+                            <input type="text" id="promoNameInput" class="mt-1 block w-full p-2 border rounded-md" required>
+                        </div>
+                        <div>
+                            <label for="promoType" class="block text-sm font-medium text-gray-700">Loại khuyến mại</label>
+                            <select id="promoType" class="mt-1 block w-full p-2 border rounded-md">
+                                <option value="percentage">Giảm theo % trên sản phẩm</option>
+                                <option value="fixed">Giảm theo số tiền trên sản phẩm</option>
+                                <option value="bogo">Mua X tặng Y sản phẩm</option>
+                                <option value="total_bill_fixed">Giảm tiền trên tổng hóa đơn</option>
+                                <option value="total_bill_percentage">Giảm % trên tổng hóa đơn</option>
+                            </select>
+                        </div>
+
+                        <div id="promoValueContainer">
+                            <label for="promoValue" class="block text-sm font-medium text-gray-700">Giá trị (VNĐ hoặc %)</label>
+                            <input type="number" id="promoValue" class="mt-1 block w-full p-2 border rounded-md" required>
+                        </div>
+                        
+                        <div id="promoBuyQuantityContainer" class="hidden">
+                             <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="promoBuyQuantity" class="block text-sm font-medium text-gray-700">Số lượng mua (X)</label>
+                                    <input type="number" id="promoBuyQuantity" class="mt-1 block w-full p-2 border rounded-md" value="1" min="1">
+                                </div>
+                                <div>
+                                    <label for="promoGetQuantity" class="block text-sm font-medium text-gray-700">Số lượng tặng (Y)</label>
+                                    <input type="number" id="promoGetQuantity" class="mt-1 block w-full p-2 border rounded-md" value="1" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="promoProductContainer">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Áp dụng cho sản phẩm</label>
+                             <div class="max-h-40 overflow-y-auto border rounded-lg p-2 bg-white">
+                                <div id="promo-product-list" class="space-y-2">
+                                    <!-- Product checkboxes will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="promoMinSpendContainer" class="hidden">
+                             <label for="promoMinSpend" class="block text-sm font-medium text-gray-700">Giá trị hóa đơn tối thiểu</label>
+                             <input type="number" id="promoMinSpend" class="mt-1 block w-full p-2 border rounded-md" value="0">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                             <div>
+                                <label for="promoStartDate" class="block text-sm font-medium text-gray-700">Ngày bắt đầu</label>
+                                <input type="date" id="promoStartDate" class="mt-1 block w-full p-2 border rounded-md" required>
+                            </div>
+                            <div>
+                                <label for="promoEndDate" class="block text-sm font-medium text-gray-700">Ngày kết thúc</label>
+                                <input type="date" id="promoEndDate" class="mt-1 block w-full p-2 border rounded-md" required>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2">
+                            <button type="button" class="cancel-btn bg-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-400">Hủy</button>
+                            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">Lưu</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
 
             <div id="complete-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
@@ -523,10 +621,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const planEmptyState = document.getElementById('plan-empty-state');
     const productList = document.getElementById('product-list');
     const productEmptyState = document.getElementById('product-empty-state');
+    const promotionList = document.getElementById('promotion-list');
+    const promotionEmptyState = document.getElementById('promotion-empty-state');
+
 
     const addPlanBtn = document.getElementById('add-plan-btn');
     const addTransactionBtn = document.getElementById('add-transaction-btn');
     const addProductBtn = document.getElementById('add-product-btn');
+    const addPromotionBtn = document.getElementById('add-promotion-btn');
     
     const exportXlsxBtn = document.getElementById('export-xlsx-btn');
     const searchPlanInput = document.getElementById('search-plan');
@@ -568,6 +670,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const productSellingPriceInput = document.getElementById('product-selling-price');
     const productStockInput = document.getElementById('product-stock');
 
+    // Promotion Modal
+    const promotionModal = document.getElementById('promotion-modal');
+    const promotionModalTitle = document.getElementById('promotion-modal-title');
+    const promotionForm = document.getElementById('promotion-form');
+
 
     const completePlanModal = document.getElementById('complete-plan-modal');
     const completePlanForm = document.getElementById('complete-plan-form');
@@ -581,19 +688,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const confirmActionBtn = document.getElementById('confirm-action-btn');
 
     // Tabs
+    const tabSales = document.getElementById('tab-sales');
+    const tabPromotions = document.getElementById('tab-promotions');
     const tabPlan = document.getElementById('tab-plan');
     const tabProducts = document.getElementById('tab-products');
     const tabHistory = document.getElementById('tab-history');
-    const tabPromotions = document.getElementById('tab-promotions');
     const tabDashboard = document.getElementById('tab-dashboard');
+    const contentSales = document.getElementById('content-sales');
+    const contentPromotions = document.getElementById('content-promotions');
     const contentPlan = document.getElementById('content-plan');
     const contentProducts = document.getElementById('content-products');
     const contentHistory = document.getElementById('content-history');
-    const contentPromotions = document.getElementById('content-promotions');
     const contentDashboard = document.getElementById('content-dashboard');
 
+    // Sales / Invoice UI
+    const salesProductListEl = document.getElementById('sales-product-list');
+    const salesProductSearchEl = document.getElementById('sales-product-search');
+    const invoiceItemsEl = document.getElementById('invoice-items');
+    const invoiceEmptyEl = document.getElementById('invoice-empty');
+    const invoiceSubtotalEl = document.getElementById('invoice-subtotal');
+    const invoicePromoNameEl = document.getElementById('invoice-promo-name');
+    const invoiceDiscountEl = document.getElementById('invoice-discount');
+    const invoiceTotalEl = document.getElementById('invoice-total');
+    const completeSaleBtn = document.getElementById('complete-sale-btn');
+
+
     // Report Elements
-    const productReportFilter = document.getElementById('product-report-filter');
+    const productReportFilterContainer = document.getElementById('product-report-filter-container');
 
 
     const reportRangeEl = document.getElementById('report-range');
@@ -611,15 +732,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fabToggleBtn = document.getElementById('fab-toggle-btn');
     const fabActions = document.getElementById('fab-actions');
     const fabBackdrop = document.getElementById('fab-backdrop');
-    const toggleUiFixedBtn = document.getElementById('toggle-ui-fixed');
     
     // Chat UI Elements
     const chatMessages = document.getElementById('chat-messages');
-    // Promotions Elements
-    const promotionList = document.getElementById('promotion-list');
-    const promotionEmptyState = document.getElementById('promotion-empty-state');
-    const addPromotionBtn = document.getElementById('add-promotion-btn');
-    const searchPromotionsInput = document.getElementById('search-promotions');
     const chatForm = document.getElementById('chat-form');
     const chatInput = document.getElementById('chat-input');
     const aiThinkingIndicator = document.getElementById('ai-thinking-indicator');
@@ -631,6 +746,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let auth, db, geminiApiKey;
     let transactionsCollection, plansCollection, productsCollection, promotionsCollection;
     let transactions = [], plans = [], products = [], promotions = [];
+    let currentTransactionItems = [];
     let currentUserId = null;
     let toastTimeout;
     let confirmAction = null;
@@ -643,7 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const stopIconSVG = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><rect width="10" height="10" x="5" y="5" rx="1"></rect></svg>`;
     
     const categories = {
-        income: ['Bán hàng', 'Thu khác'],
+        income: ['Bán hàng', 'Thu khác', 'Cho tặng', 'Mấy đứa nhỏ', 'Xả hàng'],
         expense: ['Nhập hàng', 'Nguyên liệu chính', 'Nguyên liệu phụ', 'Vật tư', 'Chi phí vận hành', 'Chi phí khác']
     };
 
@@ -690,7 +806,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 listenForData();
             } else {
                 currentUserId = null;
-                transactions = []; plans = []; products = [];
+                transactions = []; plans = []; products = []; promotions = [];
                 renderAll();
                 appContainer.classList.add('hidden');
                 loginScreen.classList.remove('hidden');
@@ -711,26 +827,32 @@ document.addEventListener('DOMContentLoaded', () => {
     function listenForData() {
         if (!transactionsCollection || !plansCollection || !productsCollection || !promotionsCollection) return;
         
+        const dataLoaded = { transactions: false, plans: false, products: false, promotions: false };
+        const checkAllDataLoaded = () => {
+            if (Object.values(dataLoaded).every(Boolean)) {
+                loadingOverlay.style.display = 'none';
+                renderAll();
+            }
+        };
+
         transactionsCollection.onSnapshot(snapshot => {
             transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-            renderAll();
-            loadingOverlay.style.display = 'none';
+            dataLoaded.transactions = true; checkAllDataLoaded();
         }, err => showError("Không thể tải lịch sử giao dịch: " + err.message));
 
         plansCollection.onSnapshot(snapshot => {
             plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
-            renderAll();
+            dataLoaded.plans = true; checkAllDataLoaded();
         }, err => showError("Không thể tải danh sách kế hoạch: " + err.message));
         
         productsCollection.onSnapshot(snapshot => {
             products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => a.name.localeCompare(b.name));
-            renderAll();
-            populateProductReportFilter();
+            dataLoaded.products = true; checkAllDataLoaded();
         }, err => showError("Không thể tải danh sách sản phẩm: " + err.message));
 
         promotionsCollection.onSnapshot(snapshot => {
-            promotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => a.name.localeCompare(b.name));
-            renderPromotions();
+            promotions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            dataLoaded.promotions = true; checkAllDataLoaded();
         }, err => showError("Không thể tải danh sách khuyến mại: " + err.message));
     }
     
@@ -744,89 +866,15 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTransactionList(searchedTransactions);
         renderPlanList(searchedPlans);
         renderProductList(searchedProducts);
-        renderPromotions();
+        renderPromotionList();
+        renderSalesProductList();
+        populateProductReportFilter();
+
 
         if(!contentDashboard.classList.contains('hidden')){
             renderReports();
         }
     }
-
-    function renderPromotions() {
-        if (!promotionList) return;
-        const term = (searchPromotionsInput?.value || '').toLowerCase().trim();
-        const source = promotions.filter(pm => {
-            if (!term) return true;
-            return [pm.name, pm.type, pm.productName].some(v => String(v||'').toLowerCase().includes(term));
-        });
-        promotionList.innerHTML = '';
-        promotionEmptyState.style.display = source.length === 0 ? 'block' : 'none';
-        source.forEach(pm => promotionList.appendChild(createPromotionElement(pm)));
-    }
-
-    function createPromotionElement(pm) {
-        const productInfo = products.find(p => p.id === pm.productId);
-        const wrapper = document.createElement('li');
-        wrapper.className = 'p-4 bg-white rounded-lg shadow flex items-start justify-between gap-4';
-        const typeLabel = pm.type === 'percent' ? `${pm.value}%` : pm.type === 'fixed' ? `${formatCurrency(pm.value)}` : `Mua ${pm.buy} tặng ${pm.get}`;
-        const dateRange = `${pm.startDate || ''} - ${pm.endDate || ''}`;
-        wrapper.innerHTML = `
-            <div>
-                <h4 class="font-semibold text-base">${pm.name || 'Khuyến mại'}</h4>
-                <p class="text-sm text-gray-600">SP: ${productInfo ? productInfo.name : 'Tất cả/Không xác định'}</p>
-                <p class="text-sm">Hình thức: <span class="font-medium">${typeLabel}</span> • Hiệu lực: ${dateRange}</p>
-                <p class="text-xs ${pm.enabled ? 'text-green-600' : 'text-gray-400'}">${pm.enabled ? 'Đang bật' : 'Đang tắt'}</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <button class="px-3 py-1 rounded bg-indigo-600 text-white text-sm" data-action="edit">Sửa</button>
-                <button class="px-3 py-1 rounded bg-red-600 text-white text-sm" data-action="delete">Xóa</button>
-                <button class="px-3 py-1 rounded ${pm.enabled ? 'bg-gray-500' : 'bg-green-600'} text-white text-sm" data-action="toggle">${pm.enabled ? 'Tắt' : 'Bật'}</button>
-            </div>
-        `;
-        wrapper.querySelector('[data-action="edit"]').addEventListener('click', () => openPromotionModal(pm));
-        wrapper.querySelector('[data-action="delete"]').addEventListener('click', () => deletePromotion(pm));
-        wrapper.querySelector('[data-action="toggle"]').addEventListener('click', () => togglePromotion(pm));
-        return wrapper;
-    }
-
-    function openPromotionModal(pm = null) {
-        // Reuse existing modal infra: use formModal with lightweight fields via prompt for now
-        const name = prompt('Tên chương trình', pm?.name || '');
-        if (name === null) return;
-        const type = prompt('Loại (percent|fixed|bxgy)', pm?.type || 'percent');
-        if (type === null) return;
-        let value = pm?.value || 0, buy = pm?.buy || 0, get = pm?.get || 0;
-        if (type === 'percent' || type === 'fixed') {
-            const v = prompt('Giá trị (%, hoặc số tiền cố định)', String(value));
-            if (v === null) return; value = +v;
-        } else if (type === 'bxgy') {
-            const bx = prompt('Mua X', String(buy)); if (bx === null) return; buy = +bx;
-            const gy = prompt('Tặng Y', String(get)); if (gy === null) return; get = +gy;
-        }
-        const productId = prompt('ID sản phẩm áp dụng (để trống nếu chưa)', pm?.productId || '') || '';
-        const startDate = prompt('Ngày bắt đầu (YYYY-MM-DD)', pm?.startDate || '') || '';
-        const endDate = prompt('Ngày kết thúc (YYYY-MM-DD)', pm?.endDate || '') || '';
-        const enabled = confirm('Bật khuyến mại này?');
-        const data = { name, type, value, buy, get, productId, startDate, endDate, enabled };
-        if (pm?.id) {
-            promotionsCollection.doc(pm.id).update(data).then(()=>showToast('Đã cập nhật khuyến mại!')).catch(e=>showError(e.message));
-        } else {
-            promotionsCollection.add(data).then(()=>showToast('Đã tạo khuyến mại!')).catch(e=>showError(e.message));
-        }
-    }
-
-    function deletePromotion(pm){
-        openConfirmationModal(`Xóa khuyến mại "${pm.name}"?`, async () => {
-            await promotionsCollection.doc(pm.id).delete();
-            showToast('Đã xóa khuyến mại.');
-        });
-    }
-
-    function togglePromotion(pm){
-        promotionsCollection.doc(pm.id).update({ enabled: !pm.enabled }).catch(e=>showError(e.message));
-    }
-
-    addPromotionBtn?.addEventListener('click', () => openPromotionModal());
-    searchPromotionsInput?.addEventListener('input', renderPromotions);
     
     function renderPlanList(source) {
         planList.innerHTML = '';
@@ -842,6 +890,25 @@ document.addEventListener('DOMContentLoaded', () => {
         productList.innerHTML = '';
         productEmptyState.style.display = source.length === 0 ? 'block' : 'none';
         source.forEach(product => productList.appendChild(createProductElement(product)));
+    }
+    function renderSalesProductList() {
+        const filter = salesProductSearchEl.value.toLowerCase();
+        salesProductListEl.innerHTML = '';
+        const filteredProducts = products.filter(p => p.name.toLowerCase().includes(filter));
+        if (filteredProducts.length === 0) {
+            salesProductListEl.innerHTML = `<p class="col-span-full text-center text-gray-500">Không tìm thấy sản phẩm.</p>`;
+            return;
+        }
+        filteredProducts.forEach(product => {
+            const productDiv = document.createElement('div');
+            productDiv.className = 'p-2 border rounded-lg text-center cursor-pointer hover:bg-indigo-100 hover:shadow-md transition';
+            productDiv.innerHTML = `
+                <div class="font-semibold text-sm">${product.name}</div>
+                <div class="text-xs text-gray-600">${formatCurrency(product.sellingPrice)}</div>
+            `;
+            productDiv.onclick = () => addProductToInvoice(product.id);
+            salesProductListEl.appendChild(productDiv);
+        });
     }
 
     function updateSummary(source) {
@@ -894,8 +961,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return item;
     }
     function createTransactionElement(tx) {
-        const { id, type, description, amount, date, category, customerName, customerNote, createdAt } = tx;
+        const { id, type, description, amount, date, category, customerName, customerNote, createdAt, items } = tx;
         const isIncome = type === 'income';
+        const isMultiItemSale = Array.isArray(items) && items.length > 0;
+
         const item = document.createElement('li');
         item.className = `p-4 rounded-lg border-l-4 ${isIncome ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`;
         const displayDateTimeStr = formatDisplayDateTime(createdAt, date);
@@ -906,6 +975,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${customerNote ? `<p><strong>Ghi chú:</strong> ${customerNote}</p>` : ''}
             </div>`;
         }
+
+        const editButton = `<button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1 ${isMultiItemSale ? 'opacity-50 cursor-not-allowed' : ''}" ${isMultiItemSale ? 'disabled title="Không thể sửa hóa đơn nhiều sản phẩm"' : ''}><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>`;
+
         item.innerHTML = `<div class="flex justify-between items-start">
                 <div class="flex-grow flex flex-col">
                     <div>
@@ -918,12 +990,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="text-right flex-shrink-0 ml-4">
                     <p class="font-bold text-xl ${isIncome ? 'text-green-600' : 'text-red-600'}">${isIncome ? '+' : '-'}${formatCurrency(amount)}</p>
                     <div class="flex gap-2 justify-end mt-1">
-                        <button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                        ${editButton}
                         <button data-action="delete" class="text-gray-500 hover:text-red-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
                     </div>
                 </div>
             </div>`;
-        item.querySelector('button[data-action="edit"]').addEventListener('click', () => openFormModal('editTransaction', tx));
+        const editBtnEl = item.querySelector('button[data-action="edit"]');
+        if (editBtnEl && !editBtnEl.disabled) {
+            editBtnEl.addEventListener('click', () => openFormModal('editTransaction', tx));
+        }
         item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteTransaction(tx));
         return item;
     }
@@ -951,11 +1026,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>`;
         item.querySelector('button[data-action="sell"]').addEventListener('click', () => {
-            openFormModal('addTransaction', {
-                type: 'income',
-                category: 'Bán hàng',
-                productId: product.id // Pass product data to pre-fill the form
-            });
+             switchTab('sales');
+             addProductToInvoice(product.id);
         });
         item.querySelector('button[data-action="edit"]').addEventListener('click', () => openProductModal('edit', product));
         item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteProduct(id, name));
@@ -1093,6 +1165,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let productId = null;
         let quantity = null;
+        let items = null; // Important for edit logic
 
         if (type === 'income' && productSelect.value) {
             productId = productSelect.value;
@@ -1105,16 +1178,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = { 
             type: type, 
             description: descriptionInput.value.trim(), 
-            amount: +amountInput.value,
-            promoId: amountInput.dataset.promoId || null,
-            discountAmount: +(amountInput.dataset.discountAmount || 0),
+            amount: +amountInput.value, 
             date: dateInput.value, 
             category: category, 
             customerName: customerNameInput.value.trim(), 
             customerNote: customerNoteInput.value.trim(), 
             createdAt: new Date().toISOString(),
             productId: productId,
-            quantity: quantity
+            quantity: quantity,
+            items: items // Will be null for single item tx
         };
 
         if (!data.description || data.amount < 0) { return showToast("Vui lòng nhập nội dung và số tiền hợp lệ.", "error"); }
@@ -1137,12 +1209,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast("Đã cập nhật kế hoạch!");
                 } else if (currentFormMode === 'editTransaction') {
                     const beforeTx = currentEditingTransaction;
+                    // Prevent editing multi-item sales
+                    if(beforeTx && Array.isArray(beforeTx.items) && beforeTx.items.length > 0) {
+                        showToast("Không thể sửa hóa đơn nhiều sản phẩm từ đây.", "error");
+                        return;
+                    }
+
                     const afterTxData = data;
                     const txDocRef = transactionsCollection.doc(editingIdInput.value);
 
                     const oldProductId = beforeTx ? beforeTx.productId : null;
                     const oldQuantity = beforeTx ? beforeTx.quantity || 0 : 0;
                     const oldType = beforeTx ? beforeTx.type : null;
+                    
                     const newProductId = afterTxData.productId;
                     const newQuantity = afterTxData.quantity || 0;
                     const newType = afterTxData.type;
@@ -1198,17 +1277,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }); 
     };
     const deletePlan = (id, description) => { openConfirmationModal(`Bạn có chắc muốn xóa kế hoạch "${description}"?`, async () => { try { await plansCollection.doc(id).delete(); showToast("Đã xóa kế hoạch."); } catch(e) { showToast('Lỗi: '+e.message, "error"); } }); };
+    
     const deleteTransaction = (tx) => { 
         openConfirmationModal(`Bạn có chắc muốn xóa giao dịch "${tx.description}"?`, async () => { 
+            const batch = db.batch();
+            const txRef = transactionsCollection.doc(tx.id);
+            batch.delete(txRef);
+            
+            // Handle stock update for multi-item sales or single-item transactions
+            if (Array.isArray(tx.items) && tx.items.length > 0) {
+                 tx.items.forEach(item => {
+                    const productRef = productsCollection.doc(item.id);
+                    batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(item.quantity) });
+                });
+            } else if (tx.productId && tx.quantity > 0) {
+                const stockChange = tx.type === 'income' ? tx.quantity : -tx.quantity;
+                const productRef = productsCollection.doc(tx.productId);
+                batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(stockChange) });
+            }
+
             try { 
-                await transactionsCollection.doc(tx.id).delete();
-                if (tx.productId && tx.quantity > 0) {
-                    const stockChange = tx.type === 'income' ? tx.quantity : -tx.quantity;
-                    await productsCollection.doc(tx.productId).update({ stock: firebase.firestore.FieldValue.increment(stockChange) });
-                }
-                showToast("Đã xóa giao dịch."); 
+                await batch.commit();
+                showToast("Đã xóa giao dịch và cập nhật lại kho hàng."); 
             } catch(e) { 
-                showToast('Lỗi: '+e.message, "error"); 
+                showToast('Lỗi khi xóa: '+e.message, "error"); 
             } 
         }); 
     };
@@ -1283,12 +1375,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function populateProductReportFilter() {
-        let options = '';
+        productReportFilterContainer.innerHTML = '';
+        if (products.length === 0) {
+            productReportFilterContainer.innerHTML = `<p class="text-center text-gray-500">Chưa có sản phẩm nào.</p>`;
+            return;
+        }
         products.forEach(p => {
-            options += `<option value="${p.id}">${p.name}</option>`;
+            const div = document.createElement('div');
+            div.className = 'flex items-center';
+            div.innerHTML = `
+                <input id="report-prod-check-${p.id}" type="checkbox" value="${p.id}" class="report-product-checkbox h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                <label for="report-prod-check-${p.id}" class="ml-2 block text-sm text-gray-900">${p.name}</label>
+            `;
+            productReportFilterContainer.appendChild(div);
         });
-        productReportFilter.innerHTML = options;
+
+        document.querySelectorAll('.report-product-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', renderReports);
+        });
     }
+
 
     function handleProductSelection(fromAI = false) {
         const selectedId = productSelect.value;
@@ -1313,46 +1419,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const product = products.find(p => p.id === selectedId);
             const quantity = +transactionQuantityInput.value;
             if (product && quantity > 0) {
-                // Apply promotions if available
-                const now = new Date();
-                const applicablePromos = (promotions || []).filter(pm => {
-                    if (!pm.enabled) return false;
-                    if (pm.productId !== selectedId) return false;
-                    const startOk = pm.startDate ? new Date(pm.startDate) <= now : true;
-                    const endOk = pm.endDate ? new Date(pm.endDate) >= now : true;
-                    return startOk && endOk;
-                });
-
-                let unitPrice = product.sellingPrice;
-                let discountTotal = 0;
-                let appliedPromoId = null;
-
-                if (applicablePromos.length > 0) {
-                    const pm = applicablePromos[0]; // pick first for now
-                    appliedPromoId = pm.id;
-                    if (pm.type === 'percent') {
-                        const discountPerUnit = Math.max(0, Math.min(100, pm.value || 0)) * unitPrice / 100;
-                        discountTotal = discountPerUnit * quantity;
-                    } else if (pm.type === 'fixed') {
-                        const discountPerUnit = Math.max(0, pm.value || 0);
-                        discountTotal = discountPerUnit * quantity;
-                    } else if (pm.type === 'bxgy') { // buy X get Y
-                        const x = Math.max(1, pm.buy || 0);
-                        const y = Math.max(0, pm.get || 0);
-                        const group = x + y;
-                        if (group > 0) {
-                            const fullGroups = Math.floor(quantity / group);
-                            const freeItems = fullGroups * y;
-                            discountTotal = freeItems * unitPrice;
-                        }
-                    }
-                }
-
-                const total = unitPrice * quantity - discountTotal;
-                amountInput.value = Math.max(0, Math.round(total));
-                // store for later save
-                amountInput.dataset.promoId = appliedPromoId || '';
-                amountInput.dataset.discountAmount = String(Math.max(0, Math.round(discountTotal)));
+                amountInput.value = product.sellingPrice * quantity;
                 descriptionInput.value = quantity > 1 ? `${quantity} ${product.name}` : product.name;
             }
         }
@@ -1440,13 +1507,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function switchTab(tab) {
-        [contentPlan, contentProducts, contentHistory, contentPromotions, contentDashboard].forEach(c => c.classList.add('hidden'));
-        [tabPlan, tabProducts, tabHistory, tabPromotions, tabDashboard].forEach(t => t.classList.remove('active'));
+        [contentSales, contentPromotions, contentPlan, contentProducts, contentHistory, contentDashboard].forEach(c => c.classList.add('hidden'));
+        [tabSales, tabPromotions, tabPlan, tabProducts, tabHistory, tabDashboard].forEach(t => t.classList.remove('active'));
         
-        if (tab === 'plan') { contentPlan.classList.remove('hidden'); tabPlan.classList.add('active'); } 
+        if (tab === 'sales') { contentSales.classList.remove('hidden'); tabSales.classList.add('active'); }
+        else if (tab === 'promotions') { contentPromotions.classList.remove('hidden'); tabPromotions.classList.add('active'); }
+        else if (tab === 'plan') { contentPlan.classList.remove('hidden'); tabPlan.classList.add('active'); } 
         else if (tab === 'products') { contentProducts.classList.remove('hidden'); tabProducts.classList.add('active'); } 
         else if (tab === 'history') { contentHistory.classList.remove('hidden'); tabHistory.classList.add('active'); } 
-        else if (tab === 'promotions') { contentPromotions.classList.remove('hidden'); tabPromotions.classList.add('active'); }
         else {
             contentDashboard.classList.remove('hidden');
             tabDashboard.classList.add('active');
@@ -1582,7 +1650,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${createComparisonCardHTML('Doanh thu', currentIncome, previousIncome, false)}
                 ${createComparisonCardHTML('Chi phí', currentExpense, previousExpense, true)}
                 ${createComparisonCardHTML('Lợi nhuận', currentProfit, previousProfit, false)}
-                ${createComparisonCardHTML('Tổng tiền đã giảm giá', currentData.reduce((s,t)=>s+(t.discountAmount||0),0), previousData.reduce((s,t)=>s+(t.discountAmount||0),0), true)}
             `;
         } else {
             comparisonSection.innerHTML = '';
@@ -1617,57 +1684,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 { label: 'Chi phí', data: expenseData, borderColor: '#dc2626', backgroundColor: '#dc262620', fill: true, tension: 0.1 }
             ] }, options: { responsive: true, maintainAspectRatio: false } });
         }
-
-        // --- Promotion Effectiveness Table ---
-        const promoAgg = currentData.reduce((acc, tx) => {
-            if (!tx.promoId || !tx.discountAmount) return acc;
-            if (!acc[tx.promoId]) acc[tx.promoId] = { count: 0, discount: 0 };
-            acc[tx.promoId].count += 1;
-            acc[tx.promoId].discount += tx.discountAmount;
-            return acc;
-        }, {});
-        const rows = Object.entries(promoAgg).map(([pid, s]) => {
-            const promo = promotions.find(p => p.id === pid);
-            return `<tr>
-                <td class="px-4 py-2 border">${promo ? promo.name : pid}</td>
-                <td class="px-4 py-2 border text-center">${s.count}</td>
-                <td class="px-4 py-2 border text-right">${formatCurrency(s.discount)}</td>
-            </tr>`;
-        }).join('');
-        const tableHTML = `<table class="min-w-full bg-white rounded shadow overflow-hidden">
-            <thead><tr>
-                <th class="px-4 py-2 border text-left">Chương trình</th>
-                <th class="px-4 py-2 border text-center">Số lần áp dụng</th>
-                <th class="px-4 py-2 border text-right">Tổng tiền giảm</th>
-            </tr></thead>
-            <tbody>${rows || `<tr><td class='px-4 py-3 text-center text-gray-500' colspan='3'>Chưa có dữ liệu khuyến mại</td></tr>`}</tbody>
-        </table>`;
-        const promoTableDiv = document.getElementById('promotion-report-table');
-        if (promoTableDiv) promoTableDiv.innerHTML = tableHTML;
     }
     
     function renderProductPerformanceReports(source) {
-        const selectedProductIds = [...productReportFilter.selectedOptions].map(opt => opt.value);
-        let sales = source.filter(tx => tx.type === 'income' && tx.productId && tx.quantity > 0);
+        const selectedProductIds = [...document.querySelectorAll('.report-product-checkbox:checked')].map(opt => opt.value);
+
+        let sales = source.filter(tx => tx.type === 'income' && (tx.productId || (Array.isArray(tx.items) && tx.items.length > 0)) );
+
+        const allSalesItems = [];
+        sales.forEach(tx => {
+            if (Array.isArray(tx.items)) {
+                tx.items.forEach(item => allSalesItems.push({ ...item, amount: item.price * item.quantity, productId: item.id, date: tx.date }));
+            } else if (tx.productId) {
+                allSalesItems.push(tx);
+            }
+        });
         
+        let filteredSalesItems = allSalesItems;
         if (selectedProductIds.length > 0) {
-            sales = sales.filter(tx => selectedProductIds.includes(tx.productId));
+            filteredSalesItems = allSalesItems.filter(item => selectedProductIds.includes(item.productId));
         }
 
         const productStats = {};
 
-        sales.forEach(sale => {
-            if (!productStats[sale.productId]) {
-                const productInfo = products.find(p => p.id === sale.productId);
-                productStats[sale.productId] = {
+        allSalesItems.forEach(sale => { // Calculate stats from ALL sales in period for top 5
+             const productId = sale.productId || sale.id;
+             if (!productStats[productId]) {
+                const productInfo = products.find(p => p.id === productId);
+                productStats[productId] = {
                     name: productInfo ? productInfo.name : 'Sản phẩm không xác định',
                     costPrice: productInfo ? productInfo.costPrice : 0,
                     quantity: 0,
                     totalRevenue: 0,
                 };
             }
-            productStats[sale.productId].quantity += sale.quantity;
-            productStats[sale.productId].totalRevenue += sale.amount;
+            productStats[productId].quantity += sale.quantity;
+            productStats[productId].totalRevenue += sale.amount;
         });
 
         const statsArray = Object.values(productStats).map(p => ({
@@ -1683,18 +1735,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const topProfit = [...statsArray].sort((a, b) => b.profit - a.profit).slice(0, 5);
         document.getElementById('top-profit-products').innerHTML = topProfit.map(p => `<div class="p-2 bg-gray-50 rounded-md"><strong>${p.name}</strong>: ${formatCurrency(p.profit)}</div>`).join('') || '<p class="text-center text-gray-500">Không có dữ liệu.</p>';
     
-        // --- NEW CHART LOGIC ---
+        // Chart Logic uses filtered sales
         if (productSalesTrendChart) productSalesTrendChart.destroy();
         const chartContainer = document.getElementById('product-chart-container');
 
-        if (selectedProductIds.length > 0 && sales.length > 0) {
+        if (selectedProductIds.length > 0 && filteredSalesItems.length > 0) {
             chartContainer.classList.remove('hidden');
 
-            const allDates = [...new Set(sales.map(s => s.date.split('T')[0]))].sort((a, b) => new Date(a) - new Date(b));
+            const allDates = [...new Set(filteredSalesItems.map(s => s.date.split('T')[0]))].sort((a, b) => new Date(a) - new Date(b));
 
             const datasets = selectedProductIds.map((productId, index) => {
                 const product = products.find(p => p.id === productId);
-                const salesForThisProduct = sales.filter(s => s.productId === productId);
+                const salesForThisProduct = filteredSalesItems.filter(s => (s.productId || s.id) === productId);
                 
                 const revenueByDate = salesForThisProduct.reduce((acc, sale) => {
                     const date = sale.date.split('T')[0];
@@ -1720,19 +1772,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (productSalesTrendChartCtx) {
                 productSalesTrendChart = new Chart(productSalesTrendChartCtx, {
                     type: 'line',
-                    data: {
-                        labels: allDates,
-                        datasets: datasets
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
+                    data: { labels: allDates, datasets: datasets },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
                 });
             }
         } else {
@@ -2031,6 +2072,344 @@ USER TEXT: "${textInput}"`;
         XLSX.writeFile(wb, `SoThuChi_BaoCao_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
+    // --- NEW PROMOTION & SALES LOGIC ---
+    function openPromotionModal(mode = 'add', data = {}) {
+        promotionForm.reset();
+        document.getElementById('promoId').value = mode === 'edit' ? data.id : '';
+        promotionModalTitle.textContent = mode === 'add' ? 'Tạo khuyến mại mới' : 'Chỉnh sửa khuyến mại';
+        const today = new Date().toISOString().split('T')[0];
+        
+        if (mode === 'edit') {
+            document.getElementById('promoNameInput').value = data.name;
+            document.getElementById('promoType').value = data.type;
+            document.getElementById('promoValue').value = data.value;
+            document.getElementById('promoBuyQuantity').value = data.buyQuantity || 1;
+            document.getElementById('promoGetQuantity').value = data.getQuantity || 1;
+            document.getElementById('promoMinSpend').value = data.minSpend || 0;
+            document.getElementById('promoStartDate').value = data.startDate || today;
+            document.getElementById('promoEndDate').value = data.endDate;
+        } else {
+            document.getElementById('promoStartDate').value = today;
+        }
+
+        renderProductCheckboxList('promo-product-list', data.productIds || []);
+        handlePromoTypeChange();
+        
+        promotionModal.classList.remove('hidden');
+        setTimeout(() => promotionModal.classList.remove('opacity-0'), 10);
+    }
+    
+    function closePromotionModal() { promotionModal.classList.add('opacity-0'); setTimeout(() => promotionModal.classList.add('hidden'), 300); }
+
+    async function handlePromotionFormSubmit(e) {
+        e.preventDefault();
+        const id = document.getElementById('promoId').value;
+        const selectedProductIds = Array.from(document.querySelectorAll('#promo-product-list input:checked')).map(cb => cb.value);
+        const data = {
+            name: document.getElementById('promoNameInput').value.trim(),
+            type: document.getElementById('promoType').value,
+            value: parseFloat(document.getElementById('promoValue').value) || 0,
+            buyQuantity: parseInt(document.getElementById('promoBuyQuantity').value) || 1,
+            getQuantity: parseInt(document.getElementById('promoGetQuantity').value) || 1,
+            minSpend: parseFloat(document.getElementById('promoMinSpend').value) || 0,
+            productIds: selectedProductIds,
+            startDate: document.getElementById('promoStartDate').value,
+            endDate: document.getElementById('promoEndDate').value,
+            isActive: true 
+        };
+        
+        if (!data.name || !data.endDate || !data.startDate) { return showToast("Vui lòng nhập đủ tên, ngày bắt đầu và kết thúc.", "error"); }
+        if (new Date(data.endDate) < new Date(data.startDate)) { return showToast("Ngày kết thúc không thể trước ngày bắt đầu.", "error");}
+        
+        try {
+            if (id) {
+                await promotionsCollection.doc(id).update(data);
+                showToast("Đã cập nhật khuyến mại!");
+            } else {
+                await promotionsCollection.add(data);
+                showToast("Đã tạo khuyến mại thành công!");
+            }
+            closePromotionModal();
+        } catch (err) {
+            showToast(`Lỗi: ${err.message}`, "error");
+        }
+    }
+
+    function renderPromotionList() {
+        promotionList.innerHTML = '';
+        promotionEmptyState.style.display = promotions.length === 0 ? 'block' : 'none';
+        
+        const sortedPromotions = [...promotions].sort((a,b) => new Date(b.endDate) - new Date(a.endDate));
+
+        sortedPromotions.forEach(promo => {
+            const li = document.createElement('li');
+            const now = new Date();
+            const startDate = new Date(promo.startDate);
+            const endDate = new Date(promo.endDate);
+            endDate.setHours(23, 59, 59, 999); // Include the whole end day
+
+            let statusText = '';
+            let statusColor = '';
+
+            if (now < startDate) {
+                statusText = 'Sắp diễn ra';
+                statusColor = 'bg-blue-100 text-blue-800';
+            } else if (now > endDate) {
+                statusText = 'Đã kết thúc';
+                statusColor = 'bg-gray-200 text-gray-800';
+            } else {
+                statusText = 'Đang hoạt động';
+                statusColor = 'bg-green-100 text-green-800';
+            }
+            
+            const isActionable = now <= endDate;
+
+
+            li.className = `p-3 rounded-lg flex justify-between items-center border-l-4 ${isActionable && promo.isActive ? 'border-green-500' : 'border-gray-400'} ${now > endDate ? 'bg-gray-100' : 'bg-white shadow-sm'}`;
+            li.innerHTML = `
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold ${!isActionable ? 'text-gray-500' : 'text-gray-800'}">${promo.name}</span>
+                        <span class="text-xs font-medium px-2 py-0.5 rounded-full ${statusColor}">${statusText}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">Từ ${startDate.toLocaleDateString('vi-VN')} - đến ${endDate.toLocaleDateString('vi-VN')}</p>
+                </div>
+                <div class="flex items-center gap-4">
+                     <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" data-action="toggle" class="sr-only peer" ${promo.isActive ? 'checked' : ''} ${!isActionable ? 'disabled' : ''}>
+                      <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-blue-300 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    </label>
+                    <div class="flex gap-1">
+                        <button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-2 rounded-lg hover:bg-gray-100"><i class="fas fa-edit"></i></button>
+                        <button data-action="delete" class="text-gray-500 hover:text-red-600 transition p-2 rounded-lg hover:bg-gray-100"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            
+            li.addEventListener('click', (e) => {
+                const actionTarget = e.target.closest('[data-action]');
+                if (!actionTarget) return;
+
+                const action = actionTarget.dataset.action;
+                if (action === 'edit') { openPromotionModal('edit', promo); } 
+                else if (action === 'delete') { deletePromotion(promo.id, promo.name); } 
+                else if (action === 'toggle' && !actionTarget.disabled) { 
+                    togglePromotionStatus(promo.id, actionTarget.checked); 
+                }
+            });
+
+            promotionList.appendChild(li);
+        });
+    }
+    
+    async function togglePromotionStatus(id, isActive) {
+        try {
+            await promotionsCollection.doc(id).update({ isActive });
+            showToast(`Đã ${isActive ? 'bật' : 'tắt'} khuyến mại.`);
+        } catch(e) {
+            showToast(`Lỗi: ${e.message}`, 'error');
+        }
+    }
+    
+    function deletePromotion(id, name) {
+        openConfirmationModal(`Bạn có chắc muốn xóa khuyến mại "${name}"?`, async () => {
+            try {
+                await promotionsCollection.doc(id).delete();
+                showToast("Đã xóa khuyến mại.");
+            } catch(e) {
+                showToast(`Lỗi: ${e.message}`, 'error');
+            }
+        });
+    }
+
+    function handlePromoTypeChange() {
+        const type = document.getElementById('promoType').value;
+        document.getElementById('promoValueContainer').classList.toggle('hidden', type === 'bogo');
+        document.getElementById('promoBuyQuantityContainer').classList.toggle('hidden', type !== 'bogo');
+        document.getElementById('promoProductContainer').classList.toggle('hidden', ['total_bill_fixed', 'total_bill_percentage'].includes(type));
+        document.getElementById('promoMinSpendContainer').classList.toggle('hidden', !['total_bill_fixed', 'total_bill_percentage'].includes(type));
+    }
+
+    function renderProductCheckboxList(containerId, checkedIds = []) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+         if (products.length === 0) {
+            container.innerHTML = `<p class="text-center text-gray-500">Chưa có sản phẩm nào.</p>`;
+            return;
+        }
+        products.forEach(product => {
+            const isChecked = checkedIds.includes(product.id);
+            const div = document.createElement('div');
+            div.className = 'flex items-center';
+            div.innerHTML = `
+                <input id="promo-prod-check-${product.id}" type="checkbox" value="${product.id}" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" ${isChecked ? 'checked' : ''}>
+                <label for="promo-prod-check-${product.id}" class="ml-2 block text-sm text-gray-900">${product.name}</label>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    function addProductToInvoice(productId) {
+        const product = products.find(p => p.id === productId);
+        if (!product) return;
+        const existingItem = currentTransactionItems.find(item => item.id === productId);
+        if (existingItem) {
+            existingItem.quantity++;
+        } else {
+            currentTransactionItems.push({ ...product, quantity: 1, sellingPrice: product.sellingPrice });
+        }
+        renderInvoiceItems();
+    }
+    
+    function renderInvoiceItems() {
+        invoiceEmptyEl.classList.toggle('hidden', currentTransactionItems.length > 0);
+        invoiceItemsEl.innerHTML = '';
+        currentTransactionItems.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'flex justify-between items-center text-sm p-2 rounded-md bg-white';
+            itemDiv.innerHTML = `
+                <div>
+                    <span class="font-semibold">${item.name}</span>
+                    <div class="text-xs text-gray-500">${formatCurrency(item.sellingPrice)}</div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button data-action="decrease" class="w-6 h-6 bg-gray-200 rounded-full">-</button>
+                    <span>${item.quantity}</span>
+                    <button data-action="increase" class="w-6 h-6 bg-gray-200 rounded-full">+</button>
+                    <button data-action="remove" class="text-red-500 hover:text-red-700"><i class="fas fa-times-circle"></i></button>
+                </div>`;
+            
+            itemDiv.addEventListener('click', (e) => {
+                const action = e.target.closest('button')?.dataset.action;
+                if (!action) return;
+                
+                const currentItem = currentTransactionItems.find(i => i.id === item.id);
+                if (action === 'increase') { currentItem.quantity++; } 
+                else if (action === 'decrease') {
+                    if (currentItem.quantity > 1) { currentItem.quantity--; } 
+                    else { currentTransactionItems = currentTransactionItems.filter(i => i.id !== item.id); }
+                } else if (action === 'remove') {
+                    currentTransactionItems = currentTransactionItems.filter(i => i.id !== item.id);
+                }
+                renderInvoiceItems();
+            });
+            invoiceItemsEl.appendChild(itemDiv);
+        });
+        updateInvoiceTotal();
+    }
+    
+    function getApplicablePromotion(items, subtotal) {
+        const now = new Date();
+        const activePromos = promotions.filter(p => {
+            const startDate = new Date(p.startDate);
+            const endDate = new Date(p.endDate);
+            endDate.setHours(23, 59, 59, 999);
+            return p.isActive && now >= startDate && now <= endDate;
+        });
+
+        let bestPromo = null, maxDiscount = 0;
+
+        activePromos.forEach(promo => {
+            let currentDiscount = 0;
+            let applies = false;
+            switch (promo.type) {
+                case 'percentage':
+                case 'fixed':
+                    items.forEach(item => {
+                        if (promo.productIds.includes(item.id)) {
+                            applies = true;
+                            if (promo.type === 'percentage') { currentDiscount += (item.sellingPrice * item.quantity * promo.value / 100); } 
+                            else { currentDiscount += promo.value * item.quantity; }
+                        }
+                    });
+                    break;
+                case 'bogo':
+                     items.forEach(item => {
+                        if (promo.productIds.includes(item.id) && item.quantity >= promo.buyQuantity) {
+                            applies = true;
+                            const triggerCount = Math.floor(item.quantity / promo.buyQuantity);
+                            const freeItems = triggerCount * promo.getQuantity;
+                            currentDiscount += freeItems * item.sellingPrice;
+                        }
+                    });
+                    break;
+                case 'total_bill_fixed':
+                    if (subtotal >= promo.minSpend) { applies = true; currentDiscount = promo.value; }
+                    break;
+                case 'total_bill_percentage':
+                    if (subtotal >= promo.minSpend) { applies = true; currentDiscount = subtotal * (promo.value / 100); }
+                    break;
+            }
+            if (applies && currentDiscount > maxDiscount) {
+                maxDiscount = currentDiscount;
+                bestPromo = promo;
+            }
+        });
+        return { promotion: bestPromo, discount: maxDiscount };
+    }
+
+    function updateInvoiceTotal() {
+        const subtotal = currentTransactionItems.reduce((acc, item) => acc + (item.sellingPrice * item.quantity), 0);
+        const { promotion, discount } = getApplicablePromotion(currentTransactionItems, subtotal);
+        const total = subtotal - discount;
+
+        invoiceSubtotalEl.textContent = formatCurrency(subtotal);
+        invoiceDiscountEl.textContent = formatCurrency(discount);
+        invoiceTotalEl.textContent = formatCurrency(total);
+        invoicePromoNameEl.textContent = promotion ? promotion.name : 'Không có';
+        completeSaleBtn.disabled = currentTransactionItems.length === 0;
+    }
+
+    async function handleCompleteSale() {
+        if (currentTransactionItems.length === 0) return;
+        const subtotal = currentTransactionItems.reduce((acc, item) => acc + (item.sellingPrice * item.quantity), 0);
+        const { promotion, discount } = getApplicablePromotion(currentTransactionItems, subtotal);
+        const total = subtotal - discount;
+
+        const description = currentTransactionItems.map(item => `${item.quantity} ${item.name}`).join(', ');
+        
+        const saleTransaction = {
+            type: 'income',
+            category: 'Bán hàng',
+            description: `Hóa đơn: ${description}`,
+            amount: total,
+            date: new Date().toISOString().split('T')[0],
+            createdAt: new Date().toISOString(),
+            items: currentTransactionItems.map(i => ({id: i.id, name: i.name, quantity: i.quantity, price: i.sellingPrice})),
+            subtotal,
+            discount,
+            promotionId: promotion ? promotion.id : null,
+            promotionName: promotion ? promotion.name : null
+        };
+        
+        const batch = db.batch();
+        const txRef = transactionsCollection.doc();
+        batch.set(txRef, saleTransaction);
+
+        let canProceed = true;
+        for(const item of currentTransactionItems) {
+            const product = products.find(p => p.id === item.id);
+            if(product.stock < item.quantity) {
+                canProceed = false;
+                showToast(`Tồn kho không đủ cho sản phẩm ${product.name}`, 'error');
+                break;
+            }
+            const productRef = productsCollection.doc(item.id);
+            batch.update(productRef, { stock: firebase.firestore.FieldValue.increment(-item.quantity) });
+        }
+        
+        if (canProceed) {
+            try {
+                await batch.commit();
+                showToast("Giao dịch thành công!");
+                currentTransactionItems = [];
+                renderInvoiceItems();
+            } catch (err) {
+                showToast(`Lỗi: ${err.message}`, 'error');
+            }
+        }
+    }
+
+
     // --- EVENT LISTENERS ---
     chatMessages.addEventListener('click', (e) => {
         const speakButton = e.target.closest('.speak-btn');
@@ -2056,6 +2435,7 @@ USER TEXT: "${textInput}"`;
     addPlanBtn.addEventListener('click', () => openFormModal('addPlan'));
     addTransactionBtn.addEventListener('click', () => openFormModal('addTransaction'));
     addProductBtn.addEventListener('click', () => openProductModal('add'));
+    addPromotionBtn.addEventListener('click', () => openPromotionModal('add'));
     
     addAiBtn.addEventListener('click', openAiEntryModal);
     aiEntryModal.querySelector('.cancel-btn').addEventListener('click', closeAiEntryModal);
@@ -2063,11 +2443,13 @@ USER TEXT: "${textInput}"`;
     
     mainForm.addEventListener('submit', handleFormSubmit);
     productForm.addEventListener('submit', handleProductFormSubmit);
+    promotionForm.addEventListener('submit', handlePromotionFormSubmit);
     
     completePlanForm.addEventListener('submit', handleCompletePlanSubmit);
     
     formModal.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', closeFormModal));
     productModal.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', closeProductModal));
+    promotionModal.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', closePromotionModal));
     completePlanModal.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', closeCompletePlanModal));
     
     confirmCancelBtn.addEventListener('click', closeConfirmationModal);
@@ -2076,140 +2458,11 @@ USER TEXT: "${textInput}"`;
     typeRadios.forEach(r => r.addEventListener('change', updateCategoryOptions));
     categorySelect.addEventListener('change', updateFormFieldsVisibility);
 
+    tabSales.addEventListener('click', () => switchTab('sales'));
+    tabPromotions.addEventListener('click', () => switchTab('promotions'));
     tabPlan.addEventListener('click', () => switchTab('plan'));
     tabProducts.addEventListener('click', () => switchTab('products'));
     tabHistory.addEventListener('click', () => switchTab('history'));
-    tabPromotions.addEventListener('click', () => switchTab('promotions'));
     tabDashboard.addEventListener('click', () => switchTab('dashboard'));
     
-    reportRangeEl.addEventListener('change', handleFilterChange);
-    customStartEl.addEventListener('change', renderAll);
-    customEndEl.addEventListener('change', renderAll);
-    searchPlanInput.addEventListener('input', renderAll);
-    searchHistoryInput.addEventListener('input', renderAll);
-    searchProductsInput.addEventListener('input', renderAll);
-    exportXlsxBtn.addEventListener('click', exportToXLSX); 
-    chatForm.addEventListener('submit', handleAiChatSubmit);
-    
-    productSelect.addEventListener('change', () => handleProductSelection(false));
-    transactionQuantityInput.addEventListener('input', handleQuantityChange);
-    importProductSelect.addEventListener('change', () => handleImportProductSelection(false));
-    importQuantityInput.addEventListener('input', handleImportQuantityChange);
-    document.getElementById('low-stock-threshold').addEventListener('input', renderInventoryReport);
-    document.querySelectorAll('.report-tab-button').forEach(button => {
-        button.addEventListener('click', (e) => switchReportTab(e.target.dataset.report));
-    });
-    productReportFilter.addEventListener('change', renderReports);
-
-    const fabToggle = () => {
-        fabActions.classList.toggle('opacity-0');
-        fabActions.classList.toggle('-translate-y-4');
-        fabActions.classList.toggle('invisible');
-        fabToggleBtn.classList.toggle('rotate-45');
-        fabBackdrop.classList.toggle('hidden');
-    };
-    fabToggleBtn.addEventListener('click', fabToggle);
-    fabBackdrop.addEventListener('click', fabToggle);
-
-    // --- INITIAL LOAD ---
-    reportRangeEl.value = 'week';
-    switchTab('products'); // Default to the new products tab
-
-    // --- New UI Toggle ---
-    const applyNewUi = (enable) => {
-        const root = document.documentElement;
-        const body = document.body;
-        if (enable) {
-            body.classList.add('new-ui');
-            // Hide old header/nav, wrap content into app-grid
-            try {
-                const container = document.querySelector('#app-container > .container');
-                if (container && !container.classList.contains('app-grid')) {
-                    container.classList.add('app-grid');
-                    // Build sidebar and topbar shells
-                    const sidebar = document.createElement('aside');
-                    sidebar.className = 'sidebar';
-                    sidebar.innerHTML = `
-                        <div class="logo">Sổ Thu Chi</div>
-                        <nav class="nav space-y-1">
-                            <a href="#" data-tab="plan">Kế hoạch</a>
-                            <a href="#" data-tab="products">Sản phẩm</a>
-                            <a href="#" data-tab="history">Lịch sử</a>
-                            <a href="#" data-tab="promotions">Khuyến mại</a>
-                            <a href="#" data-tab="dashboard">Báo cáo</a>
-                        </nav>`;
-                    const mainWrap = document.createElement('div');
-                    mainWrap.className = 'flex flex-col';
-                    const topbar = document.createElement('div');
-                    topbar.className = 'topbar';
-                    topbar.innerHTML = `<div class="font-semibold">Giao diện mới</div><div class="text-sm text-slate-400">${new Date().toLocaleDateString('vi-VN')}</div>`;
-                    const stackbar = document.createElement('div');
-                    stackbar.className = 'stackbar';
-                    stackbar.id = 'stackbar';
-                    const content = document.createElement('div');
-                    content.className = 'content';
-                    // move all children of container to content
-                    while (container.firstChild) content.appendChild(container.firstChild);
-                    mainWrap.appendChild(topbar);
-                    mainWrap.appendChild(stackbar);
-                    mainWrap.appendChild(content);
-                    container.appendChild(sidebar);
-                    container.appendChild(mainWrap);
-                    // hide old tabs bar inside content
-                    const oldTabs = content.querySelector('nav.flex.justify-around')?.parentElement;
-                    if (oldTabs) oldTabs.classList.add('hidden');
-                    // wire sidebar links to open stacks
-                    const openStack = (tab) => {
-                        const stackbarEl = document.getElementById('stackbar');
-                        const id = `stack-${tab}`;
-                        if (!document.getElementById(id)) {
-                            const btn = document.createElement('button');
-                            btn.className = 'stack-btn';
-                            btn.id = id;
-                            btn.innerHTML = `${tab}<span class="close">✕</span>`;
-                            btn.addEventListener('click', ()=> activateStack(tab));
-                            btn.querySelector('.close').addEventListener('click', (ev)=>{ ev.stopPropagation(); closeStack(tab); });
-                            stackbarEl.appendChild(btn);
-                        }
-                        activateStack(tab);
-                    };
-                    const activateStack = (tab) => {
-                        sidebar.querySelectorAll('a').forEach(x=>x.classList.remove('active'));
-                        sidebar.querySelector(`a[data-tab="${tab}"]`)?.classList.add('active');
-                        document.querySelectorAll('.stack-btn').forEach(x=>x.classList.remove('active'));
-                        document.getElementById(`stack-${tab}`)?.classList.add('active');
-                        switchTab(tab);
-                    };
-                    const closeStack = (tab) => {
-                        const el = document.getElementById(`stack-${tab}`);
-                        if (el) el.remove();
-                        // if closing active, fallback to products
-                        if (!document.querySelector('.stack-btn.active')) activateStack('products');
-                    };
-                    sidebar.querySelectorAll('a[data-tab]').forEach(a => {
-                        a.addEventListener('click', (e)=>{ e.preventDefault(); openStack(a.dataset.tab); });
-                    });
-                }
-            } catch {}
-        } else {
-            body.classList.remove('new-ui');
-            // Reload to restore original DOM quickly
-            location.reload();
-        }
-        localStorage.setItem('use_new_ui', enable ? '1' : '0');
-    };
-
-    if (localStorage.getItem('use_new_ui') === '1') {
-        applyNewUi(true);
-    }
-
-    toggleUiFixedBtn?.addEventListener('click', ()=>{
-        const enable = !document.body.classList.contains('new-ui');
-        applyNewUi(enable);
-    });
-    handleFilterChange();
-});
-</script>
-</body>
-</html>
-
+    reportRangeEl.
