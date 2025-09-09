@@ -152,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentAudio = null;
     let currentlyPlayingButton = null;
     let currentEditingTransaction = null;
+    let currentFormMode = '';
     const playIconSVG = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.5 12a4.5 4.5 0 000-8v8z"></path></svg>`;
     const stopIconSVG = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><rect width="10" height="10" x="5" y="5" rx="1"></rect></svg>`;
     
@@ -443,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function openFormModal(mode, data = {}) {
-        let currentFormMode = mode;
+        currentFormMode = mode;
         mainForm.reset();
         descriptionInput.readOnly = false;
         productSelect.value = '';
@@ -574,8 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let productId = null;
         let quantity = null;
         let items = null; // Important for edit logic
-        let currentFormMode = ''; // Assume this is defined somewhere
-
+        
         if (type === 'income' && productSelect.value) {
             productId = productSelect.value;
             quantity = +transactionQuantityInput.value;
