@@ -2,34 +2,6 @@
 
 // This is the complete script. No parts are missing.
 document.addEventListener('DOMContentLoaded', () => {
-
-    // Delegated handler for Edit buttons (supports rows with data-txid, data-id, or id="tx-...")
-    document.body.addEventListener('click', function(e){
-        const btn = e.target.closest('[data-action="edit"], button[data-action="edit"], .btn-edit');
-        if (!btn) return;
-        e.preventDefault();
-        // find transaction id in ancestor elements
-        let el = btn.closest('[data-txid], [data-id], [id]');
-        let txId = null;
-        if (el) {
-            txId = el.getAttribute('data-txid') || el.getAttribute('data-id') || (el.id && el.id.startsWith('tx-') ? el.id.replace(/^tx-/, '') : null);
-        }
-        if (!txId) {
-            // try to find within row attributes or dataset
-            el = btn.closest('tr, li, .transaction-row');
-            if (el) txId = el.dataset && el.dataset.txid ? el.dataset.txid : (el.getAttribute('data-txid')||el.getAttribute('data-id'));
-        }
-        if (txId) {
-            if (typeof loadInvoiceForEdit === 'function') {
-                loadInvoiceForEdit(txId);
-            } else {
-                console.warn('loadInvoiceForEdit not defined, falling back to openFormModal if available');
-                if (typeof openFormModal === 'function') openFormModal('editTransaction', {id: txId});
-            }
-        }
-    }, false);
-
-    
     // --- App Setup & State ---
     const appShell = document.getElementById('app-shell');
     const loginScreen = document.getElementById('login-screen');
@@ -397,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         }
 
-        const editButton = `<button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1 ${isMultiItemSale ? 'opacity-50 cursor-not-allowed' : ''}" ${isMultiItemSale ? 'disabled title="Không thể sửa hóa đơn nhiều sản phẩm"' : ''}><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>`;
+        const editButton = `<button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>`;
 
         item.innerHTML = `<div class="flex justify-between items-start">
                 <div class="flex-grow flex flex-col">
@@ -417,8 +389,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>`;
         const editBtnEl = item.querySelector('button[data-action="edit"]');
-        if (editBtnEl && !editBtnEl.disabled) {
-            editBtnEl.addEventListener('click', () => openFormModal('editTransaction', tx));
+        if (editBtnEl) {
+            editBtnEl.addEventListener('click', () => {
+                // If there are multiple items, use loadInvoiceForEdit to load full items into sale UI
+                if (Array.isArray(tx.items) && tx.items.length > 0) {
+                    if (typeof loadInvoiceForEdit === 'function') loadInvoiceForEdit(tx.id);
+                } else {
+                    openFormModal('editTransaction', tx);
+                }
+            });
         }
         item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteTransaction(tx));
         return item;
@@ -2094,40 +2073,3 @@ if (typeof window !== 'undefined'){
 }
 
 /* End of appended helpers */
-
-
-/* Promotion save handler (generic) */
-async function savePromotionFromForm(formEl){
-  try{
-    if (!formEl) formEl = document.getElementById('promoForm');
-    if (!formEl) { console.warn('promoForm not found'); return; }
-    const data = new FormData(formEl);
-    const promo = {};
-    for (const [k,v] of data.entries()) promo[k]=v;
-    // basic validation
-    if (!promo.code && !promo.name) return alert('Thiếu tên hoặc mã chương trình khuyến mại');
-    // persist via db stub - implement actual storage mapping
-    if (typeof savePromotion === 'function') {
-      await savePromotion(promo);
-    } else {
-      // fallback: save to local array
-      window._promotions = window._promotions || [];
-      promo.id = promo.id || 'promo_' + Date.now();
-      window._promotions.push(promo);
-    }
-    if (typeof showToast === 'function') showToast('Lưu chương trình khuyến mại thành công');
-    if (typeof renderPromotionList === 'function') renderPromotionList(1);
-    return promo;
-  }catch(e){ console.error(e); alert('Lưu khuyến mại lỗi'); }
-}
-
-/* Attach promo submit handler (if form exists) */
-document.addEventListener('DOMContentLoaded', ()=>{
-  const promoForm = document.getElementById('promoForm');
-  if (promoForm) {
-    promoForm.addEventListener('submit', function(ev){
-      ev.preventDefault();
-      savePromotionFromForm(promoForm);
-    });
-  }
-});
