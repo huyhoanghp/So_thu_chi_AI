@@ -1,3 +1,4 @@
+<!-- Split version: index.html (styles -> style.css, inline JS -> app.js) -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -9,12 +10,19 @@
     <!-- Thêm màu sắc chủ đề cho trình duyệt trên mobile -->
     <meta name="theme-color" content="#4f46e5">
 
-    <!-- Thư viện CSS bên ngoài -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Liên kết đến tệp CSS tùy chỉnh của bạn -->
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -150,7 +158,6 @@
                                 </div>
                                 <p id="promotion-empty-state" class="text-center text-gray-500 py-8">Chưa có chương trình khuyến mại nào.</p>
                             </div>
-
 
                             <!-- TAB KẾ HOẠCH -->
                             <div id="content-plan">
@@ -352,7 +359,6 @@
                             </div>
                         </div>
 
-
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
                                 <label for="description" class="block font-semibold mb-2">Nội dung</label>
@@ -498,7 +504,6 @@
                 </div>
             </div>
 
-
             <div id="complete-plan-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden opacity-0 z-50">
                 <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
                     <h2 class="text-xl font-bold mb-4">Xác nhận hoàn thành</h2>
@@ -546,28 +551,15 @@
         </div>
     </div>
     
-    <!-- Thư viện JS bên ngoài -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    
-    <!-- XÓA CÁC PHIÊN BẢN 9.x GÂY XUNG ĐỘT -->
-    <!-- <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script> -->
-    <!-- <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script> -->
-    <!-- <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script> -->
 
-    <!-- Liên kết đến tệp JS của ứng dụng -->
-   
-    <!-- GIỮ LẠI CÁC PHIÊN BẢN 8.x NÀY -->
-    <!-- Tải thư viện chính của Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <!-- Tải thư viện Xác thực (Authentication) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <!-- Tải thư viện Firestore -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-    <!-- Tệp JS của bạn được tải cuối cùng -->
-    <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
+```
+
+### Tóm tắt các thay đổi chính:
+
+1.  **Cập nhật hệ thống Khuyến mại:**
+    * **Đổi tên:** "Giảm theo %" và "Giảm theo số tiền" đã được đổi tên để rõ ràng hơn là áp dụng trên sản phẩm.
+    * **Nâng cấp Mua X Tặng Y:** Chương trình "Mua X tặng 1" đã được sửa lỗi không lưu và nâng cấp thành **"Mua X tặng Y"**, cho phép bạn nhập linh hoạt cả số lượng mua và
 
