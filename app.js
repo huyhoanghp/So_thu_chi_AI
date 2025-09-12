@@ -2,6 +2,34 @@
 
 // This is the complete script. No parts are missing.
 document.addEventListener('DOMContentLoaded', () => {
+
+    // Delegated handler for Edit buttons (supports rows with data-txid, data-id, or id="tx-...")
+    document.body.addEventListener('click', function(e){
+        const btn = e.target.closest('[data-action="edit"], button[data-action="edit"], .btn-edit');
+        if (!btn) return;
+        e.preventDefault();
+        // find transaction id in ancestor elements
+        let el = btn.closest('[data-txid], [data-id], [id]');
+        let txId = null;
+        if (el) {
+            txId = el.getAttribute('data-txid') || el.getAttribute('data-id') || (el.id && el.id.startsWith('tx-') ? el.id.replace(/^tx-/, '') : null);
+        }
+        if (!txId) {
+            // try to find within row attributes or dataset
+            el = btn.closest('tr, li, .transaction-row');
+            if (el) txId = el.dataset && el.dataset.txid ? el.dataset.txid : (el.getAttribute('data-txid')||el.getAttribute('data-id'));
+        }
+        if (txId) {
+            if (typeof loadInvoiceForEdit === 'function') {
+                loadInvoiceForEdit(txId);
+            } else {
+                console.warn('loadInvoiceForEdit not defined, falling back to openFormModal if available');
+                if (typeof openFormModal === 'function') openFormModal('editTransaction', {id: txId});
+            }
+        }
+    }, false);
+
+    
     // --- App Setup & State ---
     const appShell = document.getElementById('app-shell');
     const loginScreen = document.getElementById('login-screen');
@@ -319,7 +347,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const { id, type, description, amount, category, customerName, customerNote, createdAt, date, productId, quantity } = plan;
         const isIncome = type === 'income';
         const item = document.createElement('li');
-        item.setAttribute('data-txid', id);
         item.className = `p-3 rounded-lg flex items-start gap-3 border-l-4 ${isIncome ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`;
         let extraInfoHtml = '';
         if ((isIncome && customerName) || customerNote) {
@@ -1971,28 +1998,14 @@ async function applyStockChanges(stockChanges){
 
 /* Load invoice into sale UI for editing.
    This function assumes you have functions: showTab(tabId), saleCart (API), renderSaleCart(), and currentEditingTxId variable. */
-async function loadInvoiceForEdit(txId) {
+async function loadInvoiceForEdit(txId){
   const tx = await db.getTransaction(txId);
   if (!tx) return alert('Không tìm thấy hóa đơn: ' + txId);
-  // Try to switch to sales tab by clicking tab button
-  const tabBtn = document.getElementById('tab-sales') || document.getElementById('tab-sale');
-  if (tabBtn && typeof tabBtn.click === 'function') tabBtn.click();
-
-  // Map transaction items into currentTransactionItems expected by renderInvoiceItems()
-  currentTransactionItems = (tx.items || []).map((it, idx) => ({
-    id: it.id || it.productId || ('item_' + idx),
-    productId: it.productId || it.id || ('item_' + idx),
-    name: it.name || it.productName || '',
-    sellingPrice: (it.price !== undefined ? it.price : (it.sellingPrice !== undefined ? it.sellingPrice : 0)),
-    quantity: (it.qty !== undefined ? it.qty : (it.quantity !== undefined ? it.quantity : 1))
-  }));
-
-  // Render UI
-  if (typeof renderInvoiceItems === 'function') renderInvoiceItems();
-  if (typeof updateInvoiceTotal === 'function') updateInvoiceTotal();
-  window.currentEditingTxId = txId;
-  const lbl = document.getElementById('sale-mode-label'); if (lbl) lbl.textContent = "Chỉnh sửa hóa đơn " + txId;
-});
+  if (typeof showTab === 'function') showTab('tab-sales'); // adapt to your tab switcher
+  if (window.saleCart && typeof window.saleCart.clear === 'function') window.saleCart.clear();
+  (tx.items||[]).forEach(item=>{
+    if (window.saleCart && typeof window.saleCart.add === 'function') {
+      window.saleCart.add({productId: item.productId, name: item.name, price: item.price, qty: item.qty, _sourceTxId: txId});
     } else {
       // fallback: push to window._editingCart
       window._editingCart = window._editingCart || [];
@@ -2005,44 +2018,14 @@ async function loadInvoiceForEdit(txId) {
 }
 
 /* Save edited invoice: compute stock delta against old tx, check stock, apply changes, update tx */
-async function saveEditedInvoice(txId) {
+async function saveEditedInvoice(txId){
   const oldTx = await db.getTransaction(txId);
-  // Determine new items: prefer currentTransactionItems when in edit mode
-  let newItemsRaw = [];
-  if (Array.isArray(currentTransactionItems) && currentTransactionItems.length > 0) {
-    newItemsRaw = currentTransactionItems.map(i => ({ productId: i.productId || i.id, qty: i.quantity, name: i.name, price: i.sellingPrice }));
-  } else if (window.saleCart && typeof window.saleCart.items === 'function') {
-    newItemsRaw = window.saleCart.items().map(i => ({ productId: i.productId, qty: i.qty || i.quantity, name: i.name, price: i.price }));
-  } else {
-    newItemsRaw = window._editingCart || [];
-  }
-
-  const stockChanges = computeStockDelta(oldTx ? oldTx.items : [], newItemsRaw);
-  const check = await checkStockBeforeSave(stockChanges, (window.settings && window.settings.inventoryMode) ? { mode: window.settings.inventoryMode } : { mode: 'block' });
-  if (!check.ok) {
-    if (check.block) return alert("Không thể lưu: tồn kho không đủ cho: " + check.failedList.join(', '));
-    if (!confirm("Tồn kho không đủ cho: " + check.failedList.join(', ') + ". Bạn vẫn muốn lưu?")) return;
-  }
-  await applyStockChanges(stockChanges);
-
-  const newTx = Object.assign({}, oldTx || {}, {
-    items: newItemsRaw.map(i => ({ productId: i.productId, name: i.name, price: i.price, qty: i.qty })),
-    total: newItemsRaw.reduce((s, i) => s + (i.price || 0) * (i.qty || 0), 0),
-    updatedAt: new Date().toISOString()
-  });
-  await db.updateTransaction(txId, newTx);
-
-  // Clear edit mode
-  window.currentEditingTxId = null;
-  currentTransactionItems = [];
-  if (typeof renderTransactionList === 'function') {
-    if (typeof transactions !== 'undefined') renderTransactionList(transactions);
-    else renderTransactionList([]);
-  }
-  if (typeof renderInvoiceItems === 'function') renderInvoiceItems();
-  if (typeof showToast === 'function') showToast('Lưu hóa đơn thành công');
-  return newTx;
-}: {mode:'block'});
+  // gather new items from saleCart or fallback
+  let newItems = [];
+  if (window.saleCart && typeof window.saleCart.items === 'function') newItems = window.saleCart.items();
+  else newItems = window._editingCart || [];
+  const stockChanges = computeStockDelta(oldTx ? oldTx.items : [], newItems);
+  const check = await checkStockBeforeSave(stockChanges, (window.settings && window.settings.inventoryMode) ? {mode: window.settings.inventoryMode} : {mode:'block'});
   if (!check.ok){
     if (check.block) return alert("Không thể lưu: tồn kho không đủ cho: " + check.failedList.join(', '));
     if (!confirm("Tồn kho không đủ cho: " + check.failedList.join(', ') + ". Bạn vẫn muốn lưu?")) return;
@@ -2113,49 +2096,38 @@ if (typeof window !== 'undefined'){
 /* End of appended helpers */
 
 
-
-/* Save promotion by reading form fields by ID */
-async function savePromotionFromForm() {
-  try {
-    const idEl = document.getElementById('promoId');
-    const id = (idEl && idEl.value) ? idEl.value : ('promo_' + Date.now());
-    const name = (document.getElementById('promoNameInput') && document.getElementById('promoNameInput').value) ? document.getElementById('promoNameInput').value.trim() : '';
-    const type = document.getElementById('promoType') ? document.getElementById('promoType').value : 'fixed';
-    const value = document.getElementById('promoValue') ? parseFloat(document.getElementById('promoValue').value || 0) : 0;
-    const buyQty = document.getElementById('promoBuyQuantity') ? parseInt(document.getElementById('promoBuyQuantity').value || 0) : 0;
-    const getQty = document.getElementById('promoGetQuantity') ? parseInt(document.getElementById('promoGetQuantity').value || 0) : 0;
-    const minSpend = document.getElementById('promoMinSpend') ? parseFloat(document.getElementById('promoMinSpend').value || 0) : 0;
-    const startDate = document.getElementById('promoStartDate') ? document.getElementById('promoStartDate').value : (new Date()).toISOString().slice(0,10);
-    const endDate = document.getElementById('promoEndDate') ? document.getElementById('promoEndDate').value : (new Date()).toISOString().slice(0,10);
-
-    // gather selected product ids
-    const checked = Array.from(document.querySelectorAll('[id^="promo-prod-check-"]:checked')).map(i => i.value);
-
-    const promo = {
-      id, name, type, value, buyQty, getQty, productIds: checked, minSpend, startDate, endDate
-    };
-    // save to promotions array and optionally remote DB
-    window.promotions = window.promotions || [];
-    const idx = window.promotions.findIndex(p=>p.id===id);
-    if (idx >= 0) window.promotions[idx] = promo; else window.promotions.push(promo);
-
+/* Promotion save handler (generic) */
+async function savePromotionFromForm(formEl){
+  try{
+    if (!formEl) formEl = document.getElementById('promoForm');
+    if (!formEl) { console.warn('promoForm not found'); return; }
+    const data = new FormData(formEl);
+    const promo = {};
+    for (const [k,v] of data.entries()) promo[k]=v;
+    // basic validation
+    if (!promo.code && !promo.name) return alert('Thiếu tên hoặc mã chương trình khuyến mại');
+    // persist via db stub - implement actual storage mapping
     if (typeof savePromotion === 'function') {
-      try { await savePromotion(promo); } catch(e){ console.warn('savePromotion failed', e); }
+      await savePromotion(promo);
+    } else {
+      // fallback: save to local array
+      window._promotions = window._promotions || [];
+      promo.id = promo.id || 'promo_' + Date.now();
+      window._promotions.push(promo);
     }
-    if (typeof renderPromotionList === 'function') renderPromotionList();
     if (typeof showToast === 'function') showToast('Lưu chương trình khuyến mại thành công');
-    if (typeof closePromotionModal === 'function') closePromotionModal();
+    if (typeof renderPromotionList === 'function') renderPromotionList(1);
     return promo;
-  } catch (e) { console.error(e); alert('Lưu khuyến mại lỗi: ' + e.message); }
+  }catch(e){ console.error(e); alert('Lưu khuyến mại lỗi'); }
 }
 
-/* attach submit handlers for promotion form */
+/* Attach promo submit handler (if form exists) */
 document.addEventListener('DOMContentLoaded', ()=>{
-  const promoForm = document.getElementById('promotion-form') || document.getElementById('promoForm');
+  const promoForm = document.getElementById('promoForm');
   if (promoForm) {
     promoForm.addEventListener('submit', function(ev){
       ev.preventDefault();
-      savePromotionFromForm();
+      savePromotionFromForm(promoForm);
     });
   }
 });
