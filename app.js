@@ -1,5 +1,5 @@
-// Extracted inline JavaScript from original HTML (app.js)
-// NOTE: logic unchanged; moved from inline <script> tags.
+// Restored app.js from original inline script
+
 
 // This is the complete script. No parts are missing.
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const productEmptyState = document.getElementById('product-empty-state');
     const promotionList = document.getElementById('promotion-list');
     const promotionEmptyState = document.getElementById('promotion-empty-state');
+
 
     const addPlanBtn = document.getElementById('add-plan-btn');
     const addTransactionBtn = document.getElementById('add-transaction-btn');
@@ -58,6 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const importProductSelect = document.getElementById('import-product-select');
     const importQuantityInput = document.getElementById('import-quantity');
 
+
     // Product Modal
     const productModal = document.getElementById('product-modal');
     const productModalTitle = document.getElementById('product-modal-title');
@@ -72,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const promotionModal = document.getElementById('promotion-modal');
     const promotionModalTitle = document.getElementById('promotion-modal-title');
     const promotionForm = document.getElementById('promotion-form');
+
 
     const completePlanModal = document.getElementById('complete-plan-modal');
     const completePlanForm = document.getElementById('complete-plan-form');
@@ -109,8 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const invoiceTotalEl = document.getElementById('invoice-total');
     const completeSaleBtn = document.getElementById('complete-sale-btn');
 
+
     // Report Elements
     const productReportFilterContainer = document.getElementById('product-report-filter-container');
+
 
     const reportRangeEl = document.getElementById('report-range');
     const customDateRangeDiv = document.getElementById('custom-date-range');
@@ -264,6 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPromotionList();
         renderSalesProductList();
         populateProductReportFilter();
+
 
         if(!contentDashboard.classList.contains('hidden')){
             renderReports();
@@ -551,6 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+
     async function handleFormSubmit(e) {
         e.preventDefault();
         const type = formModal.querySelector('input[name="type"]:checked').value;
@@ -788,6 +795,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+
     function handleProductSelection(fromAI = false) {
         const selectedId = productSelect.value;
         if (selectedId) {
@@ -843,6 +851,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+
 
     function updateFormFieldsVisibility() { 
         const selectedType = formModal.querySelector('input[name="type"]:checked').value; 
@@ -1046,6 +1055,7 @@ document.addEventListener('DOMContentLoaded', () => {
             comparisonSection.innerHTML = '';
         }
 
+
         // --- Charts ---
         if (expensePieChart) expensePieChart.destroy();
         if (cashflowTrendChart) cashflowTrendChart.destroy();
@@ -1200,6 +1210,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHTML += '</tbody></table>';
         document.getElementById('inventory-report-table').innerHTML = tableHTML;
     }
+
 
     const handleFilterChange = () => { const isCustom = reportRangeEl.value === 'custom'; customDateRangeDiv.classList.toggle('hidden', !isCustom); customDateRangeDiv.classList.toggle('flex', isCustom); renderAll(); };
     
@@ -1553,6 +1564,7 @@ USER TEXT: "${textInput}"`;
             
             const isActionable = now <= endDate;
 
+
             li.className = `p-3 rounded-lg flex justify-between items-center border-l-4 ${isActionable && promo.isActive ? 'border-green-500' : 'border-gray-400'} ${now > endDate ? 'bg-gray-100' : 'bg-white shadow-sm'}`;
             li.innerHTML = `
                 <div>
@@ -1796,6 +1808,7 @@ USER TEXT: "${textInput}"`;
             }
         }
     }
+
 
     // --- EVENT LISTENERS ---
     chatMessages.addEventListener('click', (e) => {
