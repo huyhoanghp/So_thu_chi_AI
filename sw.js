@@ -3,7 +3,7 @@ const CACHE_NAME = 'sothuchi-pro-cache-v1';
 
 // Danh sách các tệp cần được lưu vào bộ nhớ cache khi cài đặt
 const urlsToCache = [
-  './QLTC_12_AI_Chinh hien thi nut_2.html',
+  './QLTC_V3_Pro_6_CTKM_1.html',
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js',
