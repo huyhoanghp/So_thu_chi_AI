@@ -1,4 +1,4 @@
-<!-- Split version: index.html (styles -> style.css, inline JS -> app.js) -->
+<!-- Split index (injected modal & script/style links) -->
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -551,6 +551,19 @@
         </div>
     </div>
     
+
+<!-- AI Confirmation Modal (injected) -->
+<div id="ai-confirm-modal" class="ai-confirm-modal hidden" style="position:fixed;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:9999;">
+  <div style="background:#fff;padding:18px;border-radius:8px;max-width:560px;width:90%;box-shadow:0 6px 18px rgba(0,0,0,0.2);">
+    <h3 style="margin-top:0">AI đã phân tích</h3>
+    <div id="ai-summary" style="max-height:260px;overflow:auto;margin-bottom:12px"></div>
+    <div style="text-align:right">
+      <button id="ai-cancel-btn" style="margin-right:8px;padding:8px 12px">Hủy</button>
+      <button id="ai-confirm-btn" style="padding:8px 12px">Xác nhận</button>
+    </div>
+  </div>
+</div>
+<!-- End AI Confirmation Modal -->
 
 <script src="app.js"></script>
 </body>

@@ -1,5 +1,4 @@
-// Restored app.js from original inline script
-
+// app.js - extracted from original HTML (inline scripts) + appended helpers
 
 // This is the complete script. No parts are missing.
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const productEmptyState = document.getElementById('product-empty-state');
     const promotionList = document.getElementById('promotion-list');
     const promotionEmptyState = document.getElementById('promotion-empty-state');
-
 
     const addPlanBtn = document.getElementById('add-plan-btn');
     const addTransactionBtn = document.getElementById('add-transaction-btn');
@@ -59,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const importProductSelect = document.getElementById('import-product-select');
     const importQuantityInput = document.getElementById('import-quantity');
 
-
     // Product Modal
     const productModal = document.getElementById('product-modal');
     const productModalTitle = document.getElementById('product-modal-title');
@@ -74,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const promotionModal = document.getElementById('promotion-modal');
     const promotionModalTitle = document.getElementById('promotion-modal-title');
     const promotionForm = document.getElementById('promotion-form');
-
 
     const completePlanModal = document.getElementById('complete-plan-modal');
     const completePlanForm = document.getElementById('complete-plan-form');
@@ -112,10 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const invoiceTotalEl = document.getElementById('invoice-total');
     const completeSaleBtn = document.getElementById('complete-sale-btn');
 
-
     // Report Elements
     const productReportFilterContainer = document.getElementById('product-report-filter-container');
-
 
     const reportRangeEl = document.getElementById('report-range');
     const customDateRangeDiv = document.getElementById('custom-date-range');
@@ -269,7 +263,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPromotionList();
         renderSalesProductList();
         populateProductReportFilter();
-
 
         if(!contentDashboard.classList.contains('hidden')){
             renderReports();
@@ -557,7 +550,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     async function handleFormSubmit(e) {
         e.preventDefault();
         const type = formModal.querySelector('input[name="type"]:checked').value;
@@ -795,7 +787,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
     function handleProductSelection(fromAI = false) {
         const selectedId = productSelect.value;
         if (selectedId) {
@@ -851,7 +842,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-
 
     function updateFormFieldsVisibility() { 
         const selectedType = formModal.querySelector('input[name="type"]:checked').value; 
@@ -1055,7 +1045,6 @@ document.addEventListener('DOMContentLoaded', () => {
             comparisonSection.innerHTML = '';
         }
 
-
         // --- Charts ---
         if (expensePieChart) expensePieChart.destroy();
         if (cashflowTrendChart) cashflowTrendChart.destroy();
@@ -1210,7 +1199,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHTML += '</tbody></table>';
         document.getElementById('inventory-report-table').innerHTML = tableHTML;
     }
-
 
     const handleFilterChange = () => { const isCustom = reportRangeEl.value === 'custom'; customDateRangeDiv.classList.toggle('hidden', !isCustom); customDateRangeDiv.classList.toggle('flex', isCustom); renderAll(); };
     
@@ -1564,7 +1552,6 @@ USER TEXT: "${textInput}"`;
             
             const isActionable = now <= endDate;
 
-
             li.className = `p-3 rounded-lg flex justify-between items-center border-l-4 ${isActionable && promo.isActive ? 'border-green-500' : 'border-gray-400'} ${now > endDate ? 'bg-gray-100' : 'bg-white shadow-sm'}`;
             li.innerHTML = `
                 <div>
@@ -1809,7 +1796,6 @@ USER TEXT: "${textInput}"`;
         }
     }
 
-
     // --- EVENT LISTENERS ---
     chatMessages.addEventListener('click', (e) => {
         const speakButton = e.target.closest('.speak-btn');
@@ -1912,3 +1898,171 @@ USER TEXT: "${textInput}"`;
         });
     }
 });
+
+
+/* ----------------- Added helper functions & features ----------------- */
+
+/* Debounce utility */
+function debounce(fn, wait=300){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait); }; }
+
+/* Compute stock delta between oldItems and newItems */
+function computeStockDelta(oldItems, newItems){
+  const map = new Map();
+  oldItems = oldItems || [];
+  newItems = newItems || [];
+  oldItems.forEach(it => map.set(it.productId, (map.get(it.productId)||0) - (it.qty||0)));
+  newItems.forEach(it => map.set(it.productId, (map.get(it.productId)||0) + (it.qty||0)));
+  return Array.from(map.entries()).map(([productId, delta])=>({productId, delta}));
+}
+
+/* Placeholder DB functions - adapt to your real DB layer */
+const db = {
+  getProduct: async (id)=> {
+    // implement this to fetch product by id from your storage (localStorage/indexedDB/remote)
+    if (typeof getProductById === 'function') return getProductById(id);
+    return window._products && window._products.find(p=>p.id===id);
+  },
+  getTransaction: async (id)=> {
+    if (typeof getTransactionById === 'function') return getTransactionById(id);
+    return window._transactions && window._transactions.find(t=>t.id===id);
+  },
+  updateTransaction: async (id, tx)=> { if (typeof updateTransactionById === 'function') return updateTransactionById(id, tx); 
+    // fallback: update in-memory
+    if (window._transactions){ const i=window._transactions.findIndex(t=>t.id===id); if (i>=0) window._transactions[i]=tx; }
+    return tx;
+  },
+  updateProduct: async (id, changes)=> { if (typeof updateProductById === 'function') return updateProductById(id, changes);
+    if (window._products){ const p=window._products.find(pp=>pp.id===id); if (p) Object.assign(p, changes); return p; } return null;
+  },
+  transactionsExistWithProduct: async (productId)=> { if (typeof transactionsExistWithProductId === 'function') return transactionsExistWithProductId(productId);
+    return (window._transactions||[]).some(t=> (t.items||[]).some(it=> it.productId===productId));
+  },
+  createBackorderRecords: async (failed)=> { console.warn('createBackorderRecords stub', failed); return true; }
+};
+
+/* Check stock before save
+   options.mode = 'warn' | 'block' | 'backorder' */
+async function checkStockBeforeSave(stockChanges, options={mode:'block'}){
+  const failed=[];
+  for(const sc of stockChanges){
+    const p = await db.getProduct(sc.productId);
+    if (!p) { failed.push({productId: sc.productId, name: sc.productId, shortage: sc.delta}); continue; }
+    const futureStock = (p.stock||0) - (sc.delta||0);
+    if (futureStock < 0){
+      failed.push({productId: sc.productId, name: p.name||p.id, shortage: -futureStock});
+    }
+  }
+  if (failed.length===0) return {ok:true};
+  if (options.mode==='warn') return {ok:false, block:false, failedList: failed.map(f=>f.name)};
+  if (options.mode==='block') return {ok:false, block:true, failedList: failed.map(f=>f.name)};
+  if (options.mode==='backorder'){ await db.createBackorderRecords(failed); return {ok:true, backordered: failed.map(f=>f.productId)}; }
+}
+
+/* Apply stock changes: stock -= delta (note delta positive means qty increased in sale) */
+async function applyStockChanges(stockChanges){
+  for(const sc of stockChanges){
+    const p = await db.getProduct(sc.productId);
+    if (!p) continue;
+    const newStock = (p.stock||0) - (sc.delta||0);
+    await db.updateProduct(sc.productId, { stock: newStock, updatedAt: new Date().toISOString() });
+  }
+}
+
+/* Load invoice into sale UI for editing.
+   This function assumes you have functions: showTab(tabId), saleCart (API), renderSaleCart(), and currentEditingTxId variable. */
+async function loadInvoiceForEdit(txId){
+  const tx = await db.getTransaction(txId);
+  if (!tx) return alert('Không tìm thấy hóa đơn: ' + txId);
+  if (typeof showTab === 'function') showTab('tab-sales'); // adapt to your tab switcher
+  if (window.saleCart && typeof window.saleCart.clear === 'function') window.saleCart.clear();
+  (tx.items||[]).forEach(item=>{
+    if (window.saleCart && typeof window.saleCart.add === 'function') {
+      window.saleCart.add({productId: item.productId, name: item.name, price: item.price, qty: item.qty, _sourceTxId: txId});
+    } else {
+      // fallback: push to window._editingCart
+      window._editingCart = window._editingCart || [];
+      window._editingCart.push({productId:item.productId, name:item.name, price:item.price, qty:item.qty, _sourceTxId: txId});
+    }
+  });
+  if (typeof renderSaleCart === 'function') renderSaleCart();
+  window.currentEditingTxId = txId;
+  try{ const lbl = document.getElementById('sale-mode-label'); if (lbl) lbl.textContent = "Chỉnh sửa hóa đơn " + txId; }catch(e){}
+}
+
+/* Save edited invoice: compute stock delta against old tx, check stock, apply changes, update tx */
+async function saveEditedInvoice(txId){
+  const oldTx = await db.getTransaction(txId);
+  // gather new items from saleCart or fallback
+  let newItems = [];
+  if (window.saleCart && typeof window.saleCart.items === 'function') newItems = window.saleCart.items();
+  else newItems = window._editingCart || [];
+  const stockChanges = computeStockDelta(oldTx ? oldTx.items : [], newItems);
+  const check = await checkStockBeforeSave(stockChanges, (window.settings && window.settings.inventoryMode) ? {mode: window.settings.inventoryMode} : {mode:'block'});
+  if (!check.ok){
+    if (check.block) return alert("Không thể lưu: tồn kho không đủ cho: " + check.failedList.join(', '));
+    if (!confirm("Tồn kho không đủ cho: " + check.failedList.join(', ') + ". Bạn vẫn muốn lưu?")) return;
+  }
+  await applyStockChanges(stockChanges);
+  const newTx = Object.assign({}, oldTx, {
+    items: newItems.map(i=>({productId:i.productId, name:i.name, price:i.price, qty:i.qty})),
+    total: newItems.reduce((s,i)=>s + (i.price||0)*(i.qty||0), 0),
+    updatedAt: new Date().toISOString()
+  });
+  await db.updateTransaction(txId, newTx);
+  window.currentEditingTxId = null;
+  if (typeof renderTransactionList === 'function') renderTransactionList(1);
+  if (typeof showToast === 'function') showToast('Lưu hóa đơn thành công');
+  return newTx;
+}
+
+/* Archive product with soft-delete behavior */
+async function archiveProduct(productId){
+  const hasTx = await db.transactionsExistWithProduct(productId);
+  if (hasTx) {
+    await db.updateProduct(productId, { isArchived: true });
+    if (typeof showToast === 'function') showToast('Sản phẩm đã được lưu trữ (archived) vì có giao dịch liên quan.');
+    return {archived:true};
+  } else {
+    if (typeof deleteProductById === 'function') { await deleteProductById(productId); return {deleted:true}; }
+    await db.updateProduct(productId, { isArchived: true });
+    return {archived:true};
+  }
+}
+
+/* AI confirm modal: show parsed summary and wait for user confirm */
+function showAIConfirm(parsed){
+  return new Promise((resolve)=>{
+    try{
+      const modal = document.getElementById('ai-confirm-modal');
+      const summary = document.getElementById('ai-summary');
+      if (!modal || !summary) return resolve(false);
+      // build summary html
+      let html = `<p><strong>Khách hàng:</strong> ${parsed.customer || '---'}</p><ul>`;
+      (parsed.items||[]).forEach(it=> { html += `<li>${(it.qty||'')} × ${it.name || it.product || '---'} — ${it.price || ''}</li>`; });
+      html += `</ul><p><strong>Tổng:</strong> ${parsed.total || ''}</p>`;
+      summary.innerHTML = html;
+      modal.style.display = 'flex';
+      modal.classList.remove('hidden');
+      const okBtn = document.getElementById('ai-confirm-btn');
+      const cancelBtn = document.getElementById('ai-cancel-btn');
+      const cleanup = ()=>{ modal.style.display='none'; okBtn.onclick = null; cancelBtn.onclick = null; };
+      okBtn.onclick = ()=>{ cleanup(); resolve(true); };
+      cancelBtn.onclick = ()=>{ cleanup(); resolve(false); };
+    }catch(e){ console.error(e); resolve(false); }
+  });
+}
+
+/* Override renderAll to be safer: prefer selective renders if available */
+if (typeof window !== 'undefined'){
+  window._originalRenderAll = window.renderAll || null;
+  window.renderAll = function(...args){
+    if (typeof renderHeader === 'function') renderHeader();
+    if (typeof renderTransactionList === 'function') renderTransactionList(1);
+    if (typeof renderProductList === 'function') renderProductList(1);
+    if (typeof renderSaleCart === 'function') renderSaleCart();
+    // fallback to original if exists
+    if (!renderHeader && window._originalRenderAll) window._originalRenderAll(...args);
+  };
+}
+
+/* End of appended helpers */
