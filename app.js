@@ -319,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const { id, type, description, amount, category, customerName, customerNote, createdAt, date, productId, quantity } = plan;
         const isIncome = type === 'income';
         const item = document.createElement('li');
+        item.setAttribute('data-txid', id);
         item.className = `p-3 rounded-lg flex items-start gap-3 border-l-4 ${isIncome ? 'bg-green-50 border-green-400' : 'bg-red-50 border-red-400'}`;
         let extraInfoHtml = '';
         if ((isIncome && customerName) || customerNote) {
@@ -369,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>`;
         }
 
-        const editButton = `<button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>`;
+        const editButton = `<button data-action="edit" class="text-gray-500 hover:text-blue-600 transition p-1 ${isMultiItemSale ? 'opacity-50 cursor-not-allowed' : ''}" ${isMultiItemSale ? 'disabled title="Không thể sửa hóa đơn nhiều sản phẩm"' : ''}><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>`;
 
         item.innerHTML = `<div class="flex justify-between items-start">
                 <div class="flex-grow flex flex-col">
@@ -389,15 +390,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>`;
         const editBtnEl = item.querySelector('button[data-action="edit"]');
-        if (editBtnEl) {
-            editBtnEl.addEventListener('click', () => {
-                // If there are multiple items, use loadInvoiceForEdit to load full items into sale UI
-                if (Array.isArray(tx.items) && tx.items.length > 0) {
-                    if (typeof loadInvoiceForEdit === 'function') loadInvoiceForEdit(tx.id);
-                } else {
-                    openFormModal('editTransaction', tx);
-                }
-            });
+        if (editBtnEl && !editBtnEl.disabled) {
+            editBtnEl.addEventListener('click', () => openFormModal('editTransaction', tx));
         }
         item.querySelector('button[data-action="delete"]').addEventListener('click', () => deleteTransaction(tx));
         return item;
@@ -1977,14 +1971,28 @@ async function applyStockChanges(stockChanges){
 
 /* Load invoice into sale UI for editing.
    This function assumes you have functions: showTab(tabId), saleCart (API), renderSaleCart(), and currentEditingTxId variable. */
-async function loadInvoiceForEdit(txId){
+async function loadInvoiceForEdit(txId) {
   const tx = await db.getTransaction(txId);
   if (!tx) return alert('Không tìm thấy hóa đơn: ' + txId);
-  if (typeof showTab === 'function') showTab('tab-sales'); // adapt to your tab switcher
-  if (window.saleCart && typeof window.saleCart.clear === 'function') window.saleCart.clear();
-  (tx.items||[]).forEach(item=>{
-    if (window.saleCart && typeof window.saleCart.add === 'function') {
-      window.saleCart.add({productId: item.productId, name: item.name, price: item.price, qty: item.qty, _sourceTxId: txId});
+  // Try to switch to sales tab by clicking tab button
+  const tabBtn = document.getElementById('tab-sales') || document.getElementById('tab-sale');
+  if (tabBtn && typeof tabBtn.click === 'function') tabBtn.click();
+
+  // Map transaction items into currentTransactionItems expected by renderInvoiceItems()
+  currentTransactionItems = (tx.items || []).map((it, idx) => ({
+    id: it.id || it.productId || ('item_' + idx),
+    productId: it.productId || it.id || ('item_' + idx),
+    name: it.name || it.productName || '',
+    sellingPrice: (it.price !== undefined ? it.price : (it.sellingPrice !== undefined ? it.sellingPrice : 0)),
+    quantity: (it.qty !== undefined ? it.qty : (it.quantity !== undefined ? it.quantity : 1))
+  }));
+
+  // Render UI
+  if (typeof renderInvoiceItems === 'function') renderInvoiceItems();
+  if (typeof updateInvoiceTotal === 'function') updateInvoiceTotal();
+  window.currentEditingTxId = txId;
+  const lbl = document.getElementById('sale-mode-label'); if (lbl) lbl.textContent = "Chỉnh sửa hóa đơn " + txId;
+});
     } else {
       // fallback: push to window._editingCart
       window._editingCart = window._editingCart || [];
@@ -1997,14 +2005,44 @@ async function loadInvoiceForEdit(txId){
 }
 
 /* Save edited invoice: compute stock delta against old tx, check stock, apply changes, update tx */
-async function saveEditedInvoice(txId){
+async function saveEditedInvoice(txId) {
   const oldTx = await db.getTransaction(txId);
-  // gather new items from saleCart or fallback
-  let newItems = [];
-  if (window.saleCart && typeof window.saleCart.items === 'function') newItems = window.saleCart.items();
-  else newItems = window._editingCart || [];
-  const stockChanges = computeStockDelta(oldTx ? oldTx.items : [], newItems);
-  const check = await checkStockBeforeSave(stockChanges, (window.settings && window.settings.inventoryMode) ? {mode: window.settings.inventoryMode} : {mode:'block'});
+  // Determine new items: prefer currentTransactionItems when in edit mode
+  let newItemsRaw = [];
+  if (Array.isArray(currentTransactionItems) && currentTransactionItems.length > 0) {
+    newItemsRaw = currentTransactionItems.map(i => ({ productId: i.productId || i.id, qty: i.quantity, name: i.name, price: i.sellingPrice }));
+  } else if (window.saleCart && typeof window.saleCart.items === 'function') {
+    newItemsRaw = window.saleCart.items().map(i => ({ productId: i.productId, qty: i.qty || i.quantity, name: i.name, price: i.price }));
+  } else {
+    newItemsRaw = window._editingCart || [];
+  }
+
+  const stockChanges = computeStockDelta(oldTx ? oldTx.items : [], newItemsRaw);
+  const check = await checkStockBeforeSave(stockChanges, (window.settings && window.settings.inventoryMode) ? { mode: window.settings.inventoryMode } : { mode: 'block' });
+  if (!check.ok) {
+    if (check.block) return alert("Không thể lưu: tồn kho không đủ cho: " + check.failedList.join(', '));
+    if (!confirm("Tồn kho không đủ cho: " + check.failedList.join(', ') + ". Bạn vẫn muốn lưu?")) return;
+  }
+  await applyStockChanges(stockChanges);
+
+  const newTx = Object.assign({}, oldTx || {}, {
+    items: newItemsRaw.map(i => ({ productId: i.productId, name: i.name, price: i.price, qty: i.qty })),
+    total: newItemsRaw.reduce((s, i) => s + (i.price || 0) * (i.qty || 0), 0),
+    updatedAt: new Date().toISOString()
+  });
+  await db.updateTransaction(txId, newTx);
+
+  // Clear edit mode
+  window.currentEditingTxId = null;
+  currentTransactionItems = [];
+  if (typeof renderTransactionList === 'function') {
+    if (typeof transactions !== 'undefined') renderTransactionList(transactions);
+    else renderTransactionList([]);
+  }
+  if (typeof renderInvoiceItems === 'function') renderInvoiceItems();
+  if (typeof showToast === 'function') showToast('Lưu hóa đơn thành công');
+  return newTx;
+}: {mode:'block'});
   if (!check.ok){
     if (check.block) return alert("Không thể lưu: tồn kho không đủ cho: " + check.failedList.join(', '));
     if (!confirm("Tồn kho không đủ cho: " + check.failedList.join(', ') + ". Bạn vẫn muốn lưu?")) return;
@@ -2073,3 +2111,51 @@ if (typeof window !== 'undefined'){
 }
 
 /* End of appended helpers */
+
+
+
+/* Save promotion by reading form fields by ID */
+async function savePromotionFromForm() {
+  try {
+    const idEl = document.getElementById('promoId');
+    const id = (idEl && idEl.value) ? idEl.value : ('promo_' + Date.now());
+    const name = (document.getElementById('promoNameInput') && document.getElementById('promoNameInput').value) ? document.getElementById('promoNameInput').value.trim() : '';
+    const type = document.getElementById('promoType') ? document.getElementById('promoType').value : 'fixed';
+    const value = document.getElementById('promoValue') ? parseFloat(document.getElementById('promoValue').value || 0) : 0;
+    const buyQty = document.getElementById('promoBuyQuantity') ? parseInt(document.getElementById('promoBuyQuantity').value || 0) : 0;
+    const getQty = document.getElementById('promoGetQuantity') ? parseInt(document.getElementById('promoGetQuantity').value || 0) : 0;
+    const minSpend = document.getElementById('promoMinSpend') ? parseFloat(document.getElementById('promoMinSpend').value || 0) : 0;
+    const startDate = document.getElementById('promoStartDate') ? document.getElementById('promoStartDate').value : (new Date()).toISOString().slice(0,10);
+    const endDate = document.getElementById('promoEndDate') ? document.getElementById('promoEndDate').value : (new Date()).toISOString().slice(0,10);
+
+    // gather selected product ids
+    const checked = Array.from(document.querySelectorAll('[id^="promo-prod-check-"]:checked')).map(i => i.value);
+
+    const promo = {
+      id, name, type, value, buyQty, getQty, productIds: checked, minSpend, startDate, endDate
+    };
+    // save to promotions array and optionally remote DB
+    window.promotions = window.promotions || [];
+    const idx = window.promotions.findIndex(p=>p.id===id);
+    if (idx >= 0) window.promotions[idx] = promo; else window.promotions.push(promo);
+
+    if (typeof savePromotion === 'function') {
+      try { await savePromotion(promo); } catch(e){ console.warn('savePromotion failed', e); }
+    }
+    if (typeof renderPromotionList === 'function') renderPromotionList();
+    if (typeof showToast === 'function') showToast('Lưu chương trình khuyến mại thành công');
+    if (typeof closePromotionModal === 'function') closePromotionModal();
+    return promo;
+  } catch (e) { console.error(e); alert('Lưu khuyến mại lỗi: ' + e.message); }
+}
+
+/* attach submit handlers for promotion form */
+document.addEventListener('DOMContentLoaded', ()=>{
+  const promoForm = document.getElementById('promotion-form') || document.getElementById('promoForm');
+  if (promoForm) {
+    promoForm.addEventListener('submit', function(ev){
+      ev.preventDefault();
+      savePromotionFromForm();
+    });
+  }
+});
