@@ -15,7 +15,7 @@ window.renderProductList = function(source) {
 window.createProductElement = function(product) {
     const { id, name, costPrice, sellingPrice, stock, image } = product;
     const item = document.createElement('li');
-    item.className = 'p-4 rounded-2xl bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800/80 shadow-sm transition hover:shadow-md';
+    item.className = 'p-4 rounded-2xl bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800/80 shadow-sm transition hover:shadow-md';
     
     const stockColor = stock > 10 ? 'text-emerald-600 dark:text-emerald-500' : (stock > 0 ? 'text-amber-500' : 'text-rose-600 dark:text-rose-500');
 
@@ -26,7 +26,7 @@ window.createProductElement = function(product) {
     item.innerHTML = `
         <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div class="flex items-center gap-3.5 flex-grow min-w-0">
-                <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-850 border border-gray-150 dark:border-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-800 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     ${imageHtml}
                 </div>
                 <div class="min-w-0">

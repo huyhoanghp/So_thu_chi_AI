@@ -113,7 +113,7 @@ function createComparisonCardHTML(title, currentValue, previousValue, isExpense)
     }
 
     return `
-        <div class="bg-gray-50 dark:bg-slate-800/40 border border-gray-150 dark:border-slate-850 p-4 rounded-2xl">
+        <div class="bg-gray-50 dark:bg-slate-800/40 border border-gray-200 dark:border-slate-800 p-4 rounded-2xl">
             <h3 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">${title}</h3>
             <div class="mt-2 flex items-baseline justify-between">
                 <p class="text-xl font-black text-slate-800 dark:text-white">${window.formatCurrency(currentValue)}</p>
@@ -242,7 +242,7 @@ window.renderOverviewReport = function(currentData, previousData) {
     }, {});
     const rows = Object.entries(promoAgg).map(([pid, s]) => {
         const promo = window.promotions.find(p => p.id === pid);
-        return `<tr class="border-b border-gray-150 dark:border-slate-800 text-xs hover:bg-slate-50 dark:hover:bg-slate-850">
+        return `<tr class="border-b border-gray-200 dark:border-slate-800 text-xs hover:bg-slate-50 dark:hover:bg-slate-800">
             <td class="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">${promo ? promo.name : pid}</td>
             <td class="px-4 py-2.5 text-center text-slate-650 dark:text-slate-400">${s.count}</td>
             <td class="px-4 py-2.5 text-right font-bold text-emerald-600 dark:text-emerald-400">${window.formatCurrency(s.discount)}</td>
@@ -252,7 +252,7 @@ window.renderOverviewReport = function(currentData, previousData) {
     if (promoTableDiv) {
         promoTableDiv.innerHTML = `
             <table class="min-w-full bg-white dark:bg-slate-900 overflow-hidden text-sm">
-                <thead class="bg-gray-50 dark:bg-slate-850 text-xs font-bold text-slate-500 uppercase">
+                <thead class="bg-gray-50 dark:bg-slate-800 text-xs font-bold text-slate-500 uppercase">
                     <tr>
                         <th class="px-4 py-2.5 text-left">Chương trình</th>
                         <th class="px-4 py-2.5 text-center">Số lần áp dụng</th>
@@ -326,7 +326,7 @@ window.renderProductPerformanceReports = function(source) {
     if (topSellingDiv) {
         topSellingDiv.innerHTML = topSelling.map(p => `
             <div class="flex justify-between items-center p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs">
-                <span class="font-semibold text-slate-750 dark:text-slate-350">${p.name}</span>
+                <span class="font-semibold text-slate-700 dark:text-slate-300">${p.name}</span>
                 <span class="bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2 py-0.5 rounded-lg">Đã bán ${p.quantity}</span>
             </div>
         `).join('') || '<p class="text-center text-gray-500 text-xs py-4">Không có dữ liệu.</p>';
@@ -338,7 +338,7 @@ window.renderProductPerformanceReports = function(source) {
     if (topProfitDiv) {
         topProfitDiv.innerHTML = topProfit.map(p => `
             <div class="flex justify-between items-center p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs">
-                <span class="font-semibold text-slate-750 dark:text-slate-350">${p.name}</span>
+                <span class="font-semibold text-slate-700 dark:text-slate-300">${p.name}</span>
                 <span class="text-emerald-600 dark:text-emerald-400 font-bold">${window.formatCurrency(p.profit)}</span>
             </div>
         `).join('') || '<p class="text-center text-gray-500 text-xs py-4">Không có dữ liệu.</p>';
@@ -432,7 +432,7 @@ window.renderInventoryReport = function() {
             const stockValue = p.stock * p.costPrice;
             const isLowStock = p.stock < threshold;
             tableHTML += `
-                <tr class="border-b border-gray-150 dark:border-slate-800/80 ${isLowStock ? 'bg-rose-500/5 text-rose-600 dark:text-rose-400 font-semibold' : 'bg-white dark:bg-slate-900'} hover:bg-slate-50 dark:hover:bg-slate-850">
+                <tr class="border-b border-gray-200 dark:border-slate-800/80 ${isLowStock ? 'bg-rose-500/5 text-rose-600 dark:text-rose-400 font-semibold' : 'bg-white dark:bg-slate-900'} hover:bg-slate-50 dark:hover:bg-slate-800">
                     <td class="px-4 py-3 text-slate-800 dark:text-slate-200">${p.name}</td>
                     <td class="px-4 py-3 text-right">${p.stock}</td>
                     <td class="px-4 py-3 text-right">${window.formatCurrency(stockValue)}</td>

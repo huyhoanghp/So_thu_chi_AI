@@ -185,7 +185,7 @@
                             <!-- Right: Cart checkout station -->
                             <div class="w-full lg:w-96 flex-shrink-0 bg-white dark:bg-slate-900 p-5 md:p-6 rounded-3xl border border-gray-100 dark:border-slate-800/80 shadow-sm transition-colors duration-300 flex flex-col justify-between">
                                 <div>
-                                    <h3 class="font-extrabold text-slate-850 dark:text-white text-base mb-4 border-b pb-3 border-gray-150 dark:border-slate-800 flex items-center justify-between">
+                                    <h3 class="font-extrabold text-slate-800 dark:text-white text-base mb-4 border-b pb-3 border-gray-200 dark:border-slate-800 flex items-center justify-between">
                                         <span>Giỏ hàng bán lẻ</span>
                                         <button id="pos-clear-btn" class="text-rose-500 hover:text-rose-700 text-xs font-bold transition">Hủy giỏ</button>
                                     </h3>
@@ -194,7 +194,7 @@
                                         <!-- Dynamic cart entries -->
                                     </ul>
 
-                                    <div class="space-y-3 pt-3 border-t border-gray-150 dark:border-slate-800">
+                                    <div class="space-y-3 pt-3 border-t border-gray-200 dark:border-slate-800">
                                         <div>
                                             <label for="pos-customer-name" class="block font-bold text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">Tên khách hàng</label>
                                             <input type="text" id="pos-customer-name" placeholder="Tên khách mua (không bắt buộc)..." class="w-full px-3 py-2 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-xl focus:outline-none focus:ring-1 focus:ring-brand-500 text-sm">
@@ -206,7 +206,7 @@
                                     </div>
                                 </div>
 
-                                <div class="mt-6 pt-4 border-t border-gray-150 dark:border-slate-800 space-y-3">
+                                <div class="mt-6 pt-4 border-t border-gray-200 dark:border-slate-800 space-y-3">
                                     <div class="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                                         <span>Tạm tính:</span>
                                         <span id="pos-subtotal" class="font-semibold text-slate-700 dark:text-slate-300">0 ₫</span>
@@ -215,7 +215,7 @@
                                         <span>Khuyến mại:</span>
                                         <span id="pos-discount" class="font-semibold">-0 ₫</span>
                                     </div>
-                                    <div class="flex justify-between text-base font-extrabold text-slate-850 dark:text-white pt-2 border-t border-dashed border-gray-150 dark:border-slate-800">
+                                    <div class="flex justify-between text-base font-extrabold text-slate-800 dark:text-white pt-2 border-t border-dashed border-gray-200 dark:border-slate-800">
                                         <span>Tổng cộng:</span>
                                         <span id="pos-total" class="text-brand-600 dark:text-brand-400 text-lg">0 ₫</span>
                                     </div>
@@ -351,7 +351,7 @@
                                 </div>
                             </section>
                             <!-- Report Sub-tabs -->
-                            <div class="mb-6 border-b border-gray-200 dark:border-slate-850">
+                            <div class="mb-6 border-b border-gray-200 dark:border-slate-800">
                                 <nav class="flex gap-2 -mb-px overflow-x-auto">
                                     <button data-report="overview" class="report-tab-button whitespace-nowrap pb-3 px-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white transition">Tổng quan hiệu suất</button>
                                     <button data-report="products" class="report-tab-button whitespace-nowrap pb-3 px-4 border-b-2 border-transparent font-semibold text-sm text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white transition">Sản phẩm bán ra</button>
@@ -409,7 +409,7 @@
                             <div id="report-content-inventory" class="hidden space-y-4">
                                 <div class="flex items-center gap-3 bg-gray-50 dark:bg-slate-800/50 p-4 rounded-2xl w-full max-w-sm border border-gray-100 dark:border-slate-800/50">
                                     <label for="low-stock-threshold" class="font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 whitespace-nowrap">Báo động kho dưới:</label>
-                                    <input type="number" id="low-stock-threshold" value="10" class="w-20 px-3 py-1.5 border border-gray-200 dark:border-slate-700 dark:bg-slate-850 rounded-xl focus:ring-1 focus:ring-brand-500 focus:outline-none">
+                                    <input type="number" id="low-stock-threshold" value="10" class="w-20 px-3 py-1.5 border border-gray-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl focus:ring-1 focus:ring-brand-500 focus:outline-none">
                                 </div>
                                 <div id="inventory-report-table" class="overflow-x-auto rounded-2xl border border-gray-100 dark:border-slate-800"></div>
                             </div>
@@ -426,7 +426,7 @@
                                     </div>
                                     <div class="p-4 border-t border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                                         <form id="chat-form" class="flex gap-2">
-                                            <input type="text" id="chat-input" placeholder="Hỏi trợ lý: 'Tháng này khoản chi nào lớn nhất?'..." class="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-850 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                                            <input type="text" id="chat-input" placeholder="Hỏi trợ lý: 'Tháng này khoản chi nào lớn nhất?'..." class="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
                                             <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-5 py-2.5 rounded-2xl hover:shadow-lg transition text-sm flex items-center justify-center">Gửi</button>
                                         </form>
                                     </div>
@@ -436,13 +436,13 @@
 
                         <!-- TAB CÀI ĐẶT -->
                         <div id="content-settings" class="hidden bg-white dark:bg-slate-900 p-5 md:p-6 rounded-3xl border border-gray-100 dark:border-slate-800/80 shadow-sm transition-colors duration-300">
-                            <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white border-b pb-3 border-gray-150 dark:border-slate-800 flex items-center gap-2">
+                            <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white border-b pb-3 border-gray-200 dark:border-slate-800 flex items-center gap-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 Cấu hình hệ thống
                             </h3>
                             <div class="space-y-6 max-w-2xl">
                                 <!-- Gemini API Key -->
-                                <div class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-150 dark:border-slate-800/30">
+                                <div class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-200 dark:border-slate-800/30">
                                     <label for="settings-gemini-key" class="block font-bold text-sm mb-2">Gemini API Key</label>
                                     <div class="flex gap-2">
                                         <input type="password" id="settings-gemini-key" class="flex-1 px-4 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm" placeholder="Nhập khóa API Gemini của bạn...">
@@ -452,7 +452,7 @@
                                 </div>
                                 
                                 <!-- Categories Manager -->
-                                <div class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-150 dark:border-slate-800/30">
+                                <div class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-200 dark:border-slate-800/30">
                                     <h4 class="font-bold text-sm mb-4">Quản lý Danh mục Thu / Chi</h4>
                                     
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -482,7 +482,7 @@
             </div>
 
             <!-- Floating Action Buttons -->
-            <div id="fab-container" class="fixed bottom-20 md:bottom-8 right-6 z-40 pointer-events-none">
+            <div id="fab-container" class="fixed bottom-20 md:bottom-8 right-6 z-40 pointer-events-none flex flex-col items-end">
                  <div id="fab-actions" class="flex flex-col items-end gap-4 mb-3 transition-all duration-300 ease-in-out opacity-0 -translate-y-4 invisible">
                     <div class="flex items-center gap-3">
                         <span class="text-xs font-bold dark:bg-slate-800 bg-white dark:text-white px-3 py-1.5 rounded-xl shadow-md border border-gray-100 dark:border-slate-700">Nhập liệu AI (Giọng nói/Chữ)</span>
@@ -512,7 +512,7 @@
 
             <!-- Form Modal (Giao dịch / Kế hoạch) -->
             <div id="form-modal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-start md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm opacity-0 modal">
-                <div class="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border border-gray-150 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
+                <div class="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
                     <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white" id="modal-title">Thêm Giao Dịch</h3>
                     <form id="main-form" class="space-y-4">
                         <input type="hidden" id="editing-id">
@@ -542,61 +542,61 @@
 
                         <div>
                             <label for="category" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Danh mục phân loại</label>
-                            <select id="category" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-850 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></select>
+                            <select id="category" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></select>
                         </div>
 
                         <!-- Product selection for income selling -->
-                        <div id="product-section" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-gray-150 dark:border-slate-800/60">
+                        <div id="product-section" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-gray-200 dark:border-slate-800/60">
                             <div class="sm:col-span-2">
                                 <label for="product-select" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Sản phẩm bán</label>
-                                <select id="product-select" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-850 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></select>
+                                <select id="product-select" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></select>
                             </div>
                             <div>
                                 <label for="transaction-quantity" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Số lượng</label>
-                                <input type="number" id="transaction-quantity" min="1" value="1" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-850 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm">
+                                <input type="number" id="transaction-quantity" min="1" value="1" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm">
                             </div>
                         </div>
 
                         <!-- Import stock selection for expenses -->
-                        <div id="import-section" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-gray-150 dark:border-slate-800/60">
+                        <div id="import-section" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-gray-200 dark:border-slate-800/60">
                             <div class="sm:col-span-2">
                                 <label for="import-product-select" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Sản phẩm nhập</label>
-                                <select id="import-product-select" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-850 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></select>
+                                <select id="import-product-select" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></select>
                             </div>
                             <div>
                                 <label for="import-quantity" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Số lượng nhập</label>
-                                <input type="number" id="import-quantity" min="1" value="1" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-850 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm">
+                                <input type="number" id="import-quantity" min="1" value="1" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm">
                             </div>
                         </div>
 
                         <div>
                             <label for="description" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Nội dung ghi chép</label>
-                            <input type="text" id="description" placeholder="Mô tả cụ thể giao dịch..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-850 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
+                            <input type="text" id="description" placeholder="Mô tả cụ thể giao dịch..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label for="amount" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Số tiền (VNĐ)</label>
-                                <input type="number" id="amount" placeholder="Nhập số tiền..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
+                                <input type="number" id="amount" placeholder="Nhập số tiền..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
                             </div>
                             <div>
                                 <label for="date" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Ngày thực hiện</label>
-                                <input type="date" id="date" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
+                                <input type="date" id="date" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
                             </div>
                         </div>
 
                         <div id="customer-name-field" class="hidden">
                             <label for="customerName" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Tên khách hàng</label>
-                            <input type="text" id="customerName" placeholder="Tên khách hàng (nếu có)..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-850 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm">
+                            <input type="text" id="customerName" placeholder="Tên khách hàng (nếu có)..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm">
                         </div>
 
                         <div>
                             <label for="customerNote" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Ghi chú chi tiết</label>
-                            <textarea id="customerNote" rows="2" placeholder="Ghi chú thêm về địa chỉ, thời gian giao, số điện thoại..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-850 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></textarea>
+                            <textarea id="customerNote" rows="2" placeholder="Ghi chú thêm về địa chỉ, thời gian giao, số điện thoại..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></textarea>
                         </div>
 
-                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-150 dark:border-slate-800">
-                            <button type="button" class="bg-gray-150 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm cancel-btn">Hủy bỏ</button>
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+                            <button type="button" class="bg-gray-200 hover:bg-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm cancel-btn">Hủy bỏ</button>
                             <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm shadow-md">Xác nhận Lưu</button>
                         </div>
                     </form>
@@ -605,31 +605,31 @@
 
             <!-- Product Modal -->
             <div id="product-modal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-start md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm opacity-0 modal">
-                <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-gray-150 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
+                <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
                     <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white" id="product-modal-title">Thêm Sản Phẩm Mới</h3>
                     <form id="product-form" class="space-y-4">
                         <input type="hidden" id="editing-product-id">
                         <div>
                             <label for="product-name" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Tên sản phẩm / Món ăn</label>
-                            <input type="text" id="product-name" placeholder="Tên sản phẩm..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
+                            <input type="text" id="product-name" placeholder="Tên sản phẩm..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div class="sm:col-span-1">
                                 <label for="product-cost-price" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Giá vốn (VNĐ)</label>
-                                <input type="number" id="product-cost-price" placeholder="Giá vốn..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                                <input type="number" id="product-cost-price" placeholder="Giá vốn..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
                             </div>
                             <div class="sm:col-span-1">
                                 <label for="product-selling-price" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Giá bán (VNĐ)</label>
-                                <input type="number" id="product-selling-price" placeholder="Giá bán..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
+                                <input type="number" id="product-selling-price" placeholder="Giá bán..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
                             </div>
                             <div class="sm:col-span-1">
                                 <label for="product-stock" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Tồn kho ban đầu</label>
-                                <input type="number" id="product-stock" placeholder="Tồn kho..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" value="10">
+                                <input type="number" id="product-stock" placeholder="Tồn kho..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" value="10">
                             </div>
                         </div>
 
                         <!-- Product Image Selector -->
-                        <div class="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-gray-150 dark:border-slate-800/60">
+                        <div class="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-gray-200 dark:border-slate-800/60">
                             <label class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Hình ảnh sản phẩm</label>
                             <div class="flex items-center gap-4">
                                 <div id="product-image-preview" class="w-20 h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center text-slate-400 overflow-hidden relative">
@@ -641,13 +641,13 @@
                                 <div class="flex flex-col gap-2">
                                     <input type="file" id="product-image-input" accept="image/*" class="hidden">
                                     <button type="button" id="upload-image-btn" class="bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-white font-semibold py-2 px-4 rounded-xl text-xs transition animate-scale-in">Chọn ảnh</button>
-                                    <button type="button" id="delete-image-btn" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-550 font-semibold py-2 px-4 rounded-xl text-xs transition hidden animate-scale-in">Xóa ảnh</button>
+                                    <button type="button" id="delete-image-btn" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 font-semibold py-2 px-4 rounded-xl text-xs transition hidden animate-scale-in">Xóa ảnh</button>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-150 dark:border-slate-800">
-                            <button type="button" class="bg-gray-150 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm cancel-btn">Hủy</button>
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+                            <button type="button" class="bg-gray-200 hover:bg-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm cancel-btn">Hủy</button>
                             <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm shadow-md">Lưu sản phẩm</button>
                         </div>
                     </form>
@@ -656,17 +656,17 @@
 
             <!-- Complete Plan Modal -->
             <div id="complete-plan-modal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-start md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm opacity-0 modal">
-                <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-gray-150 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
+                <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
                     <h3 class="text-xl font-bold mb-4">Xác nhận hoàn thành kế hoạch</h3>
                     <p class="text-sm text-slate-550 dark:text-slate-400 mb-4" id="complete-plan-description"></p>
                     <form id="complete-plan-form" class="space-y-4">
                         <input type="hidden" id="complete-plan-id">
                         <div>
                             <label for="complete-plan-amount" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Số tiền thực tế thực hiện (VNĐ)</label>
-                            <input type="number" id="complete-plan-amount" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
+                            <input type="number" id="complete-plan-amount" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
                         </div>
-                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-150 dark:border-slate-800">
-                            <button type="button" class="bg-gray-155 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-white font-bold py-2 px-4 rounded-xl transition text-sm cancel-btn">Hủy</button>
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+                            <button type="button" class="bg-gray-200 hover:bg-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-bold py-2 px-4 rounded-xl transition text-sm cancel-btn">Hủy</button>
                             <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl transition text-sm shadow-md">Hoàn tất ghi nhận</button>
                         </div>
                     </form>
@@ -675,12 +675,12 @@
 
             <!-- Confirmation Modal -->
             <div id="confirmation-modal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm opacity-0 modal">
-                <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-gray-150 dark:border-slate-800 p-6 transition-all duration-300 transform scale-95 opacity-0">
+                <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-800 p-6 transition-all duration-300 transform scale-95 opacity-0">
                     <h3 class="text-lg font-bold mb-2" id="confirmation-title">Xác nhận</h3>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mb-6" id="confirmation-message"></p>
 
                     <!-- Revert stock checkbox option -->
-                    <div id="confirmation-stock-revert-container" class="hidden flex items-start gap-2 mb-6 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-gray-150 dark:border-slate-800/60">
+                    <div id="confirmation-stock-revert-container" class="hidden flex items-start gap-2 mb-6 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-gray-200 dark:border-slate-800/60">
                         <input type="checkbox" id="confirm-stock-revert-checkbox" class="mt-0.5 w-4.5 h-4.5 text-brand-600 border-gray-300 rounded focus:ring-brand-500" checked>
                         <label for="confirm-stock-revert-checkbox" id="confirm-stock-revert-label" class="text-xs font-semibold cursor-pointer select-none text-slate-700 dark:text-slate-300 leading-tight"></label>
                     </div>
@@ -694,8 +694,8 @@
 
             <!-- Receipt Modal [NEW] -->
             <div id="receipt-modal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-start md:items-center justify-center p-4 bg-black/60 backdrop-blur-sm opacity-0 modal">
-                <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-gray-150 dark:border-slate-800 my-8 p-6 transition-all duration-300 transform scale-95 opacity-0">
-                    <div id="receipt-body" class="p-4 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-gray-150 dark:border-slate-800/80 mb-6">
+                <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-800 my-8 p-6 transition-all duration-300 transform scale-95 opacity-0">
+                    <div id="receipt-body" class="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-800/80 mb-6">
                         <!-- Dynamic Receipt details -->
                     </div>
                     <div class="flex justify-end gap-3">
@@ -712,7 +712,7 @@
 
             <!-- AI Entry Modal -->
             <div id="ai-entry-modal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-start md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm opacity-0 modal">
-                <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-gray-150 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
+                <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
                     <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                         Nhập liệu bằng Giọng nói & Trí tuệ AI
@@ -721,7 +721,7 @@
                     
                     <form id="ai-entry-form" class="space-y-4">
                         <div class="relative">
-                            <input type="text" id="ai-input" placeholder="Nói hoặc gõ mô tả giao dịch của bạn tại đây..." class="w-full pl-4 pr-14 py-3.5 border border-gray-250 dark:border-slate-800 dark:bg-slate-850 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
+                            <input type="text" id="ai-input" placeholder="Nói hoặc gõ mô tả giao dịch của bạn tại đây..." class="w-full pl-4 pr-14 py-3.5 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" required>
                             
                             <button type="button" id="voice-record-btn" class="absolute right-2 top-2 p-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 text-red-500 transition flex items-center justify-center w-10 h-10" title="Bắt đầu nói">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
@@ -739,8 +739,8 @@
                             <span class="text-xs text-indigo-500 dark:text-indigo-400 font-semibold">Gemini AI đang giải mã dữ liệu của bạn...</span>
                         </div>
 
-                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-150 dark:border-slate-800">
-                            <button type="button" class="bg-gray-150 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm cancel-btn">Hủy</button>
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+                            <button type="button" class="bg-gray-200 hover:bg-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm cancel-btn">Hủy</button>
                             <button type="submit" class="bg-indigo-650 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm shadow-md flex items-center gap-1.5">
                                 Gửi AI Xử Lý
                             </button>
@@ -751,22 +751,22 @@
             
             <!-- Quick Add POS Modal -->
             <div id="quick-add-pos-modal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm opacity-0 modal">
-                <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-gray-150 dark:border-slate-800 p-6 transition-all duration-300 transform scale-95 opacity-0">
+                <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-800 p-6 transition-all duration-300 transform scale-95 opacity-0">
                     <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Thêm món bán nhanh</h3>
                     <form id="quick-add-pos-form" class="space-y-4">
                         <div>
                             <label for="quick-pos-name" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Tên món / sản phẩm</label>
-                            <input type="text" id="quick-pos-name" placeholder="Ví dụ: Cà phê sữa đá, Bánh mì..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
+                            <input type="text" id="quick-pos-name" placeholder="Ví dụ: Cà phê sữa đá, Bánh mì..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
                         </div>
                         <div>
                             <label for="quick-pos-price" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Giá bán (VNĐ)</label>
-                            <input type="number" id="quick-pos-price" placeholder="Nhập giá bán..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
+                            <input type="number" id="quick-pos-price" placeholder="Nhập giá bán..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
                         </div>
                         <div>
                             <label for="quick-pos-qty" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Số lượng</label>
-                            <input type="number" id="quick-pos-qty" min="1" value="1" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
+                            <input type="number" id="quick-pos-qty" min="1" value="1" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
                         </div>
-                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-150 dark:border-slate-800">
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
                             <button type="button" class="bg-gray-150 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-white font-bold py-2 px-4 rounded-xl transition text-sm cancel-btn">Hủy</button>
                             <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2 px-4 rounded-xl transition text-sm shadow-md">Thêm vào giỏ</button>
                         </div>
@@ -776,19 +776,19 @@
 
             <!-- Promotion Modal -->
             <div id="promotion-modal" class="fixed inset-0 z-50 overflow-y-auto hidden flex items-start md:items-center justify-center p-4 bg-black/50 backdrop-blur-sm opacity-0 modal">
-                <div class="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border border-gray-150 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
+                <div class="bg-white dark:bg-slate-900 w-full max-w-xl rounded-3xl shadow-2xl border border-gray-200 dark:border-slate-800 my-8 p-6 sm:p-8 transition-colors duration-300 transform scale-95 opacity-0">
                     <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white" id="promotion-modal-title">Thêm chương trình khuyến mại</h3>
                     <form id="promotion-form" class="space-y-4">
                         <input type="hidden" id="editing-promotion-id">
                         
                         <div>
                             <label for="promotion-name" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Tên chương trình khuyến mại</label>
-                            <input type="text" id="promotion-name" placeholder="Ví dụ: Giảm giá khai trương, Mua X Tặng Y..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
+                            <input type="text" id="promotion-name" placeholder="Ví dụ: Giảm giá khai trương, Mua X Tặng Y..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm" required>
                         </div>
 
                         <div>
                             <label for="promotion-product-select" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Sản phẩm áp dụng</label>
-                            <select id="promotion-product-select" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></select>
+                            <select id="promotion-product-select" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm"></select>
                         </div>
 
                         <div>
@@ -812,29 +812,29 @@
                         <div id="promo-value-section" class="grid grid-cols-1 gap-4">
                             <div>
                                 <label id="promo-value-label" for="promotion-value" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Mức giảm (% hoặc số tiền)</label>
-                                <input type="number" id="promotion-value" placeholder="Nhập mức giảm giá..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                                <input type="number" id="promotion-value" placeholder="Nhập mức giảm giá..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
                             </div>
                         </div>
                         
                         <div id="promo-bxgy-section" class="grid grid-cols-2 gap-4 hidden">
                             <div>
                                 <label for="promotion-buy" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Mua lượng X</label>
-                                <input type="number" id="promotion-buy" value="1" min="1" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                                <input type="number" id="promotion-buy" value="1" min="1" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
                             </div>
                             <div>
                                 <label for="promotion-get" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Tặng món Y</label>
-                                <input type="number" id="promotion-get" value="1" min="0" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                                <input type="number" id="promotion-get" value="1" min="0" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label for="promotion-start" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Ngày bắt đầu</label>
-                                <input type="date" id="promotion-start" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                                <input type="date" id="promotion-start" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
                             </div>
                             <div>
                                 <label for="promotion-end" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Ngày kết thúc</label>
-                                <input type="date" id="promotion-end" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-855 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                                <input type="date" id="promotion-end" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
                             </div>
                         </div>
                         
@@ -843,8 +843,8 @@
                             <label for="promotion-enabled" class="text-sm font-semibold cursor-pointer select-none">Bật chương trình khuyến mại này ngay</label>
                         </div>
 
-                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-150 dark:border-slate-800">
-                            <button type="button" id="promo-cancel-btn" class="bg-gray-150 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm cancel-btn">Hủy</button>
+                        <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+                            <button type="button" id="promo-cancel-btn" class="bg-gray-200 hover:bg-gray-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm cancel-btn">Hủy</button>
                             <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 px-5 rounded-2xl transition text-sm shadow-md">Lưu cấu hình</button>
                         </div>
                     </form>
@@ -854,22 +854,22 @@
             <!-- Mobile Bottom Sheet More Menu -->
             <div id="more-menu-backdrop" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 hidden"></div>
             <div id="more-menu-sheet" class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 rounded-t-3xl p-6 bottom-sheet hidden-sheet transition-colors duration-300">
-                <div class="flex items-center justify-between pb-4 border-b border-gray-150 dark:border-slate-800">
-                    <h4 class="font-extrabold text-slate-850 dark:text-white text-base">Xem thêm chức năng</h4>
+                <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-slate-800">
+                    <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Xem thêm chức năng</h4>
                     <button id="close-more-menu-btn" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
                 </div>
                 <nav class="py-4 grid grid-cols-2 gap-4">
-                    <a href="#" id="bottom-tab-plan" class="flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-gray-100 dark:border-slate-800 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">
+                    <a href="#" id="bottom-tab-plan" class="flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">
                         <svg class="h-6 w-6 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                        <span class="text-xs font-bold text-slate-750 dark:text-slate-350 mt-2">Kế hoạch chi</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 mt-2">Kế hoạch chi</span>
                     </a>
-                    <a href="#" id="bottom-tab-promotions" class="flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-gray-100 dark:border-slate-800 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">
+                    <a href="#" id="bottom-tab-promotions" class="flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">
                         <svg class="h-6 w-6 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        <span class="text-xs font-bold text-slate-750 dark:text-slate-350 mt-2">Khuyến mại</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 mt-2">Khuyến mại</span>
                     </a>
-                    <a href="#" id="bottom-tab-settings" class="flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-850 rounded-2xl border border-gray-100 dark:border-slate-800 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">
+                    <a href="#" id="bottom-tab-settings" class="flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-gray-100 dark:border-slate-800 hover:bg-brand-50/50 dark:hover:bg-brand-900/10 transition">
                         <svg class="h-6 w-6 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        <span class="text-xs font-bold text-slate-750 dark:text-slate-350 mt-2">Cài đặt</span>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 mt-2">Cài đặt</span>
                     </a>
                     <a href="#" id="bottom-logout-btn" class="flex flex-col items-center justify-center p-3 bg-rose-500/5 dark:bg-rose-950/10 rounded-2xl border border-rose-500/10 hover:bg-rose-500/10 transition">
                         <svg class="h-6 w-6 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>

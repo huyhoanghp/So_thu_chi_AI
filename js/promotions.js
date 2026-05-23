@@ -25,7 +25,7 @@ window.renderPromotions = function() {
 window.createPromotionElement = function(pm) {
     const productInfo = window.products.find(p => p.id === pm.productId);
     const wrapper = document.createElement('li');
-    wrapper.className = 'p-4 bg-gray-50 dark:bg-slate-800/40 rounded-2xl border border-gray-150 dark:border-slate-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:shadow-sm';
+    wrapper.className = 'p-4 bg-gray-50 dark:bg-slate-800/40 rounded-2xl border border-gray-200 dark:border-slate-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:shadow-sm';
     
     let typeLabel = '';
     if (pm.type === 'percent') typeLabel = `Chiết khấu ${pm.value}%`;
@@ -53,7 +53,7 @@ window.createPromotionElement = function(pm) {
             <button class="p-2 rounded-xl text-slate-500 hover:text-red-650 hover:bg-white dark:hover:bg-slate-800 transition" data-action="delete" title="Xóa">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
             </button>
-            <button class="px-2.5 py-1.5 rounded-xl text-xs font-semibold ${pm.enabled ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200' : 'bg-brand-600 hover:bg-brand-700 text-white'} transition" data-action="toggle">
+            <button class="px-2.5 py-1.5 rounded-xl text-xs font-semibold ${pm.enabled ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200' : 'bg-brand-600 hover:bg-brand-700 text-white'} transition" data-action="toggle">
                 ${pm.enabled ? 'Tắt' : 'Bật'}
             </button>
         </div>
@@ -215,6 +215,65 @@ window.deletePromotion = function(pm) {
 window.togglePromotion = function(pm) {
     window.promotionsCollection.doc(pm.id).update({ enabled: !pm.enabled })
         .catch(e => window.showError("Không thể bật/tắt khuyến mại: " + e.message));
+};
+
+window.getBestPromotion = function(product, quantity, now = new Date()) {
+    const applicablePromos = (window.promotions || []).filter(pm => {
+        if (!pm.enabled) return false;
+        if (pm.productId && pm.productId !== product.id) return false;
+        
+        let startOk = true;
+        if (pm.startDate) {
+            const start = new Date(pm.startDate);
+            start.setHours(0,0,0,0);
+            startOk = now >= start;
+        }
+        let endOk = true;
+        if (pm.endDate) {
+            const end = new Date(pm.endDate);
+            end.setHours(23,59,59,999);
+            endOk = now <= end;
+        }
+        return startOk && endOk;
+    });
+
+    if (applicablePromos.length === 0) {
+        return { promoId: null, discountAmount: 0 };
+    }
+
+    let bestPromo = null;
+    let maxDiscount = -1;
+
+    applicablePromos.forEach(pm => {
+        let discount = 0;
+        if (pm.type === 'percent') {
+            const percent = Math.max(0, Math.min(100, pm.value || 0));
+            discount = (product.sellingPrice * percent / 100) * quantity;
+        } else if (pm.type === 'fixed') {
+            discount = Math.max(0, pm.value || 0) * quantity;
+        } else if (pm.type === 'bxgy') {
+            const buyX = Math.max(1, pm.buy || 0);
+            const getY = Math.max(0, pm.get || 0);
+            const group = buyX + getY;
+            if (group > 0) {
+                const groups = Math.floor(quantity / group);
+                discount = groups * getY * product.sellingPrice;
+            }
+        }
+        
+        const maxAllowed = product.sellingPrice * quantity;
+        discount = Math.min(discount, maxAllowed);
+
+        if (discount > maxDiscount) {
+            maxDiscount = discount;
+            bestPromo = pm;
+        }
+    });
+
+    return {
+        promoId: bestPromo ? bestPromo.id : null,
+        discountAmount: Math.max(0, Math.round(maxDiscount))
+    };
 };
 
 document.addEventListener('DOMContentLoaded', () => {

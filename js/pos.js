@@ -22,7 +22,7 @@ window.renderPOSProducts = function() {
 
     source.forEach(product => {
         const div = document.createElement('div');
-        div.className = 'product-card bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800/80 p-4 rounded-2xl shadow-sm flex flex-col justify-between hover:shadow-md transition duration-200';
+        div.className = 'product-card bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800/80 p-4 rounded-2xl shadow-sm flex flex-col justify-between hover:shadow-md transition duration-200';
         div.dataset.productId = product.id;
         
         const isOutOfStock = product.stock <= 0;
@@ -39,11 +39,11 @@ window.renderPOSProducts = function() {
                     <!-- Badge count (+X) -->
                     <div class="pos-badge absolute top-2 right-2 bg-brand-600 text-white text-[11px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center shadow-md opacity-0 transition-all duration-200 transform scale-75"></div>
                 </div>
-                <h4 class="font-bold text-slate-850 dark:text-slate-200 text-sm line-clamp-2">${product.name}</h4>
+                <h4 class="font-bold text-slate-800 dark:text-slate-200 text-sm line-clamp-2">${product.name}</h4>
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tồn kho: <span class="${stockColor} font-semibold">${isOutOfStock ? 'Hết hàng' : product.stock}</span></p>
             </div>
             <div class="mt-4 flex items-center justify-between gap-2">
-                <span class="text-emerald-650 dark:text-emerald-400 font-extrabold text-base">${window.formatCurrency(product.sellingPrice)}</span>
+                <span class="text-emerald-600 dark:text-emerald-400 font-extrabold text-base">${window.formatCurrency(product.sellingPrice)}</span>
                 <button class="bg-brand-600 hover:bg-brand-700 text-white font-bold p-2 rounded-xl transition flex items-center justify-center shadow-sm disabled:opacity-50" ${isOutOfStock ? 'disabled' : ''} title="Thêm vào giỏ">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
                 </button>
@@ -147,37 +147,13 @@ window.calculateCart = function() {
         const itemSubtotal = item.product.sellingPrice * item.quantity;
         subtotal += itemSubtotal;
 
-        // Auto check promotions
-        const applicablePromos = (window.promotions || []).filter(pm => {
-            if (!pm.enabled) return false;
-            if (pm.productId && pm.productId !== item.product.id) return false;
-            const startOk = pm.startDate ? new Date(pm.startDate) <= now : true;
-            const endOk = pm.endDate ? new Date(pm.endDate) >= now : true;
-            return startOk && endOk;
-        });
+        // Auto check promotions using best match
+        const best = window.getBestPromotion
+            ? window.getBestPromotion(item.product, item.quantity, now)
+            : { promoId: null, discountAmount: 0 };
 
-        let itemDiscount = 0;
-        let appliedPromoId = null;
-
-        if (applicablePromos.length > 0) {
-            const pm = applicablePromos[0]; // Apply first match
-            appliedPromoId = pm.id;
-            if (pm.type === 'percent') {
-                const percent = Math.max(0, Math.min(100, pm.value || 0));
-                itemDiscount = (item.product.sellingPrice * percent / 100) * item.quantity;
-            } else if (pm.type === 'fixed') {
-                itemDiscount = Math.max(0, pm.value || 0) * item.quantity;
-            } else if (pm.type === 'bxgy') {
-                const buyX = Math.max(1, pm.buy || 0);
-                const getY = Math.max(0, pm.get || 0);
-                const group = buyX + getY;
-                if (group > 0) {
-                    const groups = Math.floor(item.quantity / group);
-                    const freeCount = groups * getY;
-                    itemDiscount = freeCount * item.product.sellingPrice;
-                }
-            }
-        }
+        const itemDiscount = best.discountAmount;
+        const appliedPromoId = best.promoId;
 
         totalDiscount += itemDiscount;
 
@@ -215,7 +191,7 @@ window.renderCart = function() {
         
         calc.items.forEach(item => {
             const li = document.createElement('li');
-            li.className = 'py-3 border-b border-gray-150 dark:border-slate-800/80 flex items-center justify-between gap-3';
+            li.className = 'py-3 border-b border-gray-200 dark:border-slate-800/80 flex items-center justify-between gap-3';
             
             const promoBadge = item.promoId ? '<span class="inline-block text-[9px] font-bold bg-violet-500/10 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded-md">KM</span>' : '';
             
@@ -380,7 +356,7 @@ window.showReceipt = function(tx, items) {
                 <span>Giảm giá khuyến mại:</span>
                 <span>-${window.formatCurrency(totalDiscount)}</span>
             </div>` : ''}
-            <div class="flex justify-between text-base font-extrabold text-slate-850 dark:text-slate-200 border-t border-dashed border-slate-200 dark:border-slate-800 pt-2">
+            <div class="flex justify-between text-base font-extrabold text-slate-800 dark:text-slate-200 border-t border-dashed border-slate-200 dark:border-slate-800 pt-2">
                 <span>TỔNG CỘNG:</span>
                 <span>${window.formatCurrency(tx.amount)}</span>
             </div>
