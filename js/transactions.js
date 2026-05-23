@@ -1,5 +1,57 @@
 // --- TRANSACTIONS MODULE ---
 
+window.getFilteredHistoryData = function() {
+    const historyRangeEl = document.getElementById('history-range');
+    const customStartEl = document.getElementById('history-custom-start');
+    const customEndEl = document.getElementById('history-custom-end');
+    if (!historyRangeEl) return window.transactions;
+
+    const range = historyRangeEl.value;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let currentStart, currentEnd;
+
+    switch(range) {
+        case 'day':
+            currentStart = new Date(today);
+            currentEnd = new Date(today);
+            break;
+        case 'week':
+            currentStart = new Date(today);
+            currentStart.setDate(currentStart.getDate() - (currentStart.getDay() || 7) + 1);
+            currentEnd = new Date(currentStart);
+            currentEnd.setDate(currentEnd.getDate() + 6);
+            break;
+        case 'month':
+            currentStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            currentEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            break;
+        case 'year':
+            currentStart = new Date(today.getFullYear(), 0, 1);
+            currentEnd = new Date(today.getFullYear(), 11, 31);
+            break;
+        case 'custom':
+            currentStart = customStartEl?.value ? new Date(customStartEl.value) : null;
+            currentEnd = customEndEl?.value ? new Date(customEndEl.value) : null;
+            break;
+        default: // all
+            currentStart = null;
+            currentEnd = null;
+    }
+
+    if (currentEnd) currentEnd.setHours(23, 59, 59, 999);
+    
+    if (!currentStart || !currentEnd) {
+        return window.transactions;
+    }
+
+    return window.transactions.filter(t => {
+        if (!t.date) return false;
+        const d = new Date(t.date);
+        return d >= currentStart && d <= currentEnd;
+    });
+};
+
 window.renderTransactionList = function(source) {
     const transactionList = document.getElementById('transaction-list');
     const transactionEmptyState = document.getElementById('transaction-empty-state');
@@ -401,18 +453,74 @@ window.handleFormSubmit = async function(e) {
 };
 
 window.deleteTransaction = function(tx) {
-    window.openConfirmationModal(`Bạn có chắc muốn xóa giao dịch "${tx.description}"?`, async () => { 
-        try { 
-            await window.transactionsCollection.doc(tx.id).delete();
-            if (tx.productId && tx.quantity > 0) {
-                const stockChange = tx.type === 'income' ? tx.quantity : -tx.quantity;
-                await window.productsCollection.doc(tx.productId).update({ stock: firebase.firestore.FieldValue.increment(stockChange) });
+    let revertItems = [];
+    if (tx.items && tx.items.length > 0) {
+        tx.items.forEach(item => {
+            const prod = window.products.find(p => p.id === item.productId);
+            if (prod) {
+                const sign = tx.type === 'income' ? '+' : '-';
+                revertItems.push(`${sign}${item.quantity} ${prod.name}`);
             }
-            window.showToast("Đã xóa giao dịch."); 
-        } catch(e) { 
-            window.showToast('Lỗi: '+e.message, "error"); 
-        } 
-    }); 
+        });
+    } else if (tx.productId) {
+        const prod = window.products.find(p => p.id === tx.productId);
+        if (prod && tx.quantity > 0) {
+            const sign = tx.type === 'income' ? '+' : '-';
+            revertItems.push(`${sign}${tx.quantity} ${prod.name}`);
+        }
+    }
+
+    const showRevert = revertItems.length > 0;
+    const revertLabelText = showRevert ? `Đồng ý hoàn kho (${revertItems.join(', ')})` : '';
+
+    window.openConfirmationModal(
+        `Bạn có chắc muốn xóa giao dịch "${tx.description}"?`,
+        async (revertStock) => {
+            try {
+                const batch = window.db.batch();
+                
+                // Delete transaction document
+                const txRef = window.transactionsCollection.doc(tx.id);
+                batch.delete(txRef);
+
+                // Update stock if requested
+                if (revertStock) {
+                    if (tx.items && tx.items.length > 0) {
+                        tx.items.forEach(item => {
+                            if (item.productId && !item.productId.startsWith('quick_')) {
+                                const prod = window.products.find(p => p.id === item.productId);
+                                if (prod) {
+                                    const productRef = window.productsCollection.doc(item.productId);
+                                    const change = tx.type === 'income' ? item.quantity : -item.quantity;
+                                    batch.update(productRef, {
+                                        stock: firebase.firestore.FieldValue.increment(change)
+                                    });
+                                }
+                            }
+                        });
+                    } else if (tx.productId) {
+                        const prod = window.products.find(p => p.id === tx.productId);
+                        if (prod) {
+                            const productRef = window.productsCollection.doc(tx.productId);
+                            const change = tx.type === 'income' ? tx.quantity : -tx.quantity;
+                            batch.update(productRef, {
+                                stock: firebase.firestore.FieldValue.increment(change)
+                            });
+                        }
+                    }
+                }
+
+                await batch.commit();
+                window.showToast(revertStock ? "Đã xóa giao dịch và hoàn tồn kho!" : "Đã xóa giao dịch (không hoàn kho).");
+            } catch (e) {
+                window.showToast('Lỗi: ' + e.message, "error");
+            }
+        },
+        "Xóa giao dịch",
+        "Xác nhận xóa",
+        showRevert,
+        revertLabelText
+    );
 };
 
 window.exportToXLSX = function() {
@@ -491,5 +599,32 @@ document.addEventListener('DOMContentLoaded', () => {
     searchHistoryInput?.addEventListener('input', () => {
         if (window.renderAll) window.renderAll();
     });
+
+    const historyRange = document.getElementById('history-range');
+    const historyCustomDateRange = document.getElementById('history-custom-date-range');
+    const historyCustomStart = document.getElementById('history-custom-start');
+    const historyCustomEnd = document.getElementById('history-custom-end');
+
+    if (historyRange) {
+        const toggleHistoryCustomRange = () => {
+            if (historyCustomDateRange) {
+                historyCustomDateRange.classList.toggle('hidden', historyRange.value !== 'custom');
+                historyCustomDateRange.classList.toggle('flex', historyRange.value === 'custom');
+            }
+        };
+        
+        historyRange.addEventListener('change', () => {
+            toggleHistoryCustomRange();
+            if (window.renderAll) window.renderAll();
+        });
+        historyCustomStart?.addEventListener('change', () => {
+            if (window.renderAll) window.renderAll();
+        });
+        historyCustomEnd?.addEventListener('change', () => {
+            if (window.renderAll) window.renderAll();
+        });
+        
+        toggleHistoryCustomRange();
+    }
 });
 

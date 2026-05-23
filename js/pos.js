@@ -22,18 +22,25 @@ window.renderPOSProducts = function() {
 
     source.forEach(product => {
         const div = document.createElement('div');
-        div.className = 'product-card bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800/80 p-4 rounded-2xl shadow-sm flex flex-col justify-between hover:shadow-md';
+        div.className = 'product-card bg-white dark:bg-slate-900 border border-gray-150 dark:border-slate-800/80 p-4 rounded-2xl shadow-sm flex flex-col justify-between hover:shadow-md transition duration-200';
+        div.dataset.productId = product.id;
         
         const isOutOfStock = product.stock <= 0;
         const stockColor = product.stock > 10 ? 'text-emerald-600 dark:text-emerald-500' : (product.stock > 0 ? 'text-amber-500' : 'text-rose-600 dark:text-rose-500');
         
+        const imageHtml = product.image 
+            ? `<img src="${product.image}" class="w-full h-full object-cover">`
+            : `<svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>`;
+
         div.innerHTML = `
             <div>
-                <div class="h-28 w-full bg-slate-100 dark:bg-slate-800 rounded-xl mb-3 flex items-center justify-center text-slate-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                <div class="relative h-28 w-full bg-slate-100 dark:bg-slate-800 rounded-xl mb-3 flex items-center justify-center text-slate-400 overflow-hidden">
+                    ${imageHtml}
+                    <!-- Badge count (+X) -->
+                    <div class="pos-badge absolute top-2 right-2 bg-brand-600 text-white text-[11px] font-extrabold w-6 h-6 rounded-full flex items-center justify-center shadow-md opacity-0 transition-all duration-200 transform scale-75"></div>
                 </div>
                 <h4 class="font-bold text-slate-850 dark:text-slate-200 text-sm line-clamp-2">${product.name}</h4>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tồn kho: <span class="${stockColor} font-semibold">${product.stock}</span></p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tồn kho: <span class="${stockColor} font-semibold">${isOutOfStock ? 'Hết hàng' : product.stock}</span></p>
             </div>
             <div class="mt-4 flex items-center justify-between gap-2">
                 <span class="text-emerald-650 dark:text-emerald-400 font-extrabold text-base">${window.formatCurrency(product.sellingPrice)}</span>
@@ -43,11 +50,41 @@ window.renderPOSProducts = function() {
             </div>
         `;
 
-        div.querySelector('button').addEventListener('click', () => {
-            window.addProductToCart(product);
-        });
+        if (isOutOfStock) {
+            div.classList.add('opacity-50', 'cursor-not-allowed');
+            div.addEventListener('click', (e) => {
+                window.showToast("Sản phẩm này đã hết hàng!", "error");
+            });
+        } else {
+            div.classList.add('cursor-pointer');
+            div.addEventListener('click', () => {
+                window.addProductToCart(product);
+            });
+        }
 
         posProductGrid.appendChild(div);
+    });
+
+    if (window.updatePOSProductBadges) window.updatePOSProductBadges();
+};
+
+window.updatePOSProductBadges = function() {
+    const cards = document.querySelectorAll('#pos-product-grid .product-card');
+    cards.forEach(card => {
+        const pId = card.dataset.productId;
+        const cartItem = window.cart.find(item => item.product.id === pId);
+        const badge = card.querySelector('.pos-badge');
+        if (!badge) return;
+        
+        if (cartItem && cartItem.quantity > 0) {
+            badge.textContent = `+${cartItem.quantity}`;
+            badge.classList.remove('opacity-0', 'scale-75');
+            badge.classList.add('opacity-100', 'scale-100');
+        } else {
+            badge.textContent = '';
+            badge.classList.remove('opacity-100', 'scale-100');
+            badge.classList.add('opacity-0', 'scale-75');
+        }
     });
 };
 
@@ -216,6 +253,7 @@ window.renderCart = function() {
     if (posSubtotalEl) posSubtotalEl.textContent = window.formatCurrency(calc.subtotal);
     if (posDiscountEl) posDiscountEl.textContent = window.formatCurrency(calc.totalDiscount);
     if (posTotalEl) posTotalEl.textContent = window.formatCurrency(calc.total);
+    if (window.updatePOSProductBadges) window.updatePOSProductBadges();
 };
 
 // Checkout Giỏ Hàng

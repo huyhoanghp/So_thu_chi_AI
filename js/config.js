@@ -88,16 +88,30 @@ window.firebaseConfig = {
 };
 
 // Confirmation Modal Functions
-window.openConfirmationModal = function(message, onConfirm, actionText = 'Xác nhận', title = 'Xác nhận') {
+window.openConfirmationModal = function(message, onConfirm, actionText = 'Xác nhận', title = 'Xác nhận', showRevertOption = false, revertLabelText = '') {
     const modal = document.getElementById('confirmation-modal');
     const titleEl = document.getElementById('confirmation-title');
     const msgEl = document.getElementById('confirmation-message');
     const actionBtn = document.getElementById('confirm-action-btn');
+    const revertContainer = document.getElementById('confirmation-stock-revert-container');
+    const revertCheckbox = document.getElementById('confirm-stock-revert-checkbox');
+    const revertLabel = document.getElementById('confirm-stock-revert-label');
 
     if (!modal) return;
 
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = message;
+
+    if (revertContainer) {
+        if (showRevertOption) {
+            revertContainer.classList.remove('hidden');
+            if (revertLabel) revertLabel.textContent = revertLabelText;
+            if (revertCheckbox) revertCheckbox.checked = true;
+        } else {
+            revertContainer.classList.add('hidden');
+        }
+    }
+
     if (actionBtn) {
         actionBtn.textContent = actionText;
         // Apply color based on action text
@@ -109,7 +123,12 @@ window.openConfirmationModal = function(message, onConfirm, actionText = 'Xác n
                     : "bg-brand-600 hover:bg-brand-700"));
     }
 
-    window.confirmAction = onConfirm;
+    window.confirmAction = () => {
+        const revertChecked = (showRevertOption && revertCheckbox) ? revertCheckbox.checked : false;
+        if (typeof onConfirm === 'function') {
+            onConfirm(revertChecked);
+        }
+    };
 
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -119,7 +138,11 @@ window.closeConfirmationModal = function() {
     const modal = document.getElementById('confirmation-modal');
     if (!modal) return;
     modal.classList.add('opacity-0');
-    setTimeout(() => modal.classList.add('hidden'), 300);
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        const revertContainer = document.getElementById('confirmation-stock-revert-container');
+        if (revertContainer) revertContainer.classList.add('hidden');
+    }, 300);
     window.confirmAction = null;
 };
 

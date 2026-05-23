@@ -67,7 +67,11 @@ window.switchTab = function(tab) {
     } else if (tab === 'products') {
         window.renderProductList(window.products);
     } else if (tab === 'history') {
-        window.renderTransactionList(window.transactions);
+        if (window.renderAll) {
+            window.renderAll();
+        } else {
+            window.renderTransactionList(window.transactions);
+        }
     } else if (tab === 'promotions') {
         window.renderPromotions();
     } else if (tab === 'settings') {
@@ -113,7 +117,8 @@ window.renderAll = function() {
     };
 
     const searchedPlans = filterData(window.plans, searchPlanInput?.value || '');
-    const searchedTransactions = filterData(window.transactions, searchHistoryInput?.value || '');
+    const filteredHistoryTransactions = window.getFilteredHistoryData ? window.getFilteredHistoryData() : window.transactions;
+    const searchedTransactions = filterData(filteredHistoryTransactions, searchHistoryInput?.value || '');
     const searchedProducts = filterData(window.products, searchProductsInput?.value || '');
 
     // Overview numbers
