@@ -193,7 +193,7 @@ window.renderCart = function() {
             const li = document.createElement('li');
             li.className = 'py-3 border-b border-gray-200 dark:border-slate-800/80 flex items-center justify-between gap-3';
             
-            const promoBadge = item.promoId ? '<span class="inline-block text-[9px] font-bold bg-violet-500/10 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded-md">KM</span>' : '';
+            const promoBadge = item.promoId ? '<span class="inline-block text-[9px] font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 px-1.5 py-0.5 rounded-md">KM</span>' : '';
             
             li.innerHTML = `
                 <div class="flex-grow min-w-0">

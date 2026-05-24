@@ -47,7 +47,7 @@ window.createPromotionElement = function(pm) {
             </span>
         </div>
         <div class="flex items-center gap-1.5 self-center w-full sm:w-auto justify-end sm:justify-start">
-            <button class="h-9 w-9 flex items-center justify-center rounded-xl text-indigo-700 hover:text-indigo-800 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/50 dark:text-indigo-300 dark:hover:bg-indigo-850 transition" data-action="edit" title="Sửa">
+            <button class="h-9 w-9 flex items-center justify-center rounded-xl text-brand-700 hover:text-brand-800 bg-brand-100 hover:bg-brand-200 dark:bg-brand-900/50 dark:text-brand-300 dark:hover:bg-brand-850 transition" data-action="edit" title="Sửa">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>
             </button>
             <button class="h-9 w-9 flex items-center justify-center rounded-xl text-rose-700 hover:text-rose-800 bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/50 dark:text-rose-300 dark:hover:bg-rose-850 transition" data-action="delete" title="Xóa">

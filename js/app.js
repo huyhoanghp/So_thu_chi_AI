@@ -125,10 +125,15 @@ window.renderAll = function() {
     const { currentPeriodData } = window.getReportData();
     const totalIncome = currentPeriodData.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
     const totalExpense = currentPeriodData.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
+    const posSales = currentPeriodData.filter(t => t.type === 'income' && t.isPos);
+    const totalAOV = posSales.length ? posSales.reduce((s, t) => s + (t.amount || 0), 0) / posSales.length : 0;
+    const margin = totalIncome ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
     
     const totalIncomeEl = document.getElementById('total-income');
     const totalExpenseEl = document.getElementById('total-expense');
     const netProfitEl = document.getElementById('net-profit');
+    const aovValueEl = document.getElementById('aov-value');
+    const marginValueEl = document.getElementById('margin-value');
     const exportXlsxBtn = document.getElementById('export-xlsx-btn');
 
     if (totalIncomeEl) totalIncomeEl.textContent = window.formatCurrency(totalIncome);
@@ -138,6 +143,8 @@ window.renderAll = function() {
         netProfitEl.classList.toggle('text-green-600', totalIncome - totalExpense >= 0);
         netProfitEl.classList.toggle('text-red-600', totalIncome - totalExpense < 0);
     }
+    if (aovValueEl) aovValueEl.textContent = window.formatCurrency(totalAOV);
+    if (marginValueEl) marginValueEl.textContent = `${margin.toFixed(1)}%`;
     if (exportXlsxBtn) exportXlsxBtn.disabled = searchedTransactions.length === 0;
 
     window.renderTransactionList(searchedTransactions);

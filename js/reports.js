@@ -1,8 +1,12 @@
 // --- REPORTS, CHARTS, AND AI ASSISTANT MODULE ---
 
 let expensePieChart = null;
+let revenuePieChart = null;
 let cashflowTrendChart = null;
 let productSalesTrendChart = null;
+let topSellingChart = null;
+let topProfitChart = null;
+let inventoryPieChart = null;
 
 window.renderReports = function() {
     const { currentPeriodData, previousPeriodData } = window.getReportData();
@@ -130,18 +134,21 @@ function createComparisonCardHTML(title, currentValue, previousValue, isExpense)
 window.renderOverviewReport = function(currentData, previousData) {
     const reportRangeEl = document.getElementById('report-range');
     const comparisonSection = document.getElementById('comparison-section');
+    const revenuePieChartCtx = document.getElementById('revenue-pie-chart')?.getContext('2d');
     const expensePieChartCtx = document.getElementById('expense-pie-chart')?.getContext('2d');
     const cashflowTrendChartCtx = document.getElementById('cashflow-trend-chart')?.getContext('2d');
     const promoTableDiv = document.getElementById('promotion-report-table');
+    const revenueLegendContainer = document.getElementById('revenue-legend-container');
+    const expenseLegendContainer = document.getElementById('expense-legend-container');
 
     if (!comparisonSection) return;
 
-    const currentIncome = currentData.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const currentExpense = currentData.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const currentIncome = currentData.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
+    const currentExpense = currentData.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
     const currentProfit = currentIncome - currentExpense;
 
-    const previousIncome = previousData.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const previousExpense = previousData.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    const previousIncome = previousData.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
+    const previousExpense = previousData.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
     const previousProfit = previousIncome - previousExpense;
 
     if (reportRangeEl?.value !== 'all' && reportRangeEl?.value !== 'custom') {
@@ -155,7 +162,123 @@ window.renderOverviewReport = function(currentData, previousData) {
         comparisonSection.innerHTML = '';
     }
 
+    // --- Calculate dynamic AOV & Margin ---
+    const posSales = currentData.filter(t => t.type === 'income' && t.isPos);
+    const currentAOV = posSales.length ? posSales.reduce((s, t) => s + (t.amount || 0), 0) / posSales.length : 0;
+    const currentMargin = currentIncome ? (currentProfit / currentIncome) * 100 : 0;
+
+    // Update KPIs on DOM
+    const aovValueEl = document.getElementById('aov-value');
+    const marginValueEl = document.getElementById('margin-value');
+    if (aovValueEl) aovValueEl.textContent = window.formatCurrency(currentAOV);
+    if (marginValueEl) marginValueEl.textContent = `${currentMargin.toFixed(1)}%`;
+
+    // --- Sparkline Helper ---
+    const drawSparkline = (canvasId, dataPoints, color) => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        const existingChart = Chart.getChart(canvasId);
+        if (existingChart) existingChart.destroy();
+        
+        const points = dataPoints.length >= 2 ? dataPoints : (dataPoints.length === 1 ? [dataPoints[0], dataPoints[0]] : [0, 0]);
+        const labels = points.map((_, i) => i);
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: points,
+                    borderColor: color,
+                    borderWidth: 1.5,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                },
+                layout: {
+                    padding: { top: 2, bottom: 2, left: 2, right: 2 }
+                }
+            }
+        });
+    };
+
+    // --- Group currentData by Date for Sparklines and Cashflow Trend ---
+    const dataByDate = currentData.reduce((acc, curr) => { 
+        const date = curr.date.split('T')[0]; 
+        if (!acc[date]) acc[date] = { income: 0, expense: 0, posRevenue: 0, posCount: 0 }; 
+        acc[date][curr.type] += (curr.amount || 0); 
+        if (curr.type === 'income' && curr.isPos) {
+            acc[date].posRevenue += (curr.amount || 0);
+            acc[date].posCount += 1;
+        }
+        return acc; 
+    }, {});
+
+    const sortedDates = Object.keys(dataByDate).sort((a,b) => new Date(a) - new Date(b));
+
+    // Limit sparklines to the last 30 data points for readability
+    const sparkDates = sortedDates.length > 30 ? sortedDates.slice(-30) : sortedDates;
+    const incomeSparkData = sparkDates.map(d => dataByDate[d].income);
+    const expenseSparkData = sparkDates.map(d => dataByDate[d].expense);
+    const profitSparkData = sparkDates.map(d => dataByDate[d].income - dataByDate[d].expense);
+    const aovSparkData = sparkDates.map(d => dataByDate[d].posCount ? dataByDate[d].posRevenue / dataByDate[d].posCount : 0);
+    const marginSparkData = sparkDates.map(d => dataByDate[d].income ? ((dataByDate[d].income - dataByDate[d].expense) / dataByDate[d].income) * 100 : 0);
+
+    // Draw the sparklines
+    drawSparkline('income-sparkline', incomeSparkData, '#10b981');
+    drawSparkline('expense-sparkline', expenseSparkData, '#ef4444');
+    drawSparkline('profit-sparkline', profitSparkData, '#6366f1');
+    drawSparkline('aov-sparkline', aovSparkData, '#06b6d4');
+    drawSparkline('margin-sparkline', marginSparkData, '#f59e0b');
+
+    // --- Helper to build custom Glassmorphism Legend Cards ---
+    const buildCustomLegend = (containerId, dataObj, colors) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        
+        const entries = Object.entries(dataObj);
+        const total = entries.reduce((s, [_, v]) => s + v, 0);
+        if (total === 0) return;
+        
+        entries.forEach(([key, val], idx) => {
+            const pct = ((val / total) * 100).toFixed(1);
+            const color = colors[idx % colors.length];
+            
+            const card = document.createElement('div');
+            card.className = "flex items-center justify-between p-2 rounded-xl bg-white/20 dark:bg-slate-900/30 border border-white/10 dark:border-white/5 shadow-sm text-slate-700 dark:text-slate-300";
+            card.innerHTML = `
+                <div class="flex items-center gap-1.5 truncate">
+                    <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${color}; box-shadow: 0 0 8px ${color}"></span>
+                    <span class="truncate font-medium">${key}</span>
+                </div>
+                <div class="text-right shrink-0 font-semibold pl-2">
+                    <div>${window.formatCurrency(val)}</div>
+                    <div class="text-[10px] text-slate-400 dark:text-slate-500">${pct}%</div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    };
+
     // --- Charts ---
+    if (revenuePieChart) revenuePieChart.destroy();
     if (expensePieChart) expensePieChart.destroy();
     if (cashflowTrendChart) cashflowTrendChart.destroy();
 
@@ -163,61 +286,203 @@ window.renderOverviewReport = function(currentData, previousData) {
     const textColor = isDark ? '#94a3b8' : '#475569';
     const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
 
-    const expenses = currentData.filter(t => t.type === 'expense');
-    if (expensePieChartCtx && expenses.length > 0) {
-        const expenseByCategory = expenses.reduce((acc, curr) => { 
-            acc[curr.category] = (acc[curr.category] || 0) + (curr.amount || 0); return acc; 
+    // 1. Revenue Pie Chart (Cơ cấu doanh thu)
+    const incomes = currentData.filter(t => t.type === 'income');
+    if (revenuePieChartCtx && incomes.length > 0) {
+        const revenueByCategory = incomes.reduce((acc, curr) => { 
+            const cat = curr.category || (curr.isPos ? 'Bán hàng POS' : 'Thu nhập khác');
+            acc[cat] = (acc[cat] || 0) + (curr.amount || 0); 
+            return acc; 
         }, {});
-        expensePieChart = new Chart(expensePieChartCtx, {
+        const revenueColors = ['#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#14b8a6', '#0284c7'];
+        
+        revenuePieChart = new Chart(revenuePieChartCtx, {
             type: 'doughnut',
             data: {
-                labels: Object.keys(expenseByCategory),
+                labels: Object.keys(revenueByCategory),
                 datasets: [{
-                    data: Object.values(expenseByCategory),
-                    backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#6366f1'],
-                    borderWidth: isDark ? 2 : 1,
-                    borderColor: isDark ? '#1e293b' : '#ffffff'
+                    data: Object.values(revenueByCategory),
+                    backgroundColor: revenueColors.map(c => isDark ? c + 'cc' : c + 'dd'),
+                    borderColor: isDark ? '#0f172a' : '#ffffff',
+                    borderWidth: isDark ? 3 : 2,
+                    hoverBackgroundColor: revenueColors,
+                    hoverBorderColor: revenueColors,
+                    hoverBorderWidth: 2,
+                    hoverOffset: 10
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { labels: { color: textColor } }
-                }
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)',
+                        borderColor: isDark ? 'rgba(16,185,129,0.3)' : 'rgba(16,185,129,0.2)',
+                        borderWidth: 1,
+                        titleColor: isDark ? '#e2e8f0' : '#1e293b',
+                        bodyColor: isDark ? '#94a3b8' : '#475569',
+                        padding: 12, cornerRadius: 12,
+                        callbacks: {
+                            label: ctx => {
+                                const val = ctx.parsed;
+                                const total = ctx.dataset.data.reduce((s, v) => s + v, 0);
+                                const pct = total ? ((val / total) * 100).toFixed(1) : 0;
+                                return ` ${window.formatCurrency(val)} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '65%',
+                animation: { animateRotate: true, animateScale: true, duration: 700, easing: 'easeOutQuart' }
             }
         });
+        buildCustomLegend('revenue-legend-container', revenueByCategory, revenueColors);
+    } else if (revenueLegendContainer) {
+        revenueLegendContainer.innerHTML = '<div class="col-span-2 text-center text-slate-400 py-4 text-xs">Không có dữ liệu doanh thu</div>';
     }
 
-    if (cashflowTrendChartCtx && currentData.length > 0) {
-        const dataByDate = currentData.reduce((acc, curr) => { 
-            const date = curr.date.split('T')[0]; 
-            if (!acc[date]) acc[date] = { income: 0, expense: 0 }; 
-            acc[date][curr.type] += (curr.amount || 0); 
-            return acc; 
+    // 2. Expense Pie Chart (Cơ cấu chi phí)
+    const expenses = currentData.filter(t => t.type === 'expense');
+    if (expensePieChartCtx && expenses.length > 0) {
+        const expenseByCategory = expenses.reduce((acc, curr) => { 
+            acc[curr.category] = (acc[curr.category] || 0) + (curr.amount || 0); return acc; 
         }, {});
-        const sortedDates = Object.keys(dataByDate).sort((a,b) => new Date(a) - new Date(b));
+        const expenseColors = ['#ef4444', '#f97316', '#eab308', '#ec4899', '#8b5cf6', '#a855f7', '#f43f5e'];
+        
+        expensePieChart = new Chart(expensePieChartCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(expenseByCategory),
+                datasets: [{
+                    data: Object.values(expenseByCategory),
+                    backgroundColor: expenseColors.map(c => isDark ? c + 'cc' : c + 'dd'),
+                    borderColor: isDark ? '#0f172a' : '#ffffff',
+                    borderWidth: isDark ? 3 : 2,
+                    hoverBackgroundColor: expenseColors,
+                    hoverBorderColor: expenseColors,
+                    hoverBorderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)',
+                        borderColor: isDark ? 'rgba(239,68,68,0.3)' : 'rgba(239,68,68,0.2)',
+                        borderWidth: 1,
+                        titleColor: isDark ? '#e2e8f0' : '#1e293b',
+                        bodyColor: isDark ? '#94a3b8' : '#475569',
+                        padding: 12, cornerRadius: 12,
+                        callbacks: {
+                            label: ctx => {
+                                const val = ctx.parsed;
+                                const total = ctx.dataset.data.reduce((s, v) => s + v, 0);
+                                const pct = total ? ((val / total) * 100).toFixed(1) : 0;
+                                return ` ${window.formatCurrency(val)} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '65%',
+                animation: { animateRotate: true, animateScale: true, duration: 700, easing: 'easeOutQuart' }
+            }
+        });
+        buildCustomLegend('expense-legend-container', expenseByCategory, expenseColors);
+    } else if (expenseLegendContainer) {
+        expenseLegendContainer.innerHTML = '<div class="col-span-2 text-center text-slate-400 py-4 text-xs">Không có dữ liệu chi phí</div>';
+    }
+
+    // 3. Cashflow Combo Chart (Dòng tiền theo thời gian)
+    if (cashflowTrendChartCtx && currentData.length > 0) {
         const incomeData = sortedDates.map(date => dataByDate[date].income);
         const expenseData = sortedDates.map(date => dataByDate[date].expense);
+        const profitData = sortedDates.map(date => dataByDate[date].income - dataByDate[date].expense);
 
         cashflowTrendChart = new Chart(cashflowTrendChartCtx, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: sortedDates,
                 datasets: [
-                    { label: 'Doanh thu', data: incomeData, borderColor: '#10b981', backgroundColor: '#10b98115', fill: true, tension: 0.2 },
-                    { label: 'Chi phí', data: expenseData, borderColor: '#ef4444', backgroundColor: '#ef444415', fill: true, tension: 0.2 }
+                    { 
+                        label: 'Doanh thu', 
+                        data: incomeData, 
+                        backgroundColor: isDark ? 'rgba(16, 185, 129, 0.45)' : 'rgba(16, 185, 129, 0.7)', 
+                        borderColor: '#10b981',
+                        borderWidth: 1.5,
+                        borderRadius: 8,
+                        barPercentage: 0.55,
+                        order: 2
+                    },
+                    { 
+                        label: 'Chi phí', 
+                        data: expenseData, 
+                        backgroundColor: isDark ? 'rgba(239, 68, 68, 0.45)' : 'rgba(239, 68, 68, 0.7)', 
+                        borderColor: '#ef4444',
+                        borderWidth: 1.5,
+                        borderRadius: 8,
+                        barPercentage: 0.55,
+                        order: 2
+                    },
+                    { 
+                        label: 'Lợi nhuận ròng', 
+                        data: profitData, 
+                        type: 'line',
+                        borderColor: '#38bdf8', 
+                        backgroundColor: 'rgba(56, 189, 248, 0.1)', 
+                        fill: false, 
+                        tension: 0.4,
+                        borderWidth: 3.5,
+                        pointBackgroundColor: '#38bdf8',
+                        pointBorderColor: isDark ? '#070d19' : '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: sortedDates.length > 30 ? 0 : 4,
+                        pointHoverRadius: 6,
+                        order: 1
+                    }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { labels: { color: textColor } }
+                    legend: {
+                        labels: {
+                            color: textColor,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            boxWidth: 8,
+                            padding: 16
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)',
+                        borderColor: isDark ? 'rgba(56,189,248,0.25)' : 'rgba(56,189,248,0.2)',
+                        borderWidth: 1,
+                        titleColor: isDark ? '#e2e8f0' : '#1e293b',
+                        bodyColor: isDark ? '#94a3b8' : '#475569',
+                        padding: 12,
+                        cornerRadius: 12,
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: ${window.formatCurrency(ctx.parsed.y)}`
+                        }
+                    }
                 },
                 scales: {
-                    x: { grid: { color: gridColor }, ticks: { color: textColor } },
-                    y: { grid: { color: gridColor }, ticks: { color: textColor } }
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, maxRotation: 45 }
+                    },
+                    y: {
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: textColor,
+                            callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v
+                        }
+                    }
                 }
             }
         });
@@ -321,28 +586,167 @@ window.renderProductPerformanceReports = function(source) {
         profit: p.totalRevenue - (p.costPrice * p.quantity)
     }));
 
-    // Top Selling
-    const topSelling = [...statsArray].sort((a, b) => b.quantity - a.quantity).slice(0, 5);
-    const topSellingDiv = document.getElementById('top-selling-products');
-    if (topSellingDiv) {
-        topSellingDiv.innerHTML = topSelling.map(p => `
-            <div class="flex justify-between items-center p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs">
-                <span class="font-semibold text-slate-700 dark:text-slate-300">${p.name}</span>
-                <span class="bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold px-2 py-0.5 rounded-lg">Đã bán ${p.quantity}</span>
-            </div>
-        `).join('') || '<p class="text-center text-gray-500 text-xs py-4">Không có dữ liệu.</p>';
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#94a3b8' : '#475569';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+    // Helper: tạo gradient màu ngang cho bar chart (hiệu ứng neon gradient)
+    const makeHBarGradient = (ctx, color1, color2) => {
+        const canvas = ctx.canvas;
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(1, color2);
+        return gradient;
+    };
+
+    // Helper: xây dựng legend summary cards bên dưới biểu đồ
+    const buildBarLegendCards = (containerId, items, colorArr, valueFormatter) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        const maxVal = Math.max(...items.map(item => item.value), 1);
+        items.forEach((item, idx) => {
+            const color = colorArr[idx % colorArr.length];
+            const pct = ((item.value / maxVal) * 100).toFixed(0);
+            const card = document.createElement('div');
+            card.className = 'flex items-center gap-2.5 p-2 rounded-xl bg-white/20 dark:bg-slate-900/30 border border-white/10 dark:border-white/5 shadow-sm text-slate-700 dark:text-slate-300';
+            card.innerHTML = `
+                <span class="font-bold text-[10px] w-4 text-right shrink-0 text-slate-400 dark:text-slate-500">${idx + 1}</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-center mb-0.5">
+                        <span class="truncate font-semibold text-xs text-slate-700 dark:text-slate-200">${item.name}</span>
+                        <span class="font-bold text-xs ml-2 shrink-0" style="color:${color}">${valueFormatter(item.value)}</span>
+                    </div>
+                    <div class="h-1.5 rounded-full overflow-hidden" style="background:rgba(148,163,184,0.12)">
+                        <div class="h-full rounded-full" style="width:${pct}%; background:linear-gradient(90deg,${color}99,${color}); box-shadow: 0 0 6px ${color}70"></div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    };
+
+    // Top Selling Chart (Cột ngang với gradient + neon)
+    if (topSellingChart) topSellingChart.destroy();
+    const topSellingChartCtx = document.getElementById('top-selling-chart')?.getContext('2d');
+    const topSellingLegendContainer = document.getElementById('top-selling-legend');
+    if (topSellingChartCtx) {
+        const topSelling = [...statsArray].sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+        if (topSelling.length === 0) {
+            // Show empty state
+            const parentEl = topSellingChartCtx.canvas.parentElement;
+            if (parentEl) parentEl.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 dark:text-slate-500 text-sm flex-col gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg><span>Chưa có dữ liệu bán hàng</span></div>';
+        } else {
+            const labels = topSelling.map(p => p.name);
+            const data = topSelling.map(p => p.quantity);
+            const sellingGradient = makeHBarGradient(topSellingChartCtx, 'rgba(16,185,129,0.15)', 'rgba(16,185,129,0.85)');
+            
+            topSellingChart = new Chart(topSellingChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Số lượng bán',
+                        data: data,
+                        backgroundColor: sellingGradient,
+                        borderColor: '#10b981',
+                        borderWidth: isDark ? 1.5 : 1,
+                        borderRadius: { topRight: 8, bottomRight: 8 },
+                        barThickness: isDark ? 18 : 16
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)',
+                            borderColor: isDark ? 'rgba(16,185,129,0.4)' : 'rgba(16,185,129,0.3)',
+                            borderWidth: 1,
+                            titleColor: isDark ? '#e2e8f0' : '#1e293b',
+                            bodyColor: isDark ? '#94a3b8' : '#475569',
+                            padding: 10,
+                            cornerRadius: 12,
+                            callbacks: {
+                                label: ctx => ` ${ctx.parsed.x.toLocaleString('vi-VN')} sản phẩm`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 } },
+                        y: { grid: { display: false }, ticks: { color: isDark ? '#e2e8f0' : '#1e293b', font: { weight: '700', size: 11 } } }
+                    }
+                }
+            });
+
+            // Render legend cards
+            if (topSellingLegendContainer) {
+                buildBarLegendCards('top-selling-legend', topSelling.map(p => ({ name: p.name, value: p.quantity })), ['#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6'], v => `${v.toLocaleString('vi-VN')} sp`);
+            }
+        }
     }
 
-    // Top Profit
-    const topProfit = [...statsArray].sort((a, b) => b.profit - a.profit).slice(0, 5);
-    const topProfitDiv = document.getElementById('top-profit-products');
-    if (topProfitDiv) {
-        topProfitDiv.innerHTML = topProfit.map(p => `
-            <div class="flex justify-between items-center p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs">
-                <span class="font-semibold text-slate-700 dark:text-slate-300">${p.name}</span>
-                <span class="text-emerald-600 dark:text-emerald-400 font-bold">${window.formatCurrency(p.profit)}</span>
-            </div>
-        `).join('') || '<p class="text-center text-gray-500 text-xs py-4">Không có dữ liệu.</p>';
+    // Top Profit Chart (Cột ngang với gradient indigo)
+    if (topProfitChart) topProfitChart.destroy();
+    const topProfitChartCtx = document.getElementById('top-profit-chart')?.getContext('2d');
+    const topProfitLegendContainer = document.getElementById('top-profit-legend');
+    if (topProfitChartCtx) {
+        const topProfit = [...statsArray].sort((a, b) => b.profit - a.profit).slice(0, 5);
+        if (topProfit.length === 0) {
+            const parentEl = topProfitChartCtx.canvas.parentElement;
+            if (parentEl) parentEl.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 dark:text-slate-500 text-sm flex-col gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg><span>Chưa có dữ liệu lợi nhuận</span></div>';
+        } else {
+            const labels = topProfit.map(p => p.name);
+            const data = topProfit.map(p => p.profit);
+            const profitGradient = makeHBarGradient(topProfitChartCtx, 'rgba(99,102,241,0.15)', 'rgba(99,102,241,0.85)');
+            
+            topProfitChart = new Chart(topProfitChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Lợi nhuận',
+                        data: data,
+                        backgroundColor: profitGradient,
+                        borderColor: '#6366f1',
+                        borderWidth: isDark ? 1.5 : 1,
+                        borderRadius: { topRight: 8, bottomRight: 8 },
+                        barThickness: isDark ? 18 : 16
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)',
+                            borderColor: isDark ? 'rgba(99,102,241,0.4)' : 'rgba(99,102,241,0.3)',
+                            borderWidth: 1,
+                            titleColor: isDark ? '#e2e8f0' : '#1e293b',
+                            bodyColor: isDark ? '#94a3b8' : '#475569',
+                            padding: 10,
+                            cornerRadius: 12,
+                            callbacks: {
+                                label: ctx => ` ${window.formatCurrency(ctx.parsed.x)}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, callback: v => (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v) } },
+                        y: { grid: { display: false }, ticks: { color: isDark ? '#e2e8f0' : '#1e293b', font: { weight: '700', size: 11 } } }
+                    }
+                }
+            });
+
+            // Render legend cards
+            if (topProfitLegendContainer) {
+                buildBarLegendCards('top-profit-legend', topProfit.map(p => ({ name: p.name, value: p.profit })), ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'], v => window.formatCurrency(v));
+            }
+        }
     }
 
     // --- Product Chart ---
@@ -413,6 +817,15 @@ window.renderInventoryReport = function() {
     const tableDiv = document.getElementById('inventory-report-table');
     if (!tableDiv) return;
 
+    // Calculate inventory stats (Tổng tồn kho và Giá trị vốn tồn)
+    const totalQty = window.products.reduce((acc, p) => acc + (p.stock || 0), 0);
+    const totalVal = window.products.reduce((acc, p) => acc + ((p.stock || 0) * (p.costPrice || 0)), 0);
+
+    const totalInventoryQtyEl = document.getElementById('total-inventory-qty');
+    const totalInventoryValueEl = document.getElementById('total-inventory-value');
+    if (totalInventoryQtyEl) totalInventoryQtyEl.textContent = totalQty;
+    if (totalInventoryValueEl) totalInventoryValueEl.textContent = window.formatCurrency(totalVal);
+
     const threshold = +(thresholdInput?.value || 10);
     let tableHTML = `
         <table class="w-full text-sm text-left text-slate-500 dark:text-slate-400">
@@ -441,9 +854,111 @@ window.renderInventoryReport = function() {
             `;
         });
     }
-    
     tableHTML += '</tbody></table>';
     tableDiv.innerHTML = tableHTML;
+
+    // Render Inventory Pie Chart (Cơ cấu vốn tồn kho)
+    if (inventoryPieChart) inventoryPieChart.destroy();
+    const inventoryPieChartCtx = document.getElementById('inventory-pie-chart')?.getContext('2d');
+    const inventoryLegendContainer = document.getElementById('inventory-legend-container');
+    
+    if (inventoryPieChartCtx && window.products.length > 0) {
+        const productAllocation = {};
+        window.products.forEach(p => {
+            const cost = (p.stock || 0) * (p.costPrice || 0);
+            if (cost > 0) {
+                productAllocation[p.name] = cost;
+            }
+        });
+        
+        const sortedAllocation = Object.entries(productAllocation)
+            .sort((a, b) => b[1] - a[1]) // Sắp xếp giảm dần theo vốn tồn
+            .slice(0, 6); // Lấy top 6 sản phẩm nhiều vốn tồn nhất
+            
+        // Nếu có nhiều hơn 6 sản phẩm, gom phần còn lại vào "Khác"
+        const topProductCapital = sortedAllocation.reduce((s, [_, v]) => s + v, 0);
+        const totalCapital = window.products.reduce((acc, p) => acc + ((p.stock || 0) * (p.costPrice || 0)), 0);
+        const diff = totalCapital - topProductCapital;
+        if (diff > 0) {
+            sortedAllocation.push(['Khác', diff]);
+        }
+        
+        const labels = sortedAllocation.map(([name, _]) => name);
+        const data = sortedAllocation.map(([_, val]) => val);
+        const isDark = document.documentElement.classList.contains('dark');
+        const allocationColors = ['#f59e0b', '#f97316', '#3b82f6', '#06b6d4', '#10b981', '#a855f7', '#64748b'];
+        
+        inventoryPieChart = new Chart(inventoryPieChartCtx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: allocationColors.map(c => isDark ? c + 'cc' : c + 'dd'),
+                    borderColor: isDark ? '#0f172a' : '#ffffff',
+                    borderWidth: isDark ? 3 : 2,
+                    hoverBackgroundColor: allocationColors,
+                    hoverBorderColor: allocationColors,
+                    hoverBorderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isDark ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)',
+                        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                        borderWidth: 1,
+                        titleColor: isDark ? '#e2e8f0' : '#1e293b',
+                        bodyColor: isDark ? '#94a3b8' : '#475569',
+                        padding: 12,
+                        cornerRadius: 12,
+                        callbacks: {
+                            label: (ctx) => {
+                                const val = ctx.parsed;
+                                const pct = totalCapital ? ((val / totalCapital) * 100).toFixed(1) : 0;
+                                return ` ${window.formatCurrency(val)} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '66%',
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 700,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+
+        // Tải danh sách Legend Cards kính mờ
+        if (inventoryLegendContainer) {
+            inventoryLegendContainer.innerHTML = '';
+            sortedAllocation.forEach(([key, val], idx) => {
+                const pct = totalCapital ? ((val / totalCapital) * 100).toFixed(1) : 0;
+                const color = allocationColors[idx % allocationColors.length];
+                const card = document.createElement('div');
+                card.className = "flex items-center justify-between p-2 rounded-xl bg-white/20 dark:bg-slate-900/30 border border-white/10 dark:border-white/5 shadow-sm text-slate-700 dark:text-slate-300";
+                card.innerHTML = `
+                    <div class="flex items-center gap-1.5 truncate">
+                        <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: ${color}; box-shadow: 0 0 8px ${color}"></span>
+                        <span class="truncate font-medium">${key}</span>
+                    </div>
+                    <div class="text-right shrink-0 font-semibold pl-2">
+                        <div>${window.formatCurrency(val)}</div>
+                        <div class="text-[10px] text-slate-400 dark:text-slate-500">${pct}%</div>
+                    </div>
+                `;
+                inventoryLegendContainer.appendChild(card);
+            });
+        }
+    } else if (inventoryLegendContainer) {
+        inventoryLegendContainer.innerHTML = '<div class="text-center text-slate-400 py-4 text-xs">Không có dữ liệu tồn kho</div>';
+    }
 };
 
 window.handleFilterChange = function() {
@@ -684,7 +1199,7 @@ window.renderChat = function() {
         if (msg.role === 'model') {
             let html = msg.parts[0].text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             const speakBtn = document.createElement('button');
-            speakBtn.className = 'speak-btn ml-2.5 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition inline-block align-middle text-indigo-500';
+            speakBtn.className = 'speak-btn ml-2.5 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition inline-block align-middle text-brand-500';
             speakBtn.title = 'Đọc phân tích';
             speakBtn.innerHTML = window.playIconSVG;
             speakBtn.dataset.text = msg.parts[0].text;
@@ -858,21 +1373,80 @@ document.addEventListener('DOMContentLoaded', () => {
     reportRangeEl?.addEventListener('change', window.handleFilterChange);
     customStartEl?.addEventListener('change', () => { if (window.renderAll) window.renderAll(); });
     customEndEl?.addEventListener('change', () => { if (window.renderAll) window.renderAll(); });
+
+    // Setup report range pills
+    const pills = document.querySelectorAll('#report-range-pills .report-pill');
+    pills.forEach(pill => {
+        pill.addEventListener('click', (e) => {
+            const val = e.currentTarget.dataset.value;
+            if (reportRangeEl) {
+                reportRangeEl.value = val;
+                reportRangeEl.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+
+    window.syncReportRangePills = function() {
+        const val = reportRangeEl?.value || 'all';
+        pills.forEach(pill => {
+            if (pill.dataset.value === val) {
+                pill.classList.add('pill-active');
+            } else {
+                pill.classList.remove('pill-active');
+            }
+        });
+    };
+
+    // Listen for report-range change to sync pills
+    reportRangeEl?.addEventListener('change', window.syncReportRangePills);
+    
+    // Initial sync
+    window.syncReportRangePills();
     
     document.getElementById('low-stock-threshold')?.addEventListener('input', window.renderInventoryReport);
     document.getElementById('product-report-filter')?.addEventListener('change', () => {
         const { currentPeriodData } = window.getReportData();
         window.renderProductPerformanceReports(currentPeriodData);
     });
-    document.querySelectorAll('.report-tab-button').forEach(button => {
-        button.addEventListener('click', (e) => {
-            document.querySelectorAll('.report-tab-button').forEach(btn => btn.classList.remove('active'));
-            e.currentTarget.classList.add('active');
-            
-            const tabName = e.currentTarget.dataset.report;
-            document.querySelectorAll('[id^="report-content-"]').forEach(content => content.classList.add('hidden'));
-            document.getElementById(`report-content-${tabName}`)?.classList.remove('hidden');
+    const reportTabButtons = document.querySelectorAll('.report-tab-button');
+    const mobileReportTabSelector = document.getElementById('mobile-report-tab-selector');
+
+    function switchReportTab(tabName) {
+        // Sync desktop buttons
+        reportTabButtons.forEach(btn => {
+            if (btn.dataset.report === tabName) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
         });
+
+        // Sync mobile dropdown select
+        if (mobileReportTabSelector && mobileReportTabSelector.value !== tabName) {
+            mobileReportTabSelector.value = tabName;
+            mobileReportTabSelector.dispatchEvent(new CustomEvent('custom-value-set'));
+        }
+
+        // Show/hide content panels
+        document.querySelectorAll('[id^="report-content-"]').forEach(content => {
+            if (content.id === `report-content-${tabName}`) {
+                content.classList.remove('hidden');
+            } else {
+                content.classList.add('hidden');
+            }
+        });
+    }
+
+    reportTabButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const tabName = e.currentTarget.dataset.report;
+            switchReportTab(tabName);
+        });
+    });
+
+    mobileReportTabSelector?.addEventListener('change', (e) => {
+        const tabName = e.target.value;
+        switchReportTab(tabName);
     });
 
     addAiBtn?.addEventListener('click', window.openAiEntryModal);
