@@ -138,7 +138,7 @@ window.renderAll = function() {
         netProfitEl.classList.toggle('text-green-600', totalIncome - totalExpense >= 0);
         netProfitEl.classList.toggle('text-red-600', totalIncome - totalExpense < 0);
     }
-    if (exportXlsxBtn) exportXlsxBtn.disabled = currentPeriodData.length === 0;
+    if (exportXlsxBtn) exportXlsxBtn.disabled = searchedTransactions.length === 0;
 
     window.renderTransactionList(searchedTransactions);
     window.renderPlanList(searchedPlans);

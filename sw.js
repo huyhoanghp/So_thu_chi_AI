@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sothuchi-v7-cache-v4';
+const CACHE_NAME = 'sothuchi-v7-cache-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -16,7 +16,14 @@ const ASSETS = [
   './js/app.js',
   './icon-192.png',
   './icon-512.png',
-  './manifest.json'
+  './manifest.json',
+  'https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js',
+  'https://cdn.tailwindcss.com',
+  'https://cdn.jsdelivr.net/npm/chart.js',
+  'https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js',
+  'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'
 ];
 
 self.addEventListener('install', e => {

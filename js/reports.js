@@ -462,37 +462,70 @@ window.handleFilterChange = function() {
 
 window.callGeminiAPI = async function(modelEndpointAction, payloadBody) {
     const models = [
-        'gemini-1.5-flash',
+        'gemini-2.5-flash',
+        'gemini-2.5-pro',
         'gemini-2.0-flash',
-        'gemini-1.5-pro'
+        'gemini-2.0-flash-lite',
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-8b',
+        'gemini-1.5-pro',
+        'gemini-2.0-pro-exp-02-05',
+        'gemini-2.0-flash-thinking-exp-01-21',
+        'gemini-2.0-flash-lite-preview-02-05',
+        'gemini-1.5-flash-latest',
+        'gemini-1.5-pro-latest',
+        'gemini-1.5-flash-8b-latest',
+        'gemini-2.0-flash-exp',
+        'gemini-2.0-flash-thinking-exp'
     ];
+    
+    let lastIndex = parseInt(localStorage.getItem('last_gemini_model_index') || '-1', 10);
+    let startIndex = (lastIndex + 1) % models.length;
     
     const errors = [];
     for (let i = 0; i < models.length; i++) {
-        const model = models[i];
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${modelEndpointAction}?key=${window.geminiApiKey}`;
+        const modelIdx = (startIndex + i) % models.length;
+        const model = models[modelIdx];
         
-        try {
-            console.log(`Trying Gemini model: ${model}`);
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payloadBody)
-            });
-            
-            if (response.ok) {
-                return await response.json();
+        const apiVersions = ['v1beta', 'v1'];
+        let modelErrors = [];
+        let skippedModel = false;
+        
+        for (const apiVersion of apiVersions) {
+            const apiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:${modelEndpointAction}?key=${window.geminiApiKey}`;
+            try {
+                console.log(`Trying Gemini model: ${model} (${apiVersion})`);
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payloadBody)
+                });
+                
+                const errJson = await response.json().catch(() => ({}));
+                if (response.ok) {
+                    localStorage.setItem('last_gemini_model_index', modelIdx.toString());
+                    return errJson;
+                }
+                
+                const errMessage = errJson.error?.message || `Status code ${response.status}`;
+                console.warn(`Model ${model} (${apiVersion}) failed: ${errMessage}`);
+                modelErrors.push(`${apiVersion}: ${errMessage}`);
+                
+                // If it is a quota or rate limit error, trying other API version is redundant. Move to next model.
+                if (response.status === 429 || errMessage.toLowerCase().includes("quota") || errMessage.toLowerCase().includes("rate limit") || errMessage.toLowerCase().includes("exceeded")) {
+                    skippedModel = true;
+                    break;
+                }
+            } catch (err) {
+                console.warn(`Network error with model ${model} (${apiVersion}): ${err.message}`);
+                modelErrors.push(`${apiVersion} (lỗi mạng): ${err.message}`);
             }
-            
-            const errJson = await response.json().catch(() => ({}));
-            const errMessage = errJson.error?.message || `Status code ${response.status}`;
-            console.warn(`Model ${model} failed: ${errMessage}`);
-            errors.push(`${model}: ${errMessage}`);
-        } catch (err) {
-            console.warn(`Network error with model ${model}: ${err.message}`);
-            errors.push(`${model} (lỗi mạng): ${err.message}`);
         }
+        
+        errors.push(`${model} [${modelErrors.join("; ")}]`);
+        // If we broke out due to quota limits, we continue the outer loop to test the next model
     }
+    
     let finalError = errors.join(" | ");
     if (finalError.includes("Failed to fetch") && window.location.protocol === "file:") {
         finalError += " \n(Gợi ý: Trình duyệt chặn kết nối API khi mở trang trực tiếp bằng file://. Bạn cần chạy ứng dụng qua máy chủ Web cục bộ như Live Server hoặc Python http.server)";
@@ -689,25 +722,28 @@ window.handleAiChatSubmit = async function(e) {
     
     aiThinkingIndicator?.classList.remove('hidden');
     const { currentPeriodData } = window.getReportData();
+    const reportRangeEl = document.getElementById('report-range');
+    const activePeriod = reportRangeEl ? reportRangeEl.value : 'all';
     
-    const sortedData = [...currentPeriodData].sort((a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date));
-    const transactionDetails = sortedData.map((t, idx) => {
+    // Sort all transactions chronologically
+    const sortedAll = [...window.transactions].sort((a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date));
+    const allTransactionDetails = sortedAll.map((t, idx) => {
         const dateStr = t.date || (t.createdAt ? new Date(t.createdAt).toISOString().split('T')[0] : '');
-        const typeStr = t.type === 'income' ? 'Thu (Doanh thu)' : 'Chi (Chi phí)';
+        const typeStr = t.type === 'income' ? 'Thu' : 'Chi';
         const customerStr = t.customerName ? ` - Khách: ${t.customerName}` : '';
         const qtyStr = t.quantity ? ` (SL: ${t.quantity})` : '';
         return `${idx + 1}. [${dateStr}] ${typeStr} - ${t.category}: ${t.description}${qtyStr} - Số tiền: ${window.formatCurrency(t.amount)}${customerStr}`;
     }).join('\n');
 
-    const dataSummary = `BÁO CÁO TỔNG QUAN TÀI CHÍNH:
-- Tổng thu: ${totalIncomeEl?.textContent || '0 ₫'}
-- Tổng chi: ${totalExpenseEl?.textContent || '0 ₫'}
-- Lợi nhuận ròng: ${netProfitEl?.textContent || '0 ₫'}
+    const dataSummary = `BÁO CÁO CỦA KỲ ĐANG XEM (Kỳ lọc: ${activePeriod}):
+- Tổng thu trong kỳ: ${totalIncomeEl?.textContent || '0 ₫'}
+- Tổng chi trong kỳ: ${totalExpenseEl?.textContent || '0 ₫'}
+- Lợi nhuận ròng trong kỳ: ${netProfitEl?.textContent || '0 ₫'}
 
-DANH SÁCH LỊCH SỬ GIAO DỊCH CHI TIẾT TRONG KỲ:
-${transactionDetails || 'Chưa ghi nhận giao dịch nào.'}`;
+TOÀN BỘ DANH SÁCH LỊCH SỬ GIAO DỊCH TRONG HỆ THỐNG:
+${allTransactionDetails || 'Chưa ghi nhận giao dịch nào.'}`;
 
-    const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thông minh của ứng dụng "Sổ Thu Chi Pro". Hãy dựa vào báo cáo tổng quan và danh sách lịch sử giao dịch chi tiết được cung cấp để trả lời các câu hỏi của người dùng một cách chính xác, chuyên nghiệp, ngắn gọn và hữu ích. Nếu người dùng hỏi về các thống kê cụ thể (ví dụ: sản phẩm nào bán chạy nhất, khách hàng nào mua nhiều nhất, khoản chi nào tốn kém nhất, chi tiết các giao dịch trong ngày/tuần), hãy tính toán trực tiếp từ danh sách chi tiết được cung cấp.`;
+    const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thông minh của ứng dụng "Sổ Thu Chi Pro". Hãy dựa vào báo cáo tổng quan kỳ đang xem và danh sách toàn bộ lịch sử giao dịch được cung cấp để trả lời các câu hỏi của người dùng một cách chính xác, chuyên nghiệp, ngắn gọn và hữu ích. Nếu người dùng hỏi về các thống kê cụ thể (ví dụ: sản phẩm nào bán chạy nhất, khách hàng nào mua nhiều nhất, khoản chi nào tốn kém nhất, so sánh giữa các tháng/năm, chi tiết các giao dịch trong ngày/tuần), hãy tính toán trực tiếp từ danh sách toàn bộ giao dịch được cung cấp.`;
     
     try {
         const payload = {

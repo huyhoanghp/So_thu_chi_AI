@@ -501,37 +501,57 @@ window.deleteTransaction = function(tx) {
 
 window.exportToXLSX = function() {
     if (typeof XLSX === 'undefined') {
-        window.showToast('Lỗi: SheetJS chưa được tải.', 'error');
+        window.showToast('Lỗi: Thư viện SheetJS chưa được tải.', 'error');
         return;
     }
-    const { currentPeriodData } = window.getReportData();
-    const sorted = [...currentPeriodData].sort((a,b)=> new Date(a.date) - new Date(b.date));
-    const totalIncome = sorted.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amount||0),0);
-    const totalExpense = sorted.filter(t=>t.type==='expense').reduce((s,t)=>s+(t.amount||0),0);
+    
+    // Retrieve the currently filtered transactions in the History tab
+    const filteredHistoryTransactions = window.getFilteredHistoryData ? window.getFilteredHistoryData() : window.transactions;
+    
+    // Apply search filter if there's text in search-history input
+    const searchHistoryInput = document.getElementById('search-history');
+    const term = (searchHistoryInput?.value || '').toLowerCase().trim();
+    
+    let exportedData = [...filteredHistoryTransactions];
+    if (term) {
+        exportedData = exportedData.filter(item => 
+            Object.values(item).some(value => String(value || '').toLowerCase().includes(term))
+        );
+    }
+    
+    if (exportedData.length === 0) {
+        window.showToast('Không có dữ liệu giao dịch nào để xuất.', 'error');
+        return;
+    }
+    
+    // Sort transactions chronologically
+    const sorted = exportedData.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const totalIncome = sorted.filter(t => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const totalExpense = sorted.filter(t => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
     
     const summaryData = [
-        ["BÁO CÁO TỔNG QUAN"], 
+        ["BÁO CÁO TỔNG QUAN PHÂN TÍCH THU CHI"], 
         [],
         ["Khoản mục", "Số tiền"],
         ["Tổng Thu", totalIncome],
         ["Tổng Chi", totalExpense],
-        ["Lợi Nhuận", totalIncome-totalExpense]
+        ["Lợi Nhuận", totalIncome - totalExpense]
     ];
     const ws_summary = XLSX.utils.aoa_to_sheet(summaryData);
     ws_summary['!cols'] = [{wch: 25}, {wch: 20}];
 
     const header = ['Ngày', 'Loại', 'Nội dung', 'Số tiền', 'Danh mục', 'Tên khách hàng', 'Ghi chú'];
     const dataRows = sorted.map(t => ({
-        'Ngày': new Date(t.createdAt || t.date),
+        'Ngày': window.formatDisplayDateTime(t.createdAt, t.date),
         'Loại': t.type === 'income' ? 'Thu' : 'Chi',
-        'Nội dung': t.description,
-        'Số tiền': t.type === 'income' ? t.amount : -t.amount,
-        'Danh mục': t.category,
+        'Nội dung': t.description || '',
+        'Số tiền': t.type === 'income' ? (Number(t.amount) || 0) : -(Number(t.amount) || 0),
+        'Danh mục': t.category || '',
         'Tên khách hàng': t.customerName || '',
         'Ghi chú': t.customerNote || ''
     }));
     const ws_details = XLSX.utils.json_to_sheet(dataRows, {header: header});
-    ws_details['!cols'] = [{wch:20},{wch:8},{wch:30},{wch:18},{wch:20},{wch:20},{wch:30}];
+    ws_details['!cols'] = [{wch:22},{wch:8},{wch:30},{wch:18},{wch:20},{wch:20},{wch:30}];
 
     const totalRowNum = dataRows.length + 2;
     ws_details[`C${totalRowNum}`] = {t:'s', v:'LỢI NHUẬN TỔNG CỘNG:'};
@@ -539,6 +559,13 @@ window.exportToXLSX = function() {
 
     for(let i = 2; i <= totalRowNum; i++) {
         if(ws_details[`D${i}`]) ws_details[`D${i}`].z = '#,##0 "₫"';
+    }
+    
+    // Explicitly update worksheet range reference (!ref) to include the manual summary row
+    let range = XLSX.utils.decode_range(ws_details['!ref']);
+    if (range.e.r < totalRowNum - 1) {
+        range.e.r = totalRowNum - 1;
+        ws_details['!ref'] = XLSX.utils.encode_range(range);
     }
 
     const wb = XLSX.utils.book_new();
