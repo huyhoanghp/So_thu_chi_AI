@@ -464,11 +464,10 @@ window.callGeminiAPI = async function(modelEndpointAction, payloadBody) {
     const models = [
         'gemini-1.5-flash',
         'gemini-2.0-flash',
-        'gemini-1.5-pro',
-        'gemini-2.5-flash'
+        'gemini-1.5-pro'
     ];
     
-    let lastError = null;
+    const errors = [];
     for (let i = 0; i < models.length; i++) {
         const model = models[i];
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${modelEndpointAction}?key=${window.geminiApiKey}`;
@@ -488,14 +487,17 @@ window.callGeminiAPI = async function(modelEndpointAction, payloadBody) {
             const errJson = await response.json().catch(() => ({}));
             const errMessage = errJson.error?.message || `Status code ${response.status}`;
             console.warn(`Model ${model} failed: ${errMessage}`);
-            
-            lastError = new Error(`Model ${model} error: ${errMessage}`);
+            errors.push(`${model}: ${errMessage}`);
         } catch (err) {
             console.warn(`Network error with model ${model}: ${err.message}`);
-            lastError = err;
+            errors.push(`${model} (lỗi mạng): ${err.message}`);
         }
     }
-    throw lastError || new Error("Tất cả các model Gemini đều không phản hồi.");
+    let finalError = errors.join(" | ");
+    if (finalError.includes("Failed to fetch") && window.location.protocol === "file:") {
+        finalError += " \n(Gợi ý: Trình duyệt chặn kết nối API khi mở trang trực tiếp bằng file://. Bạn cần chạy ứng dụng qua máy chủ Web cục bộ như Live Server hoặc Python http.server)";
+    }
+    throw new Error(finalError);
 };
 
 window.openAiEntryModal = function() {
@@ -687,13 +689,30 @@ window.handleAiChatSubmit = async function(e) {
     
     aiThinkingIndicator?.classList.remove('hidden');
     const { currentPeriodData } = window.getReportData();
-    const dataSummary = `Dữ liệu:\n- Tổng thu: ${totalIncomeEl?.textContent || '0 ₫'}\n- Tổng chi: ${totalExpenseEl?.textContent || '0 ₫'}\n- Lợi nhuận: ${netProfitEl?.textContent || '0 ₫'}\n- Chi tiết chi phí: ${currentPeriodData.filter(t => t.type === 'expense').map(t => `${t.description} (${t.category}): ${window.formatCurrency(t.amount)}`).join(', ') || 'Không có.'}`;
-    const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thân thiện. Nhiệm vụ của bạn là trả lời các câu hỏi dựa trên dữ liệu thu chi được cung cấp một cách ngắn gọn, súc tích.`;
+    
+    const sortedData = [...currentPeriodData].sort((a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date));
+    const transactionDetails = sortedData.map((t, idx) => {
+        const dateStr = t.date || (t.createdAt ? new Date(t.createdAt).toISOString().split('T')[0] : '');
+        const typeStr = t.type === 'income' ? 'Thu (Doanh thu)' : 'Chi (Chi phí)';
+        const customerStr = t.customerName ? ` - Khách: ${t.customerName}` : '';
+        const qtyStr = t.quantity ? ` (SL: ${t.quantity})` : '';
+        return `${idx + 1}. [${dateStr}] ${typeStr} - ${t.category}: ${t.description}${qtyStr} - Số tiền: ${window.formatCurrency(t.amount)}${customerStr}`;
+    }).join('\n');
+
+    const dataSummary = `BÁO CÁO TỔNG QUAN TÀI CHÍNH:
+- Tổng thu: ${totalIncomeEl?.textContent || '0 ₫'}
+- Tổng chi: ${totalExpenseEl?.textContent || '0 ₫'}
+- Lợi nhuận ròng: ${netProfitEl?.textContent || '0 ₫'}
+
+DANH SÁCH LỊCH SỬ GIAO DỊCH CHI TIẾT TRONG KỲ:
+${transactionDetails || 'Chưa ghi nhận giao dịch nào.'}`;
+
+    const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thông minh của ứng dụng "Sổ Thu Chi Pro". Hãy dựa vào báo cáo tổng quan và danh sách lịch sử giao dịch chi tiết được cung cấp để trả lời các câu hỏi của người dùng một cách chính xác, chuyên nghiệp, ngắn gọn và hữu ích. Nếu người dùng hỏi về các thống kê cụ thể (ví dụ: sản phẩm nào bán chạy nhất, khách hàng nào mua nhiều nhất, khoản chi nào tốn kém nhất, chi tiết các giao dịch trong ngày/tuần), hãy tính toán trực tiếp từ danh sách chi tiết được cung cấp.`;
     
     try {
         const payload = {
             contents: [ ...window.chatHistory.map(item => ({ role: item.role, parts: item.parts })), { role: 'user', parts: [{ text: `Dữ liệu: "${dataSummary}". Hãy trả lời: "${userInput}"` }] } ],
-            systemInstruction: { parts: [{ text: systemPrompt }] }
+            system_instruction: { parts: [{ text: systemPrompt }] }
         };
         const result = await window.callGeminiAPI('generateContent', payload);
         const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -710,6 +729,24 @@ window.handleAiChatSubmit = async function(e) {
         aiThinkingIndicator?.classList.add('hidden');
         window.renderChat();
     }
+};
+
+// Clean markdown syntax for natural-sounding Text-to-Speech
+window.cleanMarkdownForSpeech = function(text) {
+    if (!text) return '';
+    return text
+        .replace(/\*\*(.*?)\*\*/g, '$1') // Bold
+        .replace(/\*(.*?)\*/g, '$1')     // Italic
+        .replace(/__(.*?)__/g, '$1')     // Bold underscores
+        .replace(/_(.*?)_/g, '$1')       // Italic underscores
+        .replace(/`{1,3}(.*?)[^`]`{1,3}/g, '$1') // Code block ticks
+        .replace(/#+\s+/g, '')           // Header hashes
+        .replace(/^\s*[-*+]\s+/gm, '')   // List bullets
+        .replace(/^\s*\d+\.\s+/gm, '')   // List numbers
+        .replace(/-\s+/g, ' ')           // Indented bullet line indicators
+        .replace(/[\n\r]+/g, ' ')        // New lines to spacing
+        .replace(/\s+/g, ' ')            // Normalize white spacing
+        .trim();
 };
 
 // TTS Audio Functions (Browser Native SpeechSynthesis)
@@ -731,7 +768,8 @@ window.speakText = function(textToSpeak, buttonElement) {
     buttonElement.disabled = true;
 
     try {
-        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        const cleanedText = window.cleanMarkdownForSpeech(textToSpeak);
+        const utterance = new SpeechSynthesisUtterance(cleanedText);
         utterance.lang = 'vi-VN';
         
         utterance.onstart = () => {
