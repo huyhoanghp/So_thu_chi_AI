@@ -158,14 +158,22 @@ window.listenForData = function() {
     
     window.transactionsCollection.onSnapshot(snapshot => {
         window.transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-            .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            .sort((a, b) => {
+                const dateB = b.createdAt ? window.parseDate(b.createdAt) : window.parseDate(b.date);
+                const dateA = a.createdAt ? window.parseDate(a.createdAt) : window.parseDate(a.date);
+                return dateB - dateA;
+            });
         window.renderAll();
         if (loadingOverlay) loadingOverlay.style.display = 'none';
     }, err => window.showError("Không thể tải lịch sử giao dịch: " + err.message));
 
     window.plansCollection.onSnapshot(snapshot => {
         window.plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-            .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            .sort((a, b) => {
+                const dateB = b.createdAt ? window.parseDate(b.createdAt) : window.parseDate(b.date);
+                const dateA = a.createdAt ? window.parseDate(a.createdAt) : window.parseDate(a.date);
+                return dateB - dateA;
+            });
         window.renderAll();
     }, err => window.showError("Không thể tải danh sách kế hoạch: " + err.message));
     
@@ -251,12 +259,36 @@ document.addEventListener('DOMContentLoaded', () => {
     window.initTheme();
     window.switchTab('pos'); // Start in the Bán hàng tab
 
-    // Register Service Worker for PWA
+    // Register Service Worker for PWA and handle automatic updates
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('Service Worker registered successfully:', reg))
+                .then(reg => {
+                    console.log('Service Worker registered successfully:', reg);
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    console.log('New update available. Reloading...');
+                                    window.showToast("Đang cập nhật phiên bản mới...", "success");
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 1000);
+                                }
+                            }
+                        };
+                    };
+                })
                 .catch(err => console.error('Service Worker registration failed:', err));
+        });
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                refreshing = true;
+                window.location.reload();
+            }
         });
     }
 });

@@ -1,19 +1,19 @@
-const CACHE_NAME = 'sothuchi-v7-cache-v5';
+const CACHE_NAME = 'sothuchi-v7-cache-v6';
 const ASSETS = [
   './',
   './index.html',
   './css/style.css',
-  './js/config.js',
-  './js/theme.js',
-  './js/voice.js',
-  './js/categories.js',
-  './js/promotions.js',
-  './js/products.js',
-  './js/plans.js',
-  './js/transactions.js',
-  './js/pos.js',
-  './js/reports.js',
-  './js/app.js',
+  './js/config.js?v=7.6',
+  './js/theme.js?v=7.6',
+  './js/voice.js?v=7.6',
+  './js/categories.js?v=7.6',
+  './js/promotions.js?v=7.6',
+  './js/products.js?v=7.6',
+  './js/plans.js?v=7.6',
+  './js/transactions.js?v=7.6',
+  './js/pos.js?v=7.6',
+  './js/reports.js?v=7.6',
+  './js/app.js?v=7.6',
   './icon-192.png',
   './icon-512.png',
   './manifest.json',
@@ -48,7 +48,36 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(response => response || fetch(e.request))
-  );
+  const url = new URL(e.request.url);
+  
+  // Cache-First for static third-party CDNs (e.g. SheetJS, Tailwind, Firebase, ChartJS, Fonts)
+  if (url.origin !== self.location.origin) {
+    e.respondWith(
+      caches.match(e.request).then(response => {
+        return response || fetch(e.request).then(networkResponse => {
+          return caches.open(CACHE_NAME).then(cache => {
+            cache.put(e.request, networkResponse.clone());
+            return networkResponse;
+          });
+        });
+      })
+    );
+  } else {
+    // Network-First for local files (so updates are reflected instantly when online)
+    e.respondWith(
+      fetch(e.request)
+        .then(networkResponse => {
+          if (networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(e.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(e.request);
+        })
+    );
+  }
 });

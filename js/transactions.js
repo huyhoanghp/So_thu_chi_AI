@@ -47,7 +47,8 @@ window.getFilteredHistoryData = function() {
 
     return window.transactions.filter(t => {
         if (!t.date) return false;
-        const d = new Date(t.date);
+        const d = window.parseDate(t.date);
+        if (isNaN(d.getTime())) return false;
         return d >= currentStart && d <= currentEnd;
     });
 };

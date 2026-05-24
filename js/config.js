@@ -38,10 +38,22 @@ window.categories = JSON.parse(localStorage.getItem('user_categories')) || {
 // Formatting Utilities
 window.formatCurrency = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
+window.parseDate = (val) => {
+    if (!val) return new Date(NaN);
+    if (val instanceof Date) return val;
+    if (typeof val.toDate === 'function') return val.toDate(); // Live Firestore Timestamp
+    if (typeof val === 'object') {
+        if (val.seconds !== undefined) return new Date(val.seconds * 1000); // Serialized Timestamp (Firebase seconds)
+        if (val._seconds !== undefined) return new Date(val._seconds * 1000); // Alternate format
+    }
+    return new Date(val);
+};
+
 window.formatDisplayDateTime = (createdAt, date) => {
     const timestamp = createdAt || date;
     if (!timestamp) return 'Không có ngày';
-    const d = new Date(timestamp);
+    const d = window.parseDate(timestamp);
+    if (isNaN(d.getTime())) return 'Không có ngày';
     const dateStr = d.toLocaleDateString('vi-VN');
     const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     return `${dateStr} ${timeStr}`;
