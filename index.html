@@ -603,15 +603,32 @@
                             <input type="text" id="description" placeholder="Mô tả cụ thể giao dịch..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label for="amount" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Số tiền (VNĐ)</label>
-                                <input type="number" id="amount" placeholder="Nhập số tiền..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
+                        <div>
+                            <label for="amount" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Số tiền (VNĐ)</label>
+                            <input type="number" id="amount" placeholder="Nhập số tiền..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
+                            <div id="export-zero-section" class="flex items-center gap-2 mt-2">
+                                <label for="export-zero" class="flex items-center">
+                                    <input type="checkbox" id="export-zero" class="mr-2">
+                                    Xuất hàng miễn phí
+                                </label>
                             </div>
-                            <div>
-                                <label for="date" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Ngày thực hiện</label>
-                                <input type="date" id="date" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
-                            </div>
+                            <div id="export-reason-section" class="hidden mt-2">
+    <label for="export-reason" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Lý do xuất hàng miễn phí</label>
+    <select id="export-reason" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm">
+        <option value="">Chọn lý do</option>
+        <option value="gift">Quà tặng</option>
+        <option value="expired">Hết hạn</option>
+        <option value="defective">Hàng lỗi</option>
+        <option value="other">Khác</option>
+    </select>
+    <div id="export-reason-custom-section" class="hidden mt-2">
+        <input type="text" id="export-reason-custom" placeholder="Nhập lý do khác..." class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-900 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" />
+    </div>
+</div>
+                        </div>
+                        <div>
+                            <label for="date" class="block font-bold text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Ngày thực hiện</label>
+                            <input type="date" id="date" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm" required>
                         </div>
 
                         <div id="customer-name-field" class="hidden">

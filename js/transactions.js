@@ -78,6 +78,9 @@ window.createTransactionElement = function(tx) {
             ${customerNote ? `<p><strong>Ghi chú:</strong> ${customerNote}</p>` : ''}
         </div>`;
     }
+    if (tx.exportZero && tx.exportReason) {
+        extraInfoHtml += `<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">Lý do: ${tx.exportReason}</div>`;
+    }
     let discountHtml = '';
     if (discountAmount > 0) {
         discountHtml = `<p class="text-xs text-rose-500 font-medium mt-0.5" title="Đã trừ khuyến mại">KM: -${window.formatCurrency(discountAmount)}</p>`;
@@ -92,7 +95,7 @@ window.createTransactionElement = function(tx) {
                 <p class="text-[10px] text-slate-400 dark:text-slate-500 text-right mt-2">${displayDateTimeStr}</p>
             </div>
             <div class="text-right flex-shrink-0 ml-4">
-                <p class="font-bold text-xl ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${isIncome ? '+' : '-'}${window.formatCurrency(amount)}</p>
+                <p class="font-bold text-xl ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${tx.exportZero ? 'Miễn phí' : (isIncome ? '+' : '-') + window.formatCurrency(amount)}</p>
                 ${discountHtml}
                 <div class="flex gap-1 justify-end mt-2">
                     <button data-action="edit" class="text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-800 transition p-1.5 rounded-xl" title="Sửa"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
@@ -121,6 +124,9 @@ window.openFormModal = function(mode, data = {}) {
     const importQuantityInput = document.getElementById('import-quantity');
     const productSelect = document.getElementById('product-select');
     const importProductSelect = document.getElementById('import-product-select');
+    const exportZeroCheckbox = document.getElementById('export-zero');
+    const exportReasonSection = document.getElementById('export-reason-section');
+    const exportReasonSelect = document.getElementById('export-reason');
 
     if (!formModal || !mainForm) return;
 
@@ -128,6 +134,11 @@ window.openFormModal = function(mode, data = {}) {
     if (descriptionInput) descriptionInput.readOnly = false;
     if (productSelect) productSelect.value = '';
     if (importProductSelect) importProductSelect.value = '';
+    if (exportZeroCheckbox) {
+        exportZeroCheckbox.checked = false;
+        amountInput.readOnly = false;
+        exportReasonSection?.classList.add('hidden');
+    }
 
     const type = data.type || 'income';
     const radio = formModal.querySelector(`input[name="type"][value="${type}"]`);
@@ -171,6 +182,14 @@ window.openFormModal = function(mode, data = {}) {
             if (customerNoteInput) customerNoteInput.value = data.customerNote || '';
             if (transactionQuantityInput) transactionQuantityInput.value = data.quantity || 1;
             if (importQuantityInput) importQuantityInput.value = data.quantity || 1;
+            if (exportZeroCheckbox) {
+                exportZeroCheckbox.checked = !!data.exportZero;
+                if (data.exportZero) {
+                    amountInput.readOnly = true;
+                    exportReasonSection?.classList.remove('hidden');
+                    exportReasonSelect.value = data.exportReason || '';
+                }
+            }
             break;
     }
 
@@ -250,8 +269,9 @@ window.handleQuantityChange = function() {
     const transactionQuantityInput = document.getElementById('transaction-quantity');
     const descriptionInput = document.getElementById('description');
     const amountInput = document.getElementById('amount');
+    const exportZeroCheckbox = document.getElementById('export-zero');
 
-    if (!productSelect || !amountInput || !descriptionInput) return;
+    if (!productSelect || !amountInput || !descriptionInput || exportZeroCheckbox?.checked) return;
     const selectedId = productSelect.value;
     if (selectedId) {
         const product = window.products.find(p => p.id === selectedId);
@@ -326,12 +346,34 @@ window.handleFormSubmit = async function(e) {
     const importProductSelect = document.getElementById('import-product-select');
     const importQuantityInput = document.getElementById('import-quantity');
     const editingIdInput = document.getElementById('editing-id');
+    const exportZeroCheckbox = document.getElementById('export-zero');
+    const exportReasonSelect = document.getElementById('export-reason');
+    const exportReasonCustomInput = document.getElementById('export-reason-custom');
+    const exportReasonSection = document.getElementById('export-reason-section');
+    // Thêm listener để hiển thị/ẩn mục nhập tùy chỉnh khi chọn 'Khác' và xóa giá trị khi ẩn
+    exportReasonSelect?.addEventListener('change', () => {
+        const customSection = document.getElementById('export-reason-custom-section');
+        if (exportReasonSelect.value === 'other') {
+            customSection?.classList.remove('hidden');
+        } else {
+            customSection?.classList.add('hidden');
+            // Xóa nội dung nhập liệu khi không còn hiển thị
+            const customInput = document.getElementById('export-reason-custom');
+            if (customInput) customInput.value = '';
+        }
+    });
 
     const type = formModal.querySelector('input[name="type"]:checked').value;
     const category = categorySelect.value;
     
     let productId = null;
     let quantity = null;
+    let exportZero = exportZeroCheckbox?.checked || false;
+    let exportReason = '';
+    if (exportZero) {
+        const selectedReason = exportReasonSelect?.value || '';
+        exportReason = selectedReason === 'other' && exportReasonCustomInput ? exportReasonCustomInput.value.trim() : selectedReason;
+    }
 
     if (type === 'income' && productSelect.value) {
         productId = productSelect.value;
@@ -353,11 +395,19 @@ window.handleFormSubmit = async function(e) {
         customerNote: customerNoteInput.value.trim(), 
         createdAt: new Date().toISOString(),
         productId: productId,
-        quantity: quantity
+        quantity: quantity,
+        exportZero: exportZero,
+        exportReason: exportReason
     };
 
-    if (!data.description || data.amount < 0) {
-        return window.showToast("Vui lòng nhập nội dung và số tiền hợp lệ.", "error");
+    if (!data.description) {
+        return window.showToast("Vui lòng nhập nội dung giao dịch.", "error");
+    }
+    if (!exportZero && data.amount <= 0) {
+        return window.showToast("Số tiền phải lớn hơn 0 hoặc chọn Xuất hàng miễn phí.", "error");
+    }
+    if (exportZero && !data.exportReason) {
+        return window.showToast("Vui lòng chọn lý do xuất hàng miễn phí.", "error");
     }
     
     const executeSave = async () => {
@@ -413,7 +463,7 @@ window.handleFormSubmit = async function(e) {
         }
     };
     
-    if (window.currentFormMode === 'addTransaction' && data.productId && data.quantity > 0 && data.type === 'income') {
+    if (window.currentFormMode === 'addTransaction' && data.productId && data.quantity > 0 && data.type === 'income' && !data.exportZero) {
         const product = window.products.find(p => p.id === data.productId);
         if (product && data.quantity > product.stock) {
             window.openConfirmationModal(
@@ -546,7 +596,7 @@ window.exportToXLSX = function() {
         'Ngày': window.formatDisplayDateTime(t.createdAt, t.date),
         'Loại': t.type === 'income' ? 'Thu' : 'Chi',
         'Nội dung': t.description || '',
-        'Số tiền': t.type === 'income' ? (Number(t.amount) || 0) : -(Number(t.amount) || 0),
+        'Số tiền': t.exportZero ? 0 : (t.type === 'income' ? (Number(t.amount) || 0) : -(Number(t.amount) || 0)),
         'Danh mục': t.category || '',
         'Tên khách hàng': t.customerName || '',
         'Ghi chú': t.customerNote || ''
@@ -581,10 +631,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const transactionQuantityInput = document.getElementById('transaction-quantity');
     const importProductSelect = document.getElementById('import-product-select');
     const importQuantityInput = document.getElementById('import-quantity');
+    const exportZeroCheckbox = document.getElementById('export-zero');
+    const exportReasonSection = document.getElementById('export-reason-section');
+    const exportReasonSelect = document.getElementById('export-reason');
+    const amountInput = document.getElementById('amount');
     const exportXlsxBtn = document.getElementById('export-xlsx-btn');
     const searchHistoryInput = document.getElementById('search-history');
 
     mainForm?.addEventListener('submit', window.handleFormSubmit);
+    
+    if (exportZeroCheckbox) {
+        exportZeroCheckbox.addEventListener('change', () => {
+            const isZero = exportZeroCheckbox.checked;
+            if (isZero) {
+                amountInput.value = 0;
+                amountInput.readOnly = true;
+                exportReasonSection?.classList.remove('hidden');
+            } else {
+                amountInput.readOnly = false;
+                exportReasonSection?.classList.add('hidden');
+                // Hide custom reason input and clear its value
+                const customSection = document.getElementById('export-reason-custom-section');
+                if (customSection) customSection.classList.add('hidden');
+                const customInput = document.getElementById('export-reason-custom');
+                if (customInput) customInput.value = '';
+                if (exportReasonSelect) exportReasonSelect.value = '';
+            }
+            console.log('Export zero checkbox changed:', isZero);
+        });
+    }
+    // Listener for export reason dropdown – show custom input when "Khác" is selected
+    exportReasonSelect?.addEventListener('change', () => {
+        const customSection = document.getElementById('export-reason-custom-section');
+        if (exportReasonSelect.value === 'other') {
+            customSection?.classList.remove('hidden');
+        } else {
+            customSection?.classList.add('hidden');
+            const customInput = document.getElementById('export-reason-custom');
+            if (customInput) customInput.value = '';
+        }
+    });
+    console.log('Export zero UI initialized', { exportZeroCheckbox, exportReasonSection, exportReasonSelect });
+
     mainForm?.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', window.closeFormModal));
     
     // Listen to changes on transaction type radio buttons to switch categories
