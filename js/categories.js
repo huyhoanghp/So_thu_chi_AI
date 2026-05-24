@@ -97,7 +97,9 @@ document.addEventListener('DOMContentLoaded', () => {
             window.geminiApiKey = key;
             window.showToast('Đã lưu Gemini API Key!');
         } else {
-            window.showToast('Vui lòng nhập API Key hợp lệ.', 'error');
+            localStorage.removeItem('gemini_api_key');
+            window.geminiApiKey = '';
+            window.showToast('Đã xóa Gemini API Key!');
         }
     });
 

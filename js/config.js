@@ -3,7 +3,7 @@
 // State variables
 window.auth = null;
 window.db = null;
-window.geminiApiKey = localStorage.getItem('gemini_api_key') || "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc";
+window.geminiApiKey = localStorage.getItem('gemini_api_key') || "";
 
 window.transactionsCollection = null;
 window.plansCollection = null;

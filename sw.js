@@ -1,28 +1,32 @@
-const CACHE_NAME = 'stc-pwa-cache-v1';
-const urlsToCache = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/app.js',
-    'https://cdn.tailwindcss.com',
-    'https://cdn.jsdelivr.net/npm/chart.js',
-    'https://kit.fontawesome.com/a076d05399.js',
-    'https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js',
-    'https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js',
-    'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js'
+const CACHE_NAME = 'sothuchi-v7-cache-v1';
+const ASSETS = [
+  './',
+  './index.html',
+  './css/style.css',
+  './js/config.js',
+  './js/theme.js',
+  './js/voice.js',
+  './js/categories.js',
+  './js/promotions.js',
+  './js/products.js',
+  './js/plans.js',
+  './js/transactions.js',
+  './js/pos.js',
+  './js/reports.js',
+  './js/app.js',
+  './icon-192.png',
+  './icon-512.png',
+  './manifest.json'
 ];
 
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll(urlsToCache))
-    );
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+  );
 });
 
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => response || fetch(event.request))
-    );
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(response => response || fetch(e.request))
+  );
 });

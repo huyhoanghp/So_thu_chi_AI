@@ -460,6 +460,44 @@ window.handleFilterChange = function() {
 
 // --- AI LOGIC ---
 
+window.callGeminiAPI = async function(modelEndpointAction, payloadBody) {
+    const models = [
+        'gemini-1.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-pro',
+        'gemini-2.5-flash'
+    ];
+    
+    let lastError = null;
+    for (let i = 0; i < models.length; i++) {
+        const model = models[i];
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:${modelEndpointAction}?key=${window.geminiApiKey}`;
+        
+        try {
+            console.log(`Trying Gemini model: ${model}`);
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payloadBody)
+            });
+            
+            if (response.ok) {
+                return await response.json();
+            }
+            
+            const errJson = await response.json().catch(() => ({}));
+            const errMessage = errJson.error?.message || `Status code ${response.status}`;
+            console.warn(`Model ${model} failed: ${errMessage}`);
+            
+            lastError = new Error(`Model ${model} error: ${errMessage}`);
+        } catch (err) {
+            console.warn(`Network error with model ${model}: ${err.message}`);
+            lastError = err;
+        }
+    }
+    throw lastError || new Error("Tất cả các model Gemini đều không phản hồi.");
+};
+
 window.openAiEntryModal = function() {
     const aiEntryModal = document.getElementById('ai-entry-modal');
     const aiInput = document.getElementById('ai-input');
@@ -535,7 +573,6 @@ RULES & EXAMPLES:
 USER TEXT: "${textInput}"`;
 
     try {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${window.geminiApiKey}`;
         const payload = { 
             contents: [{ parts: [{ text: prompt }] }], 
             generationConfig: { 
@@ -559,9 +596,7 @@ USER TEXT: "${textInput}"`;
                 } 
             } 
         };
-        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (!response.ok) throw new Error(`API error code: ${response.status}`);
-        const result = await response.json();
+        const result = await window.callGeminiAPI('generateContent', payload);
         const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (jsonText) {
@@ -642,6 +677,10 @@ window.handleAiChatSubmit = async function(e) {
     const userInput = chatInput?.value.trim();
     if (!userInput) return;
 
+    if (window.geminiApiKey === "YOUR_GEMINI_API_KEY_HERE" || !window.geminiApiKey) {
+        return window.showToast("Lỗi: API Key của Gemini chưa được cấu hình trong phần Cài đặt.", "error");
+    }
+
     window.chatHistory.push({ role: 'user', parts: [{ text: userInput }] });
     window.renderChat();
     if (chatInput) chatInput.value = '';
@@ -652,14 +691,11 @@ window.handleAiChatSubmit = async function(e) {
     const systemPrompt = `Bạn là một chuyên gia phân tích tài chính thân thiện. Nhiệm vụ của bạn là trả lời các câu hỏi dựa trên dữ liệu thu chi được cung cấp một cách ngắn gọn, súc tích.`;
     
     try {
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${window.geminiApiKey}`;
         const payload = {
             contents: [ ...window.chatHistory.map(item => ({ role: item.role, parts: item.parts })), { role: 'user', parts: [{ text: `Dữ liệu: "${dataSummary}". Hãy trả lời: "${userInput}"` }] } ],
             systemInstruction: { parts: [{ text: systemPrompt }] }
         };
-        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (!response.ok) throw new Error(`API error code: ${response.status}`);
-        const result = await response.json();
+        const result = await window.callGeminiAPI('generateContent', payload);
         const aiResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
         
         if (aiResponse) {
@@ -676,79 +712,61 @@ window.handleAiChatSubmit = async function(e) {
     }
 };
 
-// TTS Audio Functions
-function base64ToArrayBuffer(base64) {
-    const binaryString = window.atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
-    return bytes.buffer;
-}
-
-function pcmToWav(pcmData, sampleRate) {
-    const numChannels = 1, bitsPerSample = 16;
-    const blockAlign = (numChannels * bitsPerSample) / 8;
-    const byteRate = sampleRate * blockAlign;
-    const dataSize = pcmData.byteLength;
-    const buffer = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(buffer);
-    function writeString(view, offset, string) { for (let i = 0; i < string.length; i++) { view.setUint8(offset + i, string.charCodeAt(i)); } }
-    writeString(view, 0, 'RIFF'); view.setUint32(4, 36 + dataSize, true); writeString(view, 8, 'WAVE'); writeString(view, 12, 'fmt '); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, numChannels, true); view.setUint32(24, sampleRate, true); view.setUint32(28, byteRate, true); view.setUint16(32, blockAlign, true); view.setUint16(34, bitsPerSample, true); writeString(view, 36, 'data'); view.setUint32(40, dataSize, true);
-    const pcm16 = new Int16Array(pcmData);
-    for (let i = 0; i < pcm16.length; i++) { view.setInt16(44 + i * 2, pcm16[i], true); }
-    return new Blob([view], { type: 'audio/wav' });
-}
-
-window.speakText = async function(textToSpeak, buttonElement) {
-    if (!window.geminiApiKey || window.geminiApiKey === "YOUR_GEMINI_API_KEY_HERE") { 
-        return window.showToast("Lỗi: API Key chưa được cài đặt.", "error"); 
+// TTS Audio Functions (Browser Native SpeechSynthesis)
+window.speakText = function(textToSpeak, buttonElement) {
+    if (!('speechSynthesis' in window)) {
+        return window.showToast("Trình duyệt không hỗ trợ tổng hợp giọng nói.", "error");
     }
+
+    if (window.currentAudio) {
+        window.currentAudio.pause();
+        window.currentAudio = null;
+    }
+    if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+    }
+
     const originalContent = buttonElement.innerHTML;
     buttonElement.innerHTML = '<div class="spinner border-2 w-4.5 h-4.5"></div>';
     buttonElement.disabled = true;
+
     try {
-        if (window.audioCache[textToSpeak]) {
-            window.currentAudio = new Audio(window.audioCache[textToSpeak]);
-        } else {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${window.geminiApiKey}`;
-            const payload = { 
-                contents: [{ parts: [{ text: `Hãy đọc phân tích tài chính sau một cách rõ ràng bằng tiếng Việt: ${textToSpeak}` }] }], 
-                generationConfig: { 
-                    responseModalities: ["AUDIO"], 
-                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } 
-                }, 
-                model: "gemini-2.5-flash-preview-tts" 
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.lang = 'vi-VN';
+        
+        utterance.onstart = () => {
+            buttonElement.innerHTML = window.stopIconSVG;
+            buttonElement.disabled = false;
+            window.currentlyPlayingButton = buttonElement;
+            window.currentAudio = {
+                pause: () => {
+                    window.speechSynthesis.cancel();
+                    buttonElement.innerHTML = window.playIconSVG;
+                    window.currentAudio = null;
+                    window.currentlyPlayingButton = null;
+                }
             };
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`API error code: ${response.status}`);
-            const result = await response.json();
-            const part = result?.candidates?.[0]?.content?.parts?.[0];
-            const audioData = part?.inlineData?.data;
-            const mimeType = part?.inlineData?.mimeType;
-            if (audioData && mimeType && mimeType.startsWith("audio/")) {
-                const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10);
-                const pcmData = base64ToArrayBuffer(audioData);
-                const wavBlob = pcmToWav(pcmData, sampleRate);
-                const audioUrl = URL.createObjectURL(wavBlob);
-                window.audioCache[textToSpeak] = audioUrl;
-                window.currentAudio = new Audio(audioUrl);
-            } else { 
-                throw new Error("Không nhận diện được phản hồi âm thanh từ AI."); 
-            }
-        }
-        window.currentAudio.play();
-        buttonElement.innerHTML = window.stopIconSVG;
-        window.currentlyPlayingButton = buttonElement;
-        window.currentAudio.onended = () => {
+        };
+
+        utterance.onend = () => {
             buttonElement.innerHTML = window.playIconSVG;
             window.currentAudio = null;
             window.currentlyPlayingButton = null;
         };
+
+        utterance.onerror = (event) => {
+            console.error('SpeechSynthesis error:', event);
+            buttonElement.innerHTML = originalContent;
+            buttonElement.disabled = false;
+            window.currentAudio = null;
+            window.currentlyPlayingButton = null;
+        };
+
+        window.speechSynthesis.speak(utterance);
     } catch (error) {
         console.error(error);
-        window.showToast(`Lỗi phát âm thanh: ${error.message}`, "error");
+        window.showToast("Lỗi phát âm thanh bằng trình duyệt.", "error");
         buttonElement.innerHTML = originalContent;
-    } finally {
         buttonElement.disabled = false;
     }
 };
