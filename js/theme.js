@@ -109,6 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
             fabActions.classList.toggle('-translate-y-4');
             fabActions.classList.toggle('invisible');
             fabToggleBtn.classList.toggle('rotate-45');
+            fabToggleBtn.classList.toggle('opacity-10');
+            fabToggleBtn.classList.toggle('pointer-events-none');
             fabBackdrop.classList.toggle('hidden');
         }
     };

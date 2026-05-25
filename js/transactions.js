@@ -1,5 +1,58 @@
 // --- TRANSACTIONS MODULE ---
 
+window.getFilteredHistoryData = function() {
+    const historyRangeEl = document.getElementById('history-range');
+    const customStartEl = document.getElementById('history-custom-start');
+    const customEndEl = document.getElementById('history-custom-end');
+    if (!historyRangeEl) return window.transactions;
+
+    const range = historyRangeEl.value;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let currentStart, currentEnd;
+
+    switch(range) {
+        case 'day':
+            currentStart = new Date(today);
+            currentEnd = new Date(today);
+            break;
+        case 'week':
+            currentStart = new Date(today);
+            currentStart.setDate(currentStart.getDate() - (currentStart.getDay() || 7) + 1);
+            currentEnd = new Date(currentStart);
+            currentEnd.setDate(currentEnd.getDate() + 6);
+            break;
+        case 'month':
+            currentStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            currentEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            break;
+        case 'year':
+            currentStart = new Date(today.getFullYear(), 0, 1);
+            currentEnd = new Date(today.getFullYear(), 11, 31);
+            break;
+        case 'custom':
+            currentStart = customStartEl?.value ? new Date(customStartEl.value) : null;
+            currentEnd = customEndEl?.value ? new Date(customEndEl.value) : null;
+            break;
+        default: // all
+            currentStart = null;
+            currentEnd = null;
+    }
+
+    if (currentEnd) currentEnd.setHours(23, 59, 59, 999);
+    
+    if (!currentStart || !currentEnd) {
+        return window.transactions;
+    }
+
+    return window.transactions.filter(t => {
+        if (!t.date) return false;
+        const d = window.parseDate(t.date);
+        if (isNaN(d.getTime())) return false;
+        return d >= currentStart && d <= currentEnd;
+    });
+};
+
 window.renderTransactionList = function(source) {
     const transactionList = document.getElementById('transaction-list');
     const transactionEmptyState = document.getElementById('transaction-empty-state');
@@ -20,10 +73,13 @@ window.createTransactionElement = function(tx) {
     const displayDateTimeStr = window.formatDisplayDateTime(createdAt, date);
     let extraInfoHtml = '';
     if ((isIncome && customerName) || customerNote) {
-        extraInfoHtml = `<div class="mt-2 pt-2 border-t border-gray-150/20 dark:border-slate-800/85 text-xs text-slate-650 dark:text-slate-400">
+        extraInfoHtml = `<div class="mt-2 pt-2 border-t border-gray-200/20 dark:border-slate-800/85 text-xs text-slate-650 dark:text-slate-400">
             ${(isIncome && customerName) ? `<p class="mb-0.5"><strong>KH:</strong> ${customerName}</p>` : ''}
             ${customerNote ? `<p><strong>Ghi chú:</strong> ${customerNote}</p>` : ''}
         </div>`;
+    }
+    if (tx.exportZero && tx.exportReason) {
+        extraInfoHtml += `<div class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">Lý do: ${tx.exportReason}</div>`;
     }
     let discountHtml = '';
     if (discountAmount > 0) {
@@ -33,17 +89,17 @@ window.createTransactionElement = function(tx) {
             <div class="flex-grow flex flex-col">
                 <div>
                     <p class="font-bold text-gray-500 dark:text-slate-400 text-xs uppercase tracking-wider">${category || 'Chưa phân loại'}</p>
-                    <p class="font-semibold text-lg text-slate-850 dark:text-slate-200 mt-1">${description || 'Không có nội dung'}</p>
+                    <p class="font-semibold text-lg text-slate-800 dark:text-slate-200 mt-1">${description || 'Không có nội dung'}</p>
                     ${extraInfoHtml}
                 </div>
                 <p class="text-[10px] text-slate-400 dark:text-slate-500 text-right mt-2">${displayDateTimeStr}</p>
             </div>
             <div class="text-right flex-shrink-0 ml-4">
-                <p class="font-bold text-xl ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-550'}">${isIncome ? '+' : '-'}${window.formatCurrency(amount)}</p>
+                <p class="font-bold text-xl ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}">${tx.exportZero ? 'Miễn phí' : (isIncome ? '+' : '-') + window.formatCurrency(amount)}</p>
                 ${discountHtml}
                 <div class="flex gap-1 justify-end mt-2">
-                    <button data-action="edit" class="text-slate-455 hover:text-brand-655 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-800 transition p-1.5 rounded-xl" title="Sửa"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
-                    <button data-action="delete" class="text-slate-455 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-800 transition p-1.5 rounded-xl" title="Xóa"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+                    <button data-action="edit" class="text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-800 transition p-1.5 rounded-xl" title="Sửa"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                    <button data-action="delete" class="text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-800 transition p-1.5 rounded-xl" title="Xóa"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
                 </div>
             </div>
         </div>`;
@@ -68,6 +124,9 @@ window.openFormModal = function(mode, data = {}) {
     const importQuantityInput = document.getElementById('import-quantity');
     const productSelect = document.getElementById('product-select');
     const importProductSelect = document.getElementById('import-product-select');
+    const exportZeroCheckbox = document.getElementById('export-zero');
+    const exportReasonSection = document.getElementById('export-reason-section');
+    const exportReasonSelect = document.getElementById('export-reason');
 
     if (!formModal || !mainForm) return;
 
@@ -75,6 +134,11 @@ window.openFormModal = function(mode, data = {}) {
     if (descriptionInput) descriptionInput.readOnly = false;
     if (productSelect) productSelect.value = '';
     if (importProductSelect) importProductSelect.value = '';
+    if (exportZeroCheckbox) {
+        exportZeroCheckbox.checked = false;
+        amountInput.readOnly = false;
+        exportReasonSection?.classList.add('hidden');
+    }
 
     const type = data.type || 'income';
     const radio = formModal.querySelector(`input[name="type"][value="${type}"]`);
@@ -118,6 +182,14 @@ window.openFormModal = function(mode, data = {}) {
             if (customerNoteInput) customerNoteInput.value = data.customerNote || '';
             if (transactionQuantityInput) transactionQuantityInput.value = data.quantity || 1;
             if (importQuantityInput) importQuantityInput.value = data.quantity || 1;
+            if (exportZeroCheckbox) {
+                exportZeroCheckbox.checked = !!data.exportZero;
+                if (data.exportZero) {
+                    amountInput.readOnly = true;
+                    exportReasonSection?.classList.remove('hidden');
+                    exportReasonSelect.value = data.exportReason || '';
+                }
+            }
             break;
     }
 
@@ -197,46 +269,23 @@ window.handleQuantityChange = function() {
     const transactionQuantityInput = document.getElementById('transaction-quantity');
     const descriptionInput = document.getElementById('description');
     const amountInput = document.getElementById('amount');
+    const exportZeroCheckbox = document.getElementById('export-zero');
 
-    if (!productSelect || !amountInput || !descriptionInput) return;
+    if (!productSelect || !amountInput || !descriptionInput || exportZeroCheckbox?.checked) return;
     const selectedId = productSelect.value;
     if (selectedId) {
         const product = window.products.find(p => p.id === selectedId);
         const quantity = +(transactionQuantityInput?.value || 1);
         if (product && quantity > 0) {
             const now = new Date();
-            const applicablePromos = (window.promotions || []).filter(pm => {
-                if (!pm.enabled) return false;
-                if (pm.productId && pm.productId !== selectedId) return false;
-                const startOk = pm.startDate ? new Date(pm.startDate) <= now : true;
-                const endOk = pm.endDate ? new Date(pm.endDate) >= now : true;
-                return startOk && endOk;
-            });
+            const best = window.getBestPromotion
+                ? window.getBestPromotion(product, quantity, now)
+                : { promoId: null, discountAmount: 0 };
 
-            let unitPrice = product.sellingPrice;
-            let discountTotal = 0;
-            let appliedPromoId = null;
+            const discountTotal = best.discountAmount;
+            const appliedPromoId = best.promoId;
 
-            if (applicablePromos.length > 0) {
-                const pm = applicablePromos[0];
-                appliedPromoId = pm.id;
-                if (pm.type === 'percent') {
-                    const discountPerUnit = Math.max(0, Math.min(100, pm.value || 0)) * unitPrice / 100;
-                    discountTotal = discountPerUnit * quantity;
-                } else if (pm.type === 'fixed') {
-                    discountTotal = Math.max(0, pm.value || 0) * quantity;
-                } else if (pm.type === 'bxgy') {
-                    const x = Math.max(1, pm.buy || 0);
-                    const y = Math.max(0, pm.get || 0);
-                    const group = x + y;
-                    if (group > 0) {
-                        const fullGroups = Math.floor(quantity / group);
-                        discountTotal = fullGroups * y * unitPrice;
-                    }
-                }
-            }
-
-            const total = unitPrice * quantity - discountTotal;
+            const total = product.sellingPrice * quantity - discountTotal;
             amountInput.value = Math.max(0, Math.round(total));
             amountInput.dataset.promoId = appliedPromoId || '';
             amountInput.dataset.discountAmount = String(Math.max(0, Math.round(discountTotal)));
@@ -297,12 +346,34 @@ window.handleFormSubmit = async function(e) {
     const importProductSelect = document.getElementById('import-product-select');
     const importQuantityInput = document.getElementById('import-quantity');
     const editingIdInput = document.getElementById('editing-id');
+    const exportZeroCheckbox = document.getElementById('export-zero');
+    const exportReasonSelect = document.getElementById('export-reason');
+    const exportReasonCustomInput = document.getElementById('export-reason-custom');
+    const exportReasonSection = document.getElementById('export-reason-section');
+    // Thêm listener để hiển thị/ẩn mục nhập tùy chỉnh khi chọn 'Khác' và xóa giá trị khi ẩn
+    exportReasonSelect?.addEventListener('change', () => {
+        const customSection = document.getElementById('export-reason-custom-section');
+        if (exportReasonSelect.value === 'other') {
+            customSection?.classList.remove('hidden');
+        } else {
+            customSection?.classList.add('hidden');
+            // Xóa nội dung nhập liệu khi không còn hiển thị
+            const customInput = document.getElementById('export-reason-custom');
+            if (customInput) customInput.value = '';
+        }
+    });
 
     const type = formModal.querySelector('input[name="type"]:checked').value;
     const category = categorySelect.value;
     
     let productId = null;
     let quantity = null;
+    let exportZero = exportZeroCheckbox?.checked || false;
+    let exportReason = '';
+    if (exportZero) {
+        const selectedReason = exportReasonSelect?.value || '';
+        exportReason = selectedReason === 'other' && exportReasonCustomInput ? exportReasonCustomInput.value.trim() : selectedReason;
+    }
 
     if (type === 'income' && productSelect.value) {
         productId = productSelect.value;
@@ -324,11 +395,19 @@ window.handleFormSubmit = async function(e) {
         customerNote: customerNoteInput.value.trim(), 
         createdAt: new Date().toISOString(),
         productId: productId,
-        quantity: quantity
+        quantity: quantity,
+        exportZero: exportZero,
+        exportReason: exportReason
     };
 
-    if (!data.description || data.amount < 0) {
-        return window.showToast("Vui lòng nhập nội dung và số tiền hợp lệ.", "error");
+    if (!data.description) {
+        return window.showToast("Vui lòng nhập nội dung giao dịch.", "error");
+    }
+    if (!exportZero && data.amount <= 0) {
+        return window.showToast("Số tiền phải lớn hơn 0 hoặc chọn Xuất hàng miễn phí.", "error");
+    }
+    if (exportZero && !data.exportReason) {
+        return window.showToast("Vui lòng chọn lý do xuất hàng miễn phí.", "error");
     }
     
     const executeSave = async () => {
@@ -337,12 +416,22 @@ window.handleFormSubmit = async function(e) {
                 await window.plansCollection.add(data); 
                 window.showToast("Đã thêm kế hoạch thành công!");
             } else if (window.currentFormMode === 'addTransaction') {
+                if (data.productId && data.quantity > 0) {
+                    const product = window.products.find(p => p.id === data.productId);
+                    if (product) {
+                        const stockChange = data.type === 'income' ? -data.quantity : data.quantity;
+                        data.newStock = product.stock + stockChange;
+                    }
+                }
                 await window.transactionsCollection.add(data);
                 if (data.productId && data.quantity > 0) {
                     const stockChange = data.type === 'income' ? -data.quantity : data.quantity;
                     await window.productsCollection.doc(data.productId).update({ stock: firebase.firestore.FieldValue.increment(stockChange) });
                 }
                 window.showToast("Đã thêm giao dịch thành công!");
+                if (typeof window.sendTelegramManualAlert === 'function') {
+                    window.sendTelegramManualAlert(data);
+                }
             } else if (window.currentFormMode === 'editPlan') {
                 delete data.createdAt;
                 await window.plansCollection.doc(editingIdInput.value).update(data); 
@@ -359,6 +448,28 @@ window.handleFormSubmit = async function(e) {
                 const newProductId = afterTxData.productId;
                 const newQuantity = afterTxData.quantity || 0;
                 const newType = afterTxData.type;
+
+                // Calculate calculatedNewStock BEFORE database update commits (pre-commit state of window.products)
+                let calculatedNewStock = null;
+                let productName = "";
+                if (newProductId && newQuantity > 0 && newType === 'income') {
+                    const product = window.products.find(p => p.id === newProductId);
+                    if (product) {
+                        productName = product.name;
+                        let stockChange = 0;
+                        if (oldProductId === newProductId) {
+                            const oldChange = oldType === 'income' ? -oldQuantity : oldQuantity;
+                            const newChange = newType === 'income' ? -newQuantity : newQuantity;
+                            stockChange = newChange - oldChange;
+                        } else {
+                            stockChange = -newQuantity;
+                        }
+                        calculatedNewStock = product.stock + stockChange;
+                    }
+                }
+                if (calculatedNewStock !== null) {
+                    afterTxData.newStock = calculatedNewStock;
+                }
 
                 const batch = window.db.batch();
                 batch.update(txDocRef, afterTxData);
@@ -377,6 +488,11 @@ window.handleFormSubmit = async function(e) {
                 }
                 await batch.commit();
                 window.showToast("Đã cập nhật giao dịch và kho hàng!");
+
+                // Check and alert on edit
+                if (calculatedNewStock !== null && typeof window.sendTelegramProductStockAlert === 'function') {
+                    window.sendTelegramProductStockAlert(productName, calculatedNewStock);
+                }
             }
             window.closeFormModal();
         } catch (err) { 
@@ -384,7 +500,7 @@ window.handleFormSubmit = async function(e) {
         }
     };
     
-    if (window.currentFormMode === 'addTransaction' && data.productId && data.quantity > 0 && data.type === 'income') {
+    if (window.currentFormMode === 'addTransaction' && data.productId && data.quantity > 0 && data.type === 'income' && !data.exportZero) {
         const product = window.products.find(p => p.id === data.productId);
         if (product && data.quantity > product.stock) {
             window.openConfirmationModal(
@@ -401,53 +517,129 @@ window.handleFormSubmit = async function(e) {
 };
 
 window.deleteTransaction = function(tx) {
-    window.openConfirmationModal(`Bạn có chắc muốn xóa giao dịch "${tx.description}"?`, async () => { 
-        try { 
-            await window.transactionsCollection.doc(tx.id).delete();
-            if (tx.productId && tx.quantity > 0) {
-                const stockChange = tx.type === 'income' ? tx.quantity : -tx.quantity;
-                await window.productsCollection.doc(tx.productId).update({ stock: firebase.firestore.FieldValue.increment(stockChange) });
+    let revertItems = [];
+    if (tx.items && tx.items.length > 0) {
+        tx.items.forEach(item => {
+            const prod = window.products.find(p => p.id === item.productId);
+            if (prod) {
+                const sign = tx.type === 'income' ? '+' : '-';
+                revertItems.push(`${sign}${item.quantity} ${prod.name}`);
             }
-            window.showToast("Đã xóa giao dịch."); 
-        } catch(e) { 
-            window.showToast('Lỗi: '+e.message, "error"); 
-        } 
-    }); 
+        });
+    } else if (tx.productId) {
+        const prod = window.products.find(p => p.id === tx.productId);
+        if (prod && tx.quantity > 0) {
+            const sign = tx.type === 'income' ? '+' : '-';
+            revertItems.push(`${sign}${tx.quantity} ${prod.name}`);
+        }
+    }
+
+    const showRevert = revertItems.length > 0;
+    const revertLabelText = showRevert ? `Đồng ý hoàn kho (${revertItems.join(', ')})` : '';
+
+    window.openConfirmationModal(
+        `Bạn có chắc muốn xóa giao dịch "${tx.description}"?`,
+        async (revertStock) => {
+            try {
+                const batch = window.db.batch();
+                
+                // Delete transaction document
+                const txRef = window.transactionsCollection.doc(tx.id);
+                batch.delete(txRef);
+
+                // Update stock if requested
+                if (revertStock) {
+                    if (tx.items && tx.items.length > 0) {
+                        tx.items.forEach(item => {
+                            if (item.productId && !item.productId.startsWith('quick_')) {
+                                const prod = window.products.find(p => p.id === item.productId);
+                                if (prod) {
+                                    const productRef = window.productsCollection.doc(item.productId);
+                                    const change = tx.type === 'income' ? item.quantity : -item.quantity;
+                                    batch.update(productRef, {
+                                        stock: firebase.firestore.FieldValue.increment(change)
+                                    });
+                                }
+                            }
+                        });
+                    } else if (tx.productId) {
+                        const prod = window.products.find(p => p.id === tx.productId);
+                        if (prod) {
+                            const productRef = window.productsCollection.doc(tx.productId);
+                            const change = tx.type === 'income' ? tx.quantity : -tx.quantity;
+                            batch.update(productRef, {
+                                stock: firebase.firestore.FieldValue.increment(change)
+                            });
+                        }
+                    }
+                }
+
+                await batch.commit();
+                window.showToast(revertStock ? "Đã xóa giao dịch và hoàn tồn kho!" : "Đã xóa giao dịch (không hoàn kho).");
+            } catch (e) {
+                window.showToast('Lỗi: ' + e.message, "error");
+            }
+        },
+        "Xóa giao dịch",
+        "Xác nhận xóa",
+        showRevert,
+        revertLabelText
+    );
 };
 
 window.exportToXLSX = function() {
     if (typeof XLSX === 'undefined') {
-        window.showToast('Lỗi: SheetJS chưa được tải.', 'error');
+        window.showToast('Lỗi: Thư viện SheetJS chưa được tải.', 'error');
         return;
     }
-    const { currentPeriodData } = window.getReportData();
-    const sorted = [...currentPeriodData].sort((a,b)=> new Date(a.date) - new Date(b.date));
-    const totalIncome = sorted.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amount||0),0);
-    const totalExpense = sorted.filter(t=>t.type==='expense').reduce((s,t)=>s+(t.amount||0),0);
+    
+    // Retrieve the currently filtered transactions in the History tab
+    const filteredHistoryTransactions = window.getFilteredHistoryData ? window.getFilteredHistoryData() : window.transactions;
+    
+    // Apply search filter if there's text in search-history input
+    const searchHistoryInput = document.getElementById('search-history');
+    const term = (searchHistoryInput?.value || '').toLowerCase().trim();
+    
+    let exportedData = [...filteredHistoryTransactions];
+    if (term) {
+        exportedData = exportedData.filter(item => 
+            Object.values(item).some(value => String(value || '').toLowerCase().includes(term))
+        );
+    }
+    
+    if (exportedData.length === 0) {
+        window.showToast('Không có dữ liệu giao dịch nào để xuất.', 'error');
+        return;
+    }
+    
+    // Sort transactions chronologically
+    const sorted = exportedData.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const totalIncome = sorted.filter(t => t.type === 'income').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const totalExpense = sorted.filter(t => t.type === 'expense').reduce((s, t) => s + (Number(t.amount) || 0), 0);
     
     const summaryData = [
-        ["BÁO CÁO TỔNG QUAN"], 
+        ["BÁO CÁO TỔNG QUAN PHÂN TÍCH THU CHI"], 
         [],
         ["Khoản mục", "Số tiền"],
         ["Tổng Thu", totalIncome],
         ["Tổng Chi", totalExpense],
-        ["Lợi Nhuận", totalIncome-totalExpense]
+        ["Lợi Nhuận", totalIncome - totalExpense]
     ];
     const ws_summary = XLSX.utils.aoa_to_sheet(summaryData);
     ws_summary['!cols'] = [{wch: 25}, {wch: 20}];
 
     const header = ['Ngày', 'Loại', 'Nội dung', 'Số tiền', 'Danh mục', 'Tên khách hàng', 'Ghi chú'];
     const dataRows = sorted.map(t => ({
-        'Ngày': new Date(t.createdAt || t.date),
+        'Ngày': window.formatDisplayDateTime(t.createdAt, t.date),
         'Loại': t.type === 'income' ? 'Thu' : 'Chi',
-        'Nội dung': t.description,
-        'Số tiền': t.type === 'income' ? t.amount : -t.amount,
-        'Danh mục': t.category,
+        'Nội dung': t.description || '',
+        'Số tiền': t.exportZero ? 0 : (t.type === 'income' ? (Number(t.amount) || 0) : -(Number(t.amount) || 0)),
+        'Danh mục': t.category || '',
         'Tên khách hàng': t.customerName || '',
         'Ghi chú': t.customerNote || ''
     }));
     const ws_details = XLSX.utils.json_to_sheet(dataRows, {header: header});
-    ws_details['!cols'] = [{wch:20},{wch:8},{wch:30},{wch:18},{wch:20},{wch:20},{wch:30}];
+    ws_details['!cols'] = [{wch:22},{wch:8},{wch:30},{wch:18},{wch:20},{wch:20},{wch:30}];
 
     const totalRowNum = dataRows.length + 2;
     ws_details[`C${totalRowNum}`] = {t:'s', v:'LỢI NHUẬN TỔNG CỘNG:'};
@@ -455,6 +647,13 @@ window.exportToXLSX = function() {
 
     for(let i = 2; i <= totalRowNum; i++) {
         if(ws_details[`D${i}`]) ws_details[`D${i}`].z = '#,##0 "₫"';
+    }
+    
+    // Explicitly update worksheet range reference (!ref) to include the manual summary row
+    let range = XLSX.utils.decode_range(ws_details['!ref']);
+    if (range.e.r < totalRowNum - 1) {
+        range.e.r = totalRowNum - 1;
+        ws_details['!ref'] = XLSX.utils.encode_range(range);
     }
 
     const wb = XLSX.utils.book_new();
@@ -469,10 +668,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const transactionQuantityInput = document.getElementById('transaction-quantity');
     const importProductSelect = document.getElementById('import-product-select');
     const importQuantityInput = document.getElementById('import-quantity');
+    const exportZeroCheckbox = document.getElementById('export-zero');
+    const exportReasonSection = document.getElementById('export-reason-section');
+    const exportReasonSelect = document.getElementById('export-reason');
+    const amountInput = document.getElementById('amount');
     const exportXlsxBtn = document.getElementById('export-xlsx-btn');
     const searchHistoryInput = document.getElementById('search-history');
 
     mainForm?.addEventListener('submit', window.handleFormSubmit);
+    
+    if (exportZeroCheckbox) {
+        exportZeroCheckbox.addEventListener('change', () => {
+            const isZero = exportZeroCheckbox.checked;
+            if (isZero) {
+                amountInput.value = 0;
+                amountInput.readOnly = true;
+                exportReasonSection?.classList.remove('hidden');
+            } else {
+                amountInput.readOnly = false;
+                exportReasonSection?.classList.add('hidden');
+                // Hide custom reason input and clear its value
+                const customSection = document.getElementById('export-reason-custom-section');
+                if (customSection) customSection.classList.add('hidden');
+                const customInput = document.getElementById('export-reason-custom');
+                if (customInput) customInput.value = '';
+                if (exportReasonSelect) exportReasonSelect.value = '';
+            }
+            console.log('Export zero checkbox changed:', isZero);
+        });
+    }
+    // Listener for export reason dropdown – show custom input when "Khác" is selected
+    exportReasonSelect?.addEventListener('change', () => {
+        const customSection = document.getElementById('export-reason-custom-section');
+        if (exportReasonSelect.value === 'other') {
+            customSection?.classList.remove('hidden');
+        } else {
+            customSection?.classList.add('hidden');
+            const customInput = document.getElementById('export-reason-custom');
+            if (customInput) customInput.value = '';
+        }
+    });
+    console.log('Export zero UI initialized', { exportZeroCheckbox, exportReasonSection, exportReasonSelect });
+
     mainForm?.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', window.closeFormModal));
     
     // Listen to changes on transaction type radio buttons to switch categories
@@ -491,5 +728,32 @@ document.addEventListener('DOMContentLoaded', () => {
     searchHistoryInput?.addEventListener('input', () => {
         if (window.renderAll) window.renderAll();
     });
+
+    const historyRange = document.getElementById('history-range');
+    const historyCustomDateRange = document.getElementById('history-custom-date-range');
+    const historyCustomStart = document.getElementById('history-custom-start');
+    const historyCustomEnd = document.getElementById('history-custom-end');
+
+    if (historyRange) {
+        const toggleHistoryCustomRange = () => {
+            if (historyCustomDateRange) {
+                historyCustomDateRange.classList.toggle('hidden', historyRange.value !== 'custom');
+                historyCustomDateRange.classList.toggle('flex', historyRange.value === 'custom');
+            }
+        };
+        
+        historyRange.addEventListener('change', () => {
+            toggleHistoryCustomRange();
+            if (window.renderAll) window.renderAll();
+        });
+        historyCustomStart?.addEventListener('change', () => {
+            if (window.renderAll) window.renderAll();
+        });
+        historyCustomEnd?.addEventListener('change', () => {
+            if (window.renderAll) window.renderAll();
+        });
+        
+        toggleHistoryCustomRange();
+    }
 });
 
