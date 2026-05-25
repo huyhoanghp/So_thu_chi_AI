@@ -3,7 +3,7 @@
 // State variables
 window.auth = null;
 window.db = null;
-window.geminiApiKey = localStorage.getItem('gemini_api_key') || "AIzaSyCb6WTOOMERzf_tu7SahPAhU21y6AyFMCc";
+window.geminiApiKey = localStorage.getItem('gemini_api_key') || "";
 
 window.transactionsCollection = null;
 window.plansCollection = null;
@@ -38,10 +38,22 @@ window.categories = JSON.parse(localStorage.getItem('user_categories')) || {
 // Formatting Utilities
 window.formatCurrency = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
+window.parseDate = (val) => {
+    if (!val) return new Date(NaN);
+    if (val instanceof Date) return val;
+    if (typeof val.toDate === 'function') return val.toDate(); // Live Firestore Timestamp
+    if (typeof val === 'object') {
+        if (val.seconds !== undefined) return new Date(val.seconds * 1000); // Serialized Timestamp (Firebase seconds)
+        if (val._seconds !== undefined) return new Date(val._seconds * 1000); // Alternate format
+    }
+    return new Date(val);
+};
+
 window.formatDisplayDateTime = (createdAt, date) => {
     const timestamp = createdAt || date;
     if (!timestamp) return 'Không có ngày';
-    const d = new Date(timestamp);
+    const d = window.parseDate(timestamp);
+    if (isNaN(d.getTime())) return 'Không có ngày';
     const dateStr = d.toLocaleDateString('vi-VN');
     const timeStr = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     return `${dateStr} ${timeStr}`;
@@ -88,16 +100,30 @@ window.firebaseConfig = {
 };
 
 // Confirmation Modal Functions
-window.openConfirmationModal = function(message, onConfirm, actionText = 'Xác nhận', title = 'Xác nhận') {
+window.openConfirmationModal = function(message, onConfirm, actionText = 'Xác nhận', title = 'Xác nhận', showRevertOption = false, revertLabelText = '') {
     const modal = document.getElementById('confirmation-modal');
     const titleEl = document.getElementById('confirmation-title');
     const msgEl = document.getElementById('confirmation-message');
     const actionBtn = document.getElementById('confirm-action-btn');
+    const revertContainer = document.getElementById('confirmation-stock-revert-container');
+    const revertCheckbox = document.getElementById('confirm-stock-revert-checkbox');
+    const revertLabel = document.getElementById('confirm-stock-revert-label');
 
     if (!modal) return;
 
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = message;
+
+    if (revertContainer) {
+        if (showRevertOption) {
+            revertContainer.classList.remove('hidden');
+            if (revertLabel) revertLabel.textContent = revertLabelText;
+            if (revertCheckbox) revertCheckbox.checked = true;
+        } else {
+            revertContainer.classList.add('hidden');
+        }
+    }
+
     if (actionBtn) {
         actionBtn.textContent = actionText;
         // Apply color based on action text
@@ -109,7 +135,12 @@ window.openConfirmationModal = function(message, onConfirm, actionText = 'Xác n
                     : "bg-brand-600 hover:bg-brand-700"));
     }
 
-    window.confirmAction = onConfirm;
+    window.confirmAction = () => {
+        const revertChecked = (showRevertOption && revertCheckbox) ? revertCheckbox.checked : false;
+        if (typeof onConfirm === 'function') {
+            onConfirm(revertChecked);
+        }
+    };
 
     modal.classList.remove('hidden');
     setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -119,7 +150,11 @@ window.closeConfirmationModal = function() {
     const modal = document.getElementById('confirmation-modal');
     if (!modal) return;
     modal.classList.add('opacity-0');
-    setTimeout(() => modal.classList.add('hidden'), 300);
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        const revertContainer = document.getElementById('confirmation-stock-revert-container');
+        if (revertContainer) revertContainer.classList.add('hidden');
+    }, 300);
     window.confirmAction = null;
 };
 

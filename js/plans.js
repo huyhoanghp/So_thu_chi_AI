@@ -19,7 +19,7 @@ window.createPlanElement = function(plan) {
     item.className = `p-4 rounded-2xl flex items-start gap-3 border-l-4 transition hover:shadow-sm ${isIncome ? 'bg-emerald-500/5 border-emerald-500 dark:bg-emerald-500/5' : 'bg-rose-500/5 border-rose-500 dark:bg-rose-500/5'}`;
     let extraInfoHtml = '';
     if ((isIncome && customerName) || customerNote) {
-        extraInfoHtml = `<div class="mt-2 pt-2 border-t border-gray-150/20 dark:border-slate-800/85 text-xs text-slate-650 dark:text-slate-400">
+        extraInfoHtml = `<div class="mt-2 pt-2 border-t border-gray-200/20 dark:border-slate-800/85 text-xs text-slate-650 dark:text-slate-400">
             ${(isIncome && customerName) ? `<p class="mb-0.5"><strong>KH:</strong> ${customerName}</p>` : ''}
             ${customerNote ? `<p><strong>Ghi chú:</strong> ${customerNote}</p>` : ''}
         </div>`;
@@ -30,14 +30,14 @@ window.createPlanElement = function(plan) {
             <div>
                 <p class="font-bold text-gray-500 dark:text-slate-400 text-xs uppercase tracking-wider">${category || 'Chưa phân loại'}</p>
                 <p class="font-semibold text-slate-800 dark:text-slate-200 mt-1">${description || ''}</p>
-                <p class="text-sm font-bold mt-1 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-550'}">${window.formatCurrency(amount)}</p>
+                <p class="text-sm font-bold mt-1 ${isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-500'}">${window.formatCurrency(amount)}</p>
                 ${extraInfoHtml}
             </div>
             <p class="text-[10px] text-slate-400 dark:text-slate-500 text-right mt-2">${displayDateTimeStr}</p>
         </div>
         <div class="flex flex-col gap-2">
-            <button data-action="edit" class="text-slate-450 hover:text-brand-650 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-800 transition p-1.5 rounded-xl" title="Sửa"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
-            <button data-action="delete" class="text-slate-455 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-800 transition p-1.5 rounded-xl" title="Xóa"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+            <button data-action="edit" class="text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-white dark:hover:bg-slate-800 transition p-1.5 rounded-xl" title="Sửa"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+            <button data-action="delete" class="text-slate-400 hover:text-rose-600 hover:bg-white dark:hover:bg-slate-800 transition p-1.5 rounded-xl" title="Xóa"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
         </div>`;
     item.querySelector('.plan-item-checkbox').addEventListener('change', (e) => { 
         if (e.target.checked) { 

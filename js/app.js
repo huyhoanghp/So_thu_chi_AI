@@ -67,11 +67,16 @@ window.switchTab = function(tab) {
     } else if (tab === 'products') {
         window.renderProductList(window.products);
     } else if (tab === 'history') {
-        window.renderTransactionList(window.transactions);
+        if (window.renderAll) {
+            window.renderAll();
+        } else {
+            window.renderTransactionList(window.transactions);
+        }
     } else if (tab === 'promotions') {
         window.renderPromotions();
     } else if (tab === 'settings') {
         window.renderSettingsCategories();
+        if (typeof window.loadTelegramSettings === 'function') window.loadTelegramSettings();
     } else if (tab === 'dashboard') {
         window.renderReports();
         if (window.chatHistory.length === 0) {
@@ -113,17 +118,23 @@ window.renderAll = function() {
     };
 
     const searchedPlans = filterData(window.plans, searchPlanInput?.value || '');
-    const searchedTransactions = filterData(window.transactions, searchHistoryInput?.value || '');
+    const filteredHistoryTransactions = window.getFilteredHistoryData ? window.getFilteredHistoryData() : window.transactions;
+    const searchedTransactions = filterData(filteredHistoryTransactions, searchHistoryInput?.value || '');
     const searchedProducts = filterData(window.products, searchProductsInput?.value || '');
 
     // Overview numbers
     const { currentPeriodData } = window.getReportData();
     const totalIncome = currentPeriodData.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
     const totalExpense = currentPeriodData.filter(t => t.type === 'expense').reduce((s, t) => s + (t.amount || 0), 0);
+    const posSales = currentPeriodData.filter(t => t.type === 'income' && t.isPos);
+    const totalAOV = posSales.length ? posSales.reduce((s, t) => s + (t.amount || 0), 0) / posSales.length : 0;
+    const margin = totalIncome ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
     
     const totalIncomeEl = document.getElementById('total-income');
     const totalExpenseEl = document.getElementById('total-expense');
     const netProfitEl = document.getElementById('net-profit');
+    const aovValueEl = document.getElementById('aov-value');
+    const marginValueEl = document.getElementById('margin-value');
     const exportXlsxBtn = document.getElementById('export-xlsx-btn');
 
     if (totalIncomeEl) totalIncomeEl.textContent = window.formatCurrency(totalIncome);
@@ -133,7 +144,9 @@ window.renderAll = function() {
         netProfitEl.classList.toggle('text-green-600', totalIncome - totalExpense >= 0);
         netProfitEl.classList.toggle('text-red-600', totalIncome - totalExpense < 0);
     }
-    if (exportXlsxBtn) exportXlsxBtn.disabled = currentPeriodData.length === 0;
+    if (aovValueEl) aovValueEl.textContent = window.formatCurrency(totalAOV);
+    if (marginValueEl) marginValueEl.textContent = `${margin.toFixed(1)}%`;
+    if (exportXlsxBtn) exportXlsxBtn.disabled = searchedTransactions.length === 0;
 
     window.renderTransactionList(searchedTransactions);
     window.renderPlanList(searchedPlans);
@@ -153,14 +166,22 @@ window.listenForData = function() {
     
     window.transactionsCollection.onSnapshot(snapshot => {
         window.transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-            .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            .sort((a, b) => {
+                const dateB = b.createdAt ? window.parseDate(b.createdAt) : window.parseDate(b.date);
+                const dateA = a.createdAt ? window.parseDate(a.createdAt) : window.parseDate(a.date);
+                return dateB - dateA;
+            });
         window.renderAll();
         if (loadingOverlay) loadingOverlay.style.display = 'none';
     }, err => window.showError("Không thể tải lịch sử giao dịch: " + err.message));
 
     window.plansCollection.onSnapshot(snapshot => {
         window.plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-            .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            .sort((a, b) => {
+                const dateB = b.createdAt ? window.parseDate(b.createdAt) : window.parseDate(b.date);
+                const dateA = a.createdAt ? window.parseDate(a.createdAt) : window.parseDate(a.date);
+                return dateB - dateA;
+            });
         window.renderAll();
     }, err => window.showError("Không thể tải danh sách kế hoạch: " + err.message));
     
@@ -171,11 +192,32 @@ window.listenForData = function() {
         
         const filter = document.getElementById('product-report-filter');
         if (filter) {
-            let options = '';
+            const selectedVals = Array.from(filter.selectedOptions).map(o => o.value).filter(val => val !== '');
+            let options = '<option value="">-- Tất cả sản phẩm --</option>';
             window.products.forEach(p => {
                 options += `<option value="${p.id}">${p.name}</option>`;
             });
             filter.innerHTML = options;
+            // Restore previous selections
+            selectedVals.forEach(val => {
+                const opt = [...filter.options].find(o => o.value === val);
+                if (opt) opt.selected = true;
+            });
+            // Trigger custom-select re-init if available
+            if (filter.dataset.customSelectProcessed) {
+                delete filter.dataset.customSelectProcessed;
+                filter.style.display = '';
+                const container = filter.closest('.custom-select-container');
+                if (container) {
+                    container.replaceWith(filter);
+                }
+                // Clean up any legacy grid elements to prevent duplication
+                if (filter.parentNode) {
+                    filter.parentNode.querySelectorAll('.custom-multiselect-grid').forEach(el => el.remove());
+                }
+                // Re-init will happen via MutationObserver in custom-select.js
+                if (typeof window.initializeAllCustomControls === 'function') window.initializeAllCustomControls();
+            }
         }
     }, err => window.showError("Không thể tải danh sách sản phẩm: " + err.message));
 
@@ -245,4 +287,41 @@ document.addEventListener('DOMContentLoaded', () => {
     if (reportRangeEl) reportRangeEl.value = 'week';
     window.initTheme();
     window.switchTab('pos'); // Start in the Bán hàng tab
+
+    // Register Service Worker for PWA and handle automatic updates
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => {
+                    console.log('Service Worker registered successfully:', reg);
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    console.log('New update available. Reloading...');
+                                    window.showToast("Đang cập nhật phiên bản mới...", "success");
+                                    setTimeout(() => {
+                                        window.location.reload();
+                                    }, 1000);
+                                }
+                            }
+                        };
+                    };
+                })
+                .catch(err => console.error('Service Worker registration failed:', err));
+        });
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                refreshing = true;
+                window.location.reload();
+            }
+        });
+    }
+
+    if (typeof window.initTelegramEventListeners === 'function') {
+        window.initTelegramEventListeners();
+    }
 });

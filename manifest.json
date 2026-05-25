@@ -1,21 +1,22 @@
 {
-  "name": "Sổ Thu Chi Pro",
+  "name": "Sổ Thu Chi Pro V7",
   "short_name": "Sổ Thu Chi",
-  "description": "Ứng dụng quản lý bán hàng, thu chi và kế hoạch cá nhân với trợ lý AI.",
-  "start_url": ".",
+  "description": "Quản lý bán hàng thông minh tích hợp trạm POS chuyên nghiệp và trợ lý phân tích AI.",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "background_color": "#0f172a",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "src": "./icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
     },
     {
-      "src": "icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "./icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
     }
   ]
 }
