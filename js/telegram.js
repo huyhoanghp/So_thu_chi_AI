@@ -4,7 +4,8 @@ window.telegramConfig = {
     enabled: false,
     token: "",
     chatId: "",
-    reportTime: "off"
+    reportTime: "off",
+    reportCustomTime: ""
 };
 
 window.loadTelegramSettings = function() {
@@ -12,17 +13,26 @@ window.loadTelegramSettings = function() {
     window.telegramConfig.token = localStorage.getItem('telegram_bot_token') || '';
     window.telegramConfig.chatId = localStorage.getItem('telegram_chat_id') || '';
     window.telegramConfig.reportTime = localStorage.getItem('telegram_report_time') || 'off';
+    window.telegramConfig.reportCustomTime = localStorage.getItem('telegram_report_custom_time') || '';
 
     // Render in UI Cài đặt if elements exist
     const enableCheckbox = document.getElementById('settings-telegram-enable');
     const tokenInput = document.getElementById('settings-telegram-token');
     const chatIdInput = document.getElementById('settings-telegram-chatid');
     const reportTimeSelect = document.getElementById('settings-telegram-report-time');
+    const reportCustomInput = document.getElementById('settings-telegram-report-custom-time');
 
     if (enableCheckbox) enableCheckbox.checked = window.telegramConfig.enabled;
     if (tokenInput) tokenInput.value = window.telegramConfig.token;
     if (chatIdInput) chatIdInput.value = window.telegramConfig.chatId;
     if (reportTimeSelect) reportTimeSelect.value = window.telegramConfig.reportTime;
+    if (reportCustomInput) reportCustomInput.value = window.telegramConfig.reportCustomTime;
+
+    // Toggle custom time input container visibility
+    const customContainer = document.getElementById('settings-telegram-report-custom-container');
+    if (customContainer && reportTimeSelect) {
+        customContainer.classList.toggle('hidden', window.telegramConfig.reportTime !== 'custom');
+    }
 
     window.updateTelegramUIState();
 };
@@ -34,16 +44,18 @@ window.updateTelegramUIState = function() {
     }
 };
 
-window.saveTelegramSettings = function(enabled, token, chatId, reportTime) {
+window.saveTelegramSettings = function(enabled, token, chatId, reportTime, reportCustomTime) {
     localStorage.setItem('telegram_enabled', String(enabled));
     localStorage.setItem('telegram_bot_token', token);
     localStorage.setItem('telegram_chat_id', chatId);
     localStorage.setItem('telegram_report_time', reportTime);
+    localStorage.setItem('telegram_report_custom_time', reportCustomTime);
 
     window.telegramConfig.enabled = enabled;
     window.telegramConfig.token = token;
     window.telegramConfig.chatId = chatId;
     window.telegramConfig.reportTime = reportTime;
+    window.telegramConfig.reportCustomTime = reportCustomTime;
 
     window.updateTelegramUIState();
     window.showToast("Đã lưu cấu hình Telegram!");
@@ -243,14 +255,32 @@ window.sendDailyReportTelegram = async function() {
 window.checkAndSendScheduledReport = function() {
     if (!window.telegramConfig.enabled || window.telegramConfig.reportTime === 'off') return;
 
-    const reportHour = parseInt(window.telegramConfig.reportTime, 10);
-    if (isNaN(reportHour)) return;
+    let targetHour = null;
+    let targetMinute = 0;
+
+    if (window.telegramConfig.reportTime === 'custom') {
+        const customTimeStr = window.telegramConfig.reportCustomTime;
+        if (!customTimeStr) return; // Time not set yet
+        const parts = customTimeStr.split(':');
+        if (parts.length === 2) {
+            targetHour = parseInt(parts[0], 10);
+            targetMinute = parseInt(parts[1], 10);
+        }
+    } else {
+        targetHour = parseInt(window.telegramConfig.reportTime, 10);
+        targetMinute = 0;
+    }
+
+    if (targetHour === null || isNaN(targetHour) || isNaN(targetMinute)) return;
 
     const now = new Date();
     const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
     
-    // Check if current hour is at or after scheduled hour
-    if (currentHour >= reportHour) {
+    // Check if current time is at or after scheduled target time
+    const reachedTargetTime = currentHour > targetHour || (currentHour === targetHour && currentMinute >= targetMinute);
+    
+    if (reachedTargetTime) {
         const todayStr = now.toISOString().split('T')[0];
         const lastReportDate = localStorage.getItem('telegram_last_report_date');
 
@@ -274,13 +304,23 @@ window.initTelegramEventListeners = function() {
     const saveTelegramBtn = document.getElementById('save-telegram-btn');
     const testTelegramBtn = document.getElementById('test-telegram-btn');
     const sendReportBtn = document.getElementById('send-report-telegram-btn');
+    const reportTimeSelect = document.getElementById('settings-telegram-report-time');
+    const customContainer = document.getElementById('settings-telegram-report-custom-container');
+
+    // Toggle custom time container when selection changes
+    reportTimeSelect?.addEventListener('change', () => {
+        if (customContainer && reportTimeSelect) {
+            customContainer.classList.toggle('hidden', reportTimeSelect.value !== 'custom');
+        }
+    });
 
     saveTelegramBtn?.addEventListener('click', () => {
         const enabled = document.getElementById('settings-telegram-enable')?.checked || false;
         const token = document.getElementById('settings-telegram-token')?.value.trim() || '';
         const chatId = document.getElementById('settings-telegram-chatid')?.value.trim() || '';
         const reportTime = document.getElementById('settings-telegram-report-time')?.value || 'off';
-        window.saveTelegramSettings(enabled, token, chatId, reportTime);
+        const reportCustomTime = document.getElementById('settings-telegram-report-custom-time')?.value || '';
+        window.saveTelegramSettings(enabled, token, chatId, reportTime, reportCustomTime);
     });
 
     testTelegramBtn?.addEventListener('click', window.testTelegramConnection);
