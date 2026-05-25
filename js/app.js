@@ -191,11 +191,32 @@ window.listenForData = function() {
         
         const filter = document.getElementById('product-report-filter');
         if (filter) {
-            let options = '';
+            const selectedVals = Array.from(filter.selectedOptions).map(o => o.value).filter(val => val !== '');
+            let options = '<option value="">-- Tất cả sản phẩm --</option>';
             window.products.forEach(p => {
                 options += `<option value="${p.id}">${p.name}</option>`;
             });
             filter.innerHTML = options;
+            // Restore previous selections
+            selectedVals.forEach(val => {
+                const opt = [...filter.options].find(o => o.value === val);
+                if (opt) opt.selected = true;
+            });
+            // Trigger custom-select re-init if available
+            if (filter.dataset.customSelectProcessed) {
+                delete filter.dataset.customSelectProcessed;
+                filter.style.display = '';
+                const container = filter.closest('.custom-select-container');
+                if (container) {
+                    container.replaceWith(filter);
+                }
+                // Clean up any legacy grid elements to prevent duplication
+                if (filter.parentNode) {
+                    filter.parentNode.querySelectorAll('.custom-multiselect-grid').forEach(el => el.remove());
+                }
+                // Re-init will happen via MutationObserver in custom-select.js
+                if (typeof window.initializeAllCustomControls === 'function') window.initializeAllCustomControls();
+            }
         }
     }, err => window.showError("Không thể tải danh sách sản phẩm: " + err.message));
 

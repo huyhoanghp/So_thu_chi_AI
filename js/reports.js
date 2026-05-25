@@ -537,16 +537,16 @@ window.renderProductPerformanceReports = function(source) {
     const chartContainer = document.getElementById('product-chart-container');
     if (!productReportFilter) return;
 
-    const selectedProductIds = [...productReportFilter.selectedOptions].map(opt => opt.value);
+    const selectedProductIds = Array.from(productReportFilter.selectedOptions).map(opt => opt.value).filter(val => val !== '');
     
-    // Tổng hợp số liệu sản phẩm
-    const productStats = {};
+    // Tổng hợp số liệu Tất cả sản phẩm (dùng cho Top 5 charts - không lọc)
+    const allProductStats = {};
+    // Tổng hợp số liệu sản phẩm được chọn (dùng cho Trend chart)
+    const filteredProductStats = {};
 
-    const addStat = (productId, name, costPrice, quantity, amount, dateStr) => {
-        if (selectedProductIds.length > 0 && !selectedProductIds.includes(productId)) return;
-        
-        if (!productStats[productId]) {
-            productStats[productId] = {
+    const addToStats = (target, productId, name, costPrice, quantity, amount, dateStr) => {
+        if (!target[productId]) {
+            target[productId] = {
                 name: name || 'SP không xác định',
                 costPrice: costPrice || 0,
                 quantity: 0,
@@ -554,11 +554,19 @@ window.renderProductPerformanceReports = function(source) {
                 salesByDate: {}
             };
         }
-        productStats[productId].quantity += quantity;
-        productStats[productId].totalRevenue += amount;
-        
+        target[productId].quantity += quantity;
+        target[productId].totalRevenue += amount;
         if (dateStr) {
-            productStats[productId].salesByDate[dateStr] = (productStats[productId].salesByDate[dateStr] || 0) + amount;
+            target[productId].salesByDate[dateStr] = (target[productId].salesByDate[dateStr] || 0) + amount;
+        }
+    };
+
+    const addStat = (productId, name, costPrice, quantity, amount, dateStr) => {
+        // Luôn thêm vào allProductStats (không lọc)
+        addToStats(allProductStats, productId, name, costPrice, quantity, amount, dateStr);
+        // Chỉ thêm vào filteredProductStats nếu khớp bộ lọc
+        if (selectedProductIds.length === 0 || selectedProductIds.includes(productId)) {
+            addToStats(filteredProductStats, productId, name, costPrice, quantity, amount, dateStr);
         }
     };
 
@@ -581,10 +589,12 @@ window.renderProductPerformanceReports = function(source) {
         }
     });
 
-    const statsArray = Object.values(productStats).map(p => ({
+    // statsArray dùng allProductStats - luôn bao gồm tất cả sản phẩm (cho Top 5 charts)
+    const statsArray = Object.values(allProductStats).map(p => ({
         ...p,
         profit: p.totalRevenue - (p.costPrice * p.quantity)
     }));
+
 
     const isDark = document.documentElement.classList.contains('dark');
     const textColor = isDark ? '#94a3b8' : '#475569';
@@ -599,44 +609,18 @@ window.renderProductPerformanceReports = function(source) {
         return gradient;
     };
 
-    // Helper: xây dựng legend summary cards bên dưới biểu đồ
-    const buildBarLegendCards = (containerId, items, colorArr, valueFormatter) => {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        container.innerHTML = '';
-        const maxVal = Math.max(...items.map(item => item.value), 1);
-        items.forEach((item, idx) => {
-            const color = colorArr[idx % colorArr.length];
-            const pct = ((item.value / maxVal) * 100).toFixed(0);
-            const card = document.createElement('div');
-            card.className = 'flex items-center gap-2.5 p-2 rounded-xl bg-white/20 dark:bg-slate-900/30 border border-white/10 dark:border-white/5 shadow-sm text-slate-700 dark:text-slate-300';
-            card.innerHTML = `
-                <span class="font-bold text-[10px] w-4 text-right shrink-0 text-slate-400 dark:text-slate-500">${idx + 1}</span>
-                <div class="flex-1 min-w-0">
-                    <div class="flex justify-between items-center mb-0.5">
-                        <span class="truncate font-semibold text-xs text-slate-700 dark:text-slate-200">${item.name}</span>
-                        <span class="font-bold text-xs ml-2 shrink-0" style="color:${color}">${valueFormatter(item.value)}</span>
-                    </div>
-                    <div class="h-1.5 rounded-full overflow-hidden" style="background:rgba(148,163,184,0.12)">
-                        <div class="h-full rounded-full" style="width:${pct}%; background:linear-gradient(90deg,${color}99,${color}); box-shadow: 0 0 6px ${color}70"></div>
-                    </div>
-                </div>
-            `;
-            container.appendChild(card);
-        });
-    };
-
     // Top Selling Chart (Cột ngang với gradient + neon)
     if (topSellingChart) topSellingChart.destroy();
     const topSellingChartCtx = document.getElementById('top-selling-chart')?.getContext('2d');
-    const topSellingLegendContainer = document.getElementById('top-selling-legend');
+    const topSellingEmpty = document.getElementById('top-selling-empty');
     if (topSellingChartCtx) {
         const topSelling = [...statsArray].sort((a, b) => b.quantity - a.quantity).slice(0, 5);
         if (topSelling.length === 0) {
-            // Show empty state
-            const parentEl = topSellingChartCtx.canvas.parentElement;
-            if (parentEl) parentEl.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 dark:text-slate-500 text-sm flex-col gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg><span>Chưa có dữ liệu bán hàng</span></div>';
+            topSellingEmpty?.classList.remove('hidden');
+            topSellingChartCtx.canvas.classList.add('hidden');
         } else {
+            topSellingEmpty?.classList.add('hidden');
+            topSellingChartCtx.canvas.classList.remove('hidden');
             const labels = topSelling.map(p => p.name);
             const data = topSelling.map(p => p.quantity);
             const sellingGradient = makeHBarGradient(topSellingChartCtx, 'rgba(16,185,129,0.15)', 'rgba(16,185,129,0.85)');
@@ -680,24 +664,21 @@ window.renderProductPerformanceReports = function(source) {
                     }
                 }
             });
-
-            // Render legend cards
-            if (topSellingLegendContainer) {
-                buildBarLegendCards('top-selling-legend', topSelling.map(p => ({ name: p.name, value: p.quantity })), ['#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6'], v => `${v.toLocaleString('vi-VN')} sp`);
-            }
         }
     }
 
     // Top Profit Chart (Cột ngang với gradient indigo)
     if (topProfitChart) topProfitChart.destroy();
     const topProfitChartCtx = document.getElementById('top-profit-chart')?.getContext('2d');
-    const topProfitLegendContainer = document.getElementById('top-profit-legend');
+    const topProfitEmpty = document.getElementById('top-profit-empty');
     if (topProfitChartCtx) {
         const topProfit = [...statsArray].sort((a, b) => b.profit - a.profit).slice(0, 5);
         if (topProfit.length === 0) {
-            const parentEl = topProfitChartCtx.canvas.parentElement;
-            if (parentEl) parentEl.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 dark:text-slate-500 text-sm flex-col gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg><span>Chưa có dữ liệu lợi nhuận</span></div>';
+            topProfitEmpty?.classList.remove('hidden');
+            topProfitChartCtx.canvas.classList.add('hidden');
         } else {
+            topProfitEmpty?.classList.add('hidden');
+            topProfitChartCtx.canvas.classList.remove('hidden');
             const labels = topProfit.map(p => p.name);
             const data = topProfit.map(p => p.profit);
             const profitGradient = makeHBarGradient(topProfitChartCtx, 'rgba(99,102,241,0.15)', 'rgba(99,102,241,0.85)');
@@ -741,72 +722,88 @@ window.renderProductPerformanceReports = function(source) {
                     }
                 }
             });
-
-            // Render legend cards
-            if (topProfitLegendContainer) {
-                buildBarLegendCards('top-profit-legend', topProfit.map(p => ({ name: p.name, value: p.profit })), ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'], v => window.formatCurrency(v));
-            }
         }
     }
 
-    // --- Product Chart ---
+    // --- Product Trend Chart (chỉ hiện khi chọn ít nhất 1 sản phẩm cụ thể) ---
     if (productSalesTrendChart) productSalesTrendChart.destroy();
     
-    const hasSalesData = Object.keys(productStats).length > 0;
+    const hasSalesData = Object.keys(allProductStats).length > 0;
     if (selectedProductIds.length > 0 && hasSalesData && chartContainer && productSalesTrendChartCtx) {
         chartContainer.classList.remove('hidden');
         
-        // Thu thập tất cả các ngày có giao dịch bán sản phẩm được chọn
         const datesSet = new Set();
         selectedProductIds.forEach(pid => {
-            if (productStats[pid]) {
-                Object.keys(productStats[pid].salesByDate).forEach(d => datesSet.add(d));
+            const stats = filteredProductStats[pid];
+            if (stats) {
+                Object.keys(stats.salesByDate).forEach(d => datesSet.add(d));
             }
         });
         const allDates = [...datesSet].sort((a, b) => new Date(a) - new Date(b));
 
         if (allDates.length === 0) {
             chartContainer.classList.add('hidden');
-            return;
-        }
+        } else {
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#ef4444'];
+            const datasets = selectedProductIds.map((pid, idx) => {
+                const stats = filteredProductStats[pid];
+                if (!stats) return null;
+                const productName = stats.name;
+                const data = allDates.map(date => stats.salesByDate[date] || 0);
+                const color = colors[idx % colors.length];
+                
+                return {
+                    label: productName,
+                    data: data,
+                    borderColor: color,
+                    backgroundColor: color + '1a', // 10% opacity for fill
+                    fill: selectedProductIds.length === 1, // Only fill if single product to avoid overlapping clutter
+                    tension: 0.4,
+                    borderWidth: 2.5,
+                    pointBackgroundColor: color,
+                    pointBorderColor: isDark ? '#0f172a' : '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: allDates.length > 30 ? 0 : 4,
+                    pointHoverRadius: 6
+                };
+            }).filter(ds => ds !== null);
 
-        const datasets = selectedProductIds.map((productId, index) => {
-            const stats = productStats[productId];
-            const name = stats ? stats.name : (window.products.find(p => p.id === productId)?.name || 'SP');
-            const data = allDates.map(date => (stats && stats.salesByDate[date]) || 0);
-            
-            const chartColors = ['#3b82f6', '#10b981', '#f97316', '#8b5cf6', '#ef4444', '#eab308', '#06b6d4', '#d946ef'];
-            const color = chartColors[index % chartColors.length];
+            if (datasets.length === 0) {
+                chartContainer.classList.add('hidden');
+            } else {
+                const isDark2 = document.documentElement.classList.contains('dark');
+                const textColor2 = isDark2 ? '#94a3b8' : '#475569';
+                const gridColor2 = isDark2 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
 
-            return {
-                label: name,
-                data: data,
-                borderColor: color,
-                backgroundColor: `${color}15`,
-                fill: true,
-                tension: 0.1
-            };
-        });
-
-        const isDark = document.documentElement.classList.contains('dark');
-        const textColor = isDark ? '#94a3b8' : '#475569';
-        const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-
-        productSalesTrendChart = new Chart(productSalesTrendChartCtx, {
-            type: 'line',
-            data: { labels: allDates, datasets: datasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { labels: { color: textColor } }
-                },
-                scales: {
-                    x: { grid: { color: gridColor }, ticks: { color: textColor } },
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } }
-                }
+                productSalesTrendChart = new Chart(productSalesTrendChartCtx, {
+                    type: 'line',
+                    data: {
+                        labels: allDates,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: textColor2, usePointStyle: true, pointStyle: 'circle', boxWidth: 8 } },
+                            tooltip: {
+                                backgroundColor: isDark2 ? 'rgba(15,23,42,0.92)' : 'rgba(255,255,255,0.96)',
+                                borderColor: isDark2 ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                                borderWidth: 1,
+                                titleColor: isDark2 ? '#e2e8f0' : '#1e293b',
+                                bodyColor: isDark2 ? '#94a3b8' : '#475569',
+                                padding: 10, cornerRadius: 12,
+                                callbacks: { label: ctx => ` ${ctx.dataset.label}: ${window.formatCurrency(ctx.parsed.y)}` }
+                            }
+                        },
+                        scales: {
+                            x: { grid: { color: gridColor2 }, ticks: { color: textColor2, maxRotation: 45 } },
+                            y: { beginAtZero: true, grid: { color: gridColor2 }, ticks: { color: textColor2, callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v } }
+                        }
+                    }
+                });
             }
-        });
+        }
     } else {
         chartContainer?.classList.add('hidden');
     }

@@ -488,9 +488,13 @@
 
                             <!-- Report Content: Products -->
                             <div id="report-content-products" class="hidden space-y-6">
-                                 <div>
-                                    <label for="product-report-filter" class="block text-sm font-semibold mb-2">Lọc theo sản phẩm (chọn một hoặc nhiều):</label>
-                                    <select multiple id="product-report-filter" class="w-full p-3 border border-gray-200 dark:border-slate-800 dark:bg-slate-800 dark:text-white rounded-2xl h-28 focus:ring-2 focus:ring-brand-500 focus:outline-none"></select>
+                                 <div class="flex items-center gap-3">
+                                     <label for="product-report-filter" class="text-sm font-semibold whitespace-nowrap">Lọc sản phẩm:</label>
+                                     <div class="flex-1 relative">
+                                         <select id="product-report-filter" class="w-full" multiple>
+                                             <option value="">-- Tất cả sản phẩm --</option>
+                                         </select>
+                                     </div>
                                  </div>
                                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                      <div class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-3xl border border-gray-100 dark:border-slate-800/40 flex flex-col gap-4">
@@ -498,16 +502,26 @@
                                              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500" style="box-shadow: 0 0 8px #10b981"></span>
                                              Top 5 Sản phẩm Bán chạy
                                          </h3>
-                                         <div class="relative h-52 w-full"><canvas id="top-selling-chart"></canvas></div>
-                                         <div id="top-selling-legend" class="space-y-1.5"></div>
+                                         <div class="relative h-64 w-full">
+                                             <canvas id="top-selling-chart"></canvas>
+                                             <div id="top-selling-empty" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm flex-col gap-2">
+                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                                                 <span>Chưa có dữ liệu bán hàng</span>
+                                             </div>
+                                         </div>
                                      </div>
                                      <div class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-3xl border border-gray-100 dark:border-slate-800/40 flex flex-col gap-4">
                                          <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500" style="box-shadow: 0 0 8px #6366f1"></span>
                                              Top 5 Sản phẩm Lợi nhuận cao
                                          </h3>
-                                         <div class="relative h-52 w-full"><canvas id="top-profit-chart"></canvas></div>
-                                         <div id="top-profit-legend" class="space-y-1.5"></div>
+                                         <div class="relative h-64 w-full">
+                                             <canvas id="top-profit-chart"></canvas>
+                                             <div id="top-profit-empty" class="hidden absolute inset-0 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm flex-col gap-2">
+                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                                                 <span>Chưa có dữ liệu lợi nhuận</span>
+                                             </div>
+                                         </div>
                                      </div>
                                  </div>
                                 <div id="product-chart-container" class="hidden bg-gray-50 dark:bg-slate-800/40 p-5 rounded-3xl border border-gray-100 dark:border-slate-800/40">

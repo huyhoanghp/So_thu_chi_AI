@@ -134,20 +134,58 @@
 
         select.dataset.customSelectProcessed = "true";
 
-        // Create container list grid
+        // Create container (same structure as single select)
         const container = document.createElement('div');
-        container.className = 'custom-multiselect-grid mt-2';
+        container.className = 'custom-select-container';
 
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'custom-select-trigger';
+        trigger.innerHTML = `
+            <span class="custom-select-label"></span>
+            <svg class="h-4.5 w-4.5 text-slate-400 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+        `;
+
+        const menu = document.createElement('div');
+        menu.className = 'custom-select-menu';
+
+        // Insert container into the DOM and move the original select inside it
         select.parentNode.insertBefore(container, select);
+        container.appendChild(select);
+        container.appendChild(trigger);
+        container.appendChild(menu);
+
+        // Hide original select
         select.style.display = 'none';
+
+        const label = trigger.querySelector('.custom-select-label');
+
+        // Override value property on this specific select instance to intercept programmatic changes
+        if (originalValueProp) {
+            Object.defineProperty(select, 'value', {
+                get() {
+                    return originalValueProp.get.call(this);
+                },
+                set(val) {
+                    originalValueProp.set.call(this, val);
+                    this.dispatchEvent(new CustomEvent('custom-value-set'));
+                },
+                configurable: true,
+                enumerable: true
+            });
+        }
 
         // Keep track of selections persistently so dynamic innerHTML updates on select don't wipe them
         const selectedValues = new Set();
 
-        // Function to rebuild product pills
-        function rebuildPills() {
-            container.innerHTML = '';
+        // Function to rebuild options list with checkboxes
+        function rebuildOptions() {
+            menu.innerHTML = '';
             Array.from(select.options).forEach((option) => {
+                if (option.value === "") return; // Skip "All" placeholder option in multiselect menu
+
                 // Restore selection state
                 if (selectedValues.has(option.value)) {
                     option.selected = true;
@@ -155,19 +193,21 @@
                     selectedValues.add(option.value);
                 }
 
-                const pill = document.createElement('div');
-                pill.className = `custom-multiselect-pill ${option.selected ? 'selected' : ''}`;
-                pill.dataset.value = option.value;
-                pill.innerHTML = `
-                    <span class="custom-multiselect-pill-checkbox">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                        </svg>
-                    </span>
-                    <span>${option.textContent}</span>
+                const optEl = document.createElement('div');
+                optEl.className = `custom-select-option ${option.selected ? 'selected' : ''}`;
+                optEl.dataset.value = option.value;
+                optEl.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="custom-select-option-checkbox">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </span>
+                        <span>${option.textContent}</span>
+                    </div>
                 `;
 
-                pill.addEventListener('click', (e) => {
+                optEl.addEventListener('click', (e) => {
                     e.stopPropagation();
                     option.selected = !option.selected;
                     
@@ -177,38 +217,62 @@
                         selectedValues.delete(option.value);
                     }
                     
-                    pill.classList.toggle('selected', option.selected);
+                    optEl.classList.toggle('selected', option.selected);
+                    
                     // Dispatch change event to trigger reports re-render
                     select.dispatchEvent(new Event('change', { bubbles: true }));
+                    updateTriggerLabel();
                 });
 
-                container.appendChild(pill);
+                menu.appendChild(optEl);
             });
+            updateTriggerLabel();
         }
 
-        // Rebuild list when options dynamically change
-        const observer = new MutationObserver(rebuildPills);
-        observer.observe(select, { childList: true });
+        // Function to update the visible label and selected styling
+        function updateTriggerLabel() {
+            const selectedOptions = Array.from(select.options).filter(opt => opt.selected && opt.value !== '');
+            if (selectedOptions.length === 0) {
+                label.textContent = select.placeholder || '-- Tất cả sản phẩm --';
+            } else if (selectedOptions.length <= 2) {
+                label.textContent = selectedOptions.map(opt => opt.textContent).join(', ');
+            } else {
+                label.textContent = `Đã chọn ${selectedOptions.length} sản phẩm`;
+            }
 
-        // Listen for change events to sync internal selectedValues set
-        function syncSelectedValues() {
-            Array.from(select.options).forEach(opt => {
-                if (opt.selected) {
-                    selectedValues.add(opt.value);
+            // Sync visual checkbox states
+            const optionEls = menu.querySelectorAll('.custom-select-option');
+            optionEls.forEach(opt => {
+                const correspondingOption = Array.from(select.options).find(o => o.value === opt.dataset.value);
+                if (correspondingOption && correspondingOption.selected) {
+                    opt.classList.add('selected');
                 } else {
-                    selectedValues.delete(opt.value);
+                    opt.classList.remove('selected');
                 }
             });
-            container.querySelectorAll('.custom-multiselect-pill').forEach(pill => {
-                const isSel = selectedValues.has(pill.dataset.value);
-                pill.classList.toggle('selected', isSel);
-            });
         }
 
-        select.addEventListener('change', syncSelectedValues);
-        select.addEventListener('custom-value-set', syncSelectedValues);
+        // Event listeners
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = menu.classList.contains('show');
+            closeAllDropdowns();
+            if (!isOpen) {
+                menu.classList.add('show');
+                trigger.classList.add('active');
+            }
+        });
 
-        rebuildPills();
+        // Sync visual display when value changes natively or programmatically
+        select.addEventListener('change', updateTriggerLabel);
+        select.addEventListener('custom-value-set', updateTriggerLabel);
+
+        // Rebuild when the <select>'s options change dynamically
+        const observer = new MutationObserver(rebuildOptions);
+        observer.observe(select, { childList: true });
+
+        // Initialize display
+        rebuildOptions();
     }
 
     // Initialize function
