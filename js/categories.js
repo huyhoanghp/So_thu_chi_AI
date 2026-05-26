@@ -29,7 +29,7 @@ window.renderSettingsCategories = function() {
         settingsIncomeCategories.innerHTML = '';
         window.categories.income.forEach(cat => {
             const div = document.createElement('div');
-            div.className = 'flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700/60 text-sm';
+            div.className = 'flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700/60 text-sm';
             div.innerHTML = `
                 <span class="font-medium">${cat}</span>
                 <button class="text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 px-2 py-0.5 rounded-lg transition font-bold" data-category="${cat}" data-type="income">✕</button>
@@ -42,7 +42,7 @@ window.renderSettingsCategories = function() {
         settingsExpenseCategories.innerHTML = '';
         window.categories.expense.forEach(cat => {
             const div = document.createElement('div');
-            div.className = 'flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700/60 text-sm';
+            div.className = 'flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700/60 text-sm';
             div.innerHTML = `
                 <span class="font-medium">${cat}</span>
                 <button class="text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 px-2 py-0.5 rounded-lg transition font-bold" data-category="${cat}" data-type="expense">✕</button>

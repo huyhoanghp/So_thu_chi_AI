@@ -598,46 +598,60 @@
                         <!-- TAB CÀI ĐẶT -->
                         <div id="content-settings" class="hidden bg-white dark:bg-slate-900 p-5 md:p-6 rounded-3xl border border-gray-100 dark:border-slate-800/80 shadow-sm transition-colors duration-300">
                             <h3 class="text-xl font-bold mb-6 text-gray-900 dark:text-white border-b pb-3 border-gray-200 dark:border-slate-800 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                 Cấu hình hệ thống
                             </h3>
+                            
+                            <!-- Tabbed sub-navigation for mobile and desktop settings -->
+                            <div class="bg-gray-100/80 dark:bg-slate-800/50 p-1 rounded-2xl flex gap-1 overflow-x-auto mb-6 max-w-2xl scrollbar-none border border-gray-250/10 dark:border-slate-800/30 shadow-inner">
+                                <button type="button" data-settings-tab="gemini" class="settings-tab-btn settings-tab-btn-active flex-1 text-center py-2 px-3 text-xs md:text-sm font-bold rounded-xl whitespace-nowrap">
+                                    🤖 Trợ lý AI
+                                </button>
+                                <button type="button" data-settings-tab="categories" class="settings-tab-btn settings-tab-btn-inactive flex-1 text-center py-2 px-3 text-xs md:text-sm font-bold rounded-xl whitespace-nowrap">
+                                    📁 Danh mục
+                                </button>
+                                <button type="button" data-settings-tab="telegram" class="settings-tab-btn settings-tab-btn-inactive flex-1 text-center py-2 px-3 text-xs md:text-sm font-bold rounded-xl whitespace-nowrap">
+                                    💬 Telegram
+                                </button>
+                            </div>
+
                             <div class="space-y-6 max-w-2xl">
                                 <!-- Gemini API Key -->
-                                <div class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-200 dark:border-slate-800/30">
+                                <div id="settings-group-gemini" class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-200 dark:border-slate-800/30 transition-all duration-300">
                                     <label for="settings-gemini-key" class="block font-bold text-sm mb-2">Gemini API Key</label>
                                     <div class="flex gap-2">
-                                        <input type="password" id="settings-gemini-key" class="flex-1 px-4 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm" placeholder="Nhập khóa API Gemini của bạn...">
-                                        <button id="save-gemini-key-btn" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2 rounded-xl transition text-sm">Lưu</button>
+                                        <input type="password" id="settings-gemini-key" class="flex-1 px-4 py-2.5 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-sm" placeholder="Nhập khóa API Gemini của bạn...">
+                                        <button id="save-gemini-key-btn" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2.5 rounded-2xl shadow-md hover:shadow-lg transition hover:-translate-y-0.5 text-sm">Lưu</button>
                                     </div>
                                     <p class="text-xs text-gray-550 dark:text-slate-400 mt-2">Dùng để xử lý hội thoại AI và nhận diện giọng nói. Được lưu trữ cục bộ trên thiết bị của bạn.</p>
                                 </div>
                                 
                                 <!-- Categories Manager -->
-                                <div class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-200 dark:border-slate-800/30">
+                                <div id="settings-group-categories" class="hidden bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-200 dark:border-slate-800/30 transition-all duration-300">
                                     <h4 class="font-bold text-sm mb-4">Quản lý Danh mục Thu / Chi</h4>
                                     
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <h5 class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3">Danh mục Thu</h5>
                                             <div id="settings-income-categories" class="space-y-2 mb-3"></div>
-                                            <div class="flex gap-1.5">
-                                                <input type="text" id="new-income-category" class="flex-1 px-3 py-1.5 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl text-xs focus:outline-none" placeholder="Tên danh mục thu...">
-                                                <button id="add-income-category-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-xl text-xs transition">Thêm</button>
+                                            <div class="flex gap-1.5 w-full">
+                                                <input type="text" id="new-income-category" class="flex-1 min-w-0 px-3 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-2xl text-xs focus:outline-none" placeholder="Tên danh mục thu...">
+                                                <button id="add-income-category-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-2xl shadow-md hover:shadow-lg transition hover:-translate-y-0.5 text-xs flex-shrink-0">Thêm</button>
                                             </div>
                                         </div>
                                         <div>
                                             <h5 class="text-xs font-bold text-rose-600 uppercase tracking-widest mb-3">Danh mục Chi</h5>
                                             <div id="settings-expense-categories" class="space-y-2 mb-3"></div>
-                                            <div class="flex gap-1.5">
-                                                <input type="text" id="new-expense-category" class="flex-1 px-3 py-1.5 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl text-xs focus:outline-none" placeholder="Tên danh mục chi...">
-                                                <button id="add-expense-category-btn" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-3 py-1.5 rounded-xl text-xs transition">Thêm</button>
+                                            <div class="flex gap-1.5 w-full">
+                                                <input type="text" id="new-expense-category" class="flex-1 min-w-0 px-3 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-2xl text-xs focus:outline-none" placeholder="Tên danh mục chi...">
+                                                <button id="add-expense-category-btn" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-4 py-2 rounded-2xl shadow-md hover:shadow-lg transition hover:-translate-y-0.5 text-xs flex-shrink-0">Thêm</button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Telegram Notification Config -->
-                                <div class="bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-200 dark:border-slate-800/30">
+                                <div id="settings-group-telegram" class="hidden bg-gray-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-gray-200 dark:border-slate-800/30 transition-all duration-300">
                                     <h4 class="font-bold text-sm mb-2 flex items-center gap-2">
                                         <svg class="h-5 w-5 text-sky-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.02-.27 0-.12.03-1.95 1.24-5.5 3.63-.52.36-.96.53-1.33.52-.41-.01-1.2-.23-1.78-.42-.72-.23-1.29-.35-1.24-.75.03-.2.31-.4 1.13-.79 4.99-2.17 8.31-3.6 9.97-4.29 4.74-1.97 5.72-2.31 6.36-2.32.14 0 .46.03.67.2.18.14.23.33.25.48.02.09.03.27.01.44z"/></svg>
                                         Cấu hình thông báo Telegram
@@ -646,7 +660,7 @@
                                     
                                     <div class="space-y-4">
                                         <div class="flex items-center justify-between py-1">
-                                            <span class="text-xs font-bold text-slate-700 dark:text-slate-350">Bật thông báo kho & báo cáo:</span>
+                                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Bật thông báo kho & báo cáo:</span>
                                             <label class="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" id="settings-telegram-enable" class="sr-only peer">
                                                 <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-600"></div>
@@ -654,7 +668,7 @@
                                         </div>
                                         
                                         <div class="flex items-center justify-between py-1">
-                                            <span class="text-xs font-bold text-slate-700 dark:text-slate-350">Gửi thông báo biến động giao dịch:</span>
+                                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200">Gửi thông báo biến động giao dịch:</span>
                                             <label class="relative inline-flex items-center cursor-pointer">
                                                 <input type="checkbox" id="settings-telegram-tx-alert" class="sr-only peer">
                                                 <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-brand-600"></div>
@@ -663,17 +677,17 @@
                                         
                                         <div>
                                             <label for="settings-telegram-token" class="block font-bold text-xs mb-1.5 text-slate-500 dark:text-slate-400">Telegram Bot Token</label>
-                                            <input type="password" id="settings-telegram-token" class="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-xs" placeholder="Ví dụ: 123456789:ABCdefGhIJKlmNoPQRsTuvWxYz">
+                                            <input type="password" id="settings-telegram-token" class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-xs" placeholder="Ví dụ: 123456789:ABCdefGhIJKlmNoPQRsTuvWxYz">
                                         </div>
                                         
                                         <div>
                                             <label for="settings-telegram-chatid" class="block font-bold text-xs mb-1.5 text-slate-500 dark:text-slate-400">Telegram Chat ID / Group ID</label>
-                                            <input type="text" id="settings-telegram-chatid" class="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-xs" placeholder="Ví dụ: -10028471029 hoặc 987654321">
+                                            <input type="text" id="settings-telegram-chatid" class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-xs" placeholder="Ví dụ: -10028471029 hoặc 987654321">
                                         </div>
-
+ 
                                         <div>
                                             <label for="settings-telegram-report-time" class="block font-bold text-xs mb-1.5 text-slate-500 dark:text-slate-400">Tự động gửi báo cáo doanh thu cuối ngày</label>
-                                            <select id="settings-telegram-report-time" class="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-xs">
+                                            <select id="settings-telegram-report-time" class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-xs">
                                                 <option value="off">Tắt (Chỉ gửi thủ công)</option>
                                                 <option value="20">Hàng ngày lúc 20:00</option>
                                                 <option value="21">Hàng ngày lúc 21:00</option>
@@ -681,15 +695,15 @@
                                                 <option value="custom">Giờ tùy chọn...</option>
                                             </select>
                                         </div>
-
+ 
                                         <div id="settings-telegram-report-custom-container" class="hidden">
                                             <label for="settings-telegram-report-custom-time" class="block font-bold text-xs mb-1.5 text-slate-500 dark:text-slate-400">Chọn giờ gửi báo cáo</label>
-                                            <input type="time" id="settings-telegram-report-custom-time" class="w-full px-4 py-2 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-xs">
+                                            <input type="time" id="settings-telegram-report-custom-time" class="w-full px-4 py-2.5 border border-gray-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-2xl focus:ring-1 focus:ring-brand-500 focus:outline-none text-xs">
                                         </div>
-
+ 
                                         <div class="flex gap-2 pt-2">
-                                            <button id="test-telegram-btn" type="button" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/40 dark:hover:bg-slate-850 text-slate-700 dark:text-slate-200 font-semibold px-4 py-2 rounded-xl transition text-xs border border-gray-200 dark:border-slate-700">Gửi thử tin nhắn</button>
-                                            <button id="save-telegram-btn" type="button" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-4 py-2 rounded-xl transition text-xs">Lưu cấu hình</button>
+                                            <button id="test-telegram-btn" type="button" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/40 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold px-4 py-2.5 rounded-2xl hover:shadow-md transition text-xs border border-gray-200 dark:border-slate-700/80 hover:-translate-y-0.5">Gửi thử tin nhắn</button>
+                                            <button id="save-telegram-btn" type="button" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2.5 rounded-2xl hover:shadow-lg transition hover:-translate-y-0.5 text-xs shadow-md">Lưu cấu hình</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1129,6 +1143,7 @@
     </div>
 
     <!-- Script Modules (Loaded Sequentially to avoid CORS issues locally) -->
+    <script src="js/db.js?v=8.0"></script>
     <script src="js/config.js?v=8.0"></script>
     <script src="js/theme.js?v=8.0"></script>
     <script src="js/voice.js?v=8.0"></script>

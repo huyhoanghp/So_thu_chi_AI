@@ -171,6 +171,7 @@ window.listenForData = function() {
                 const dateA = a.createdAt ? window.parseDate(a.createdAt) : window.parseDate(a.date);
                 return dateB - dateA;
             });
+        setItem('transactions', window.transactions).catch(err => console.error("Error writing transactions to IndexedDB:", err));
         window.renderAll();
         if (loadingOverlay) loadingOverlay.style.display = 'none';
     }, err => window.showError("Không thể tải lịch sử giao dịch: " + err.message));
@@ -188,6 +189,7 @@ window.listenForData = function() {
     window.productsCollection.onSnapshot(snapshot => {
         window.products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
             .sort((a, b) => a.name.localeCompare(b.name));
+        setItem('products', window.products).catch(err => console.error("Error writing products to IndexedDB:", err));
         window.renderAll();
         
         const filter = document.getElementById('product-report-filter');
@@ -226,6 +228,50 @@ window.listenForData = function() {
             .sort((a, b) => a.name.localeCompare(b.name));
         window.renderPromotions();
     }, err => window.showError("Không thể tải danh sách khuyến mại: " + err.message));
+};
+
+window.initSettingsTabs = function() {
+    const tabBtns = document.querySelectorAll('.settings-tab-btn');
+    const sections = {
+        gemini: document.getElementById('settings-group-gemini'),
+        categories: document.getElementById('settings-group-categories'),
+        telegram: document.getElementById('settings-group-telegram')
+    };
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetTab = btn.getAttribute('data-settings-tab');
+            
+            // Update active states on buttons
+            tabBtns.forEach(b => {
+                const isActive = b === btn;
+                if (isActive) {
+                    b.classList.add('settings-tab-btn-active');
+                    b.classList.remove('settings-tab-btn-inactive');
+                } else {
+                    b.classList.remove('settings-tab-btn-active');
+                    b.classList.add('settings-tab-btn-inactive');
+                }
+            });
+
+            // Toggle visibility of sections
+            Object.entries(sections).forEach(([name, el]) => {
+                if (el) {
+                    if (name === targetTab) {
+                        el.classList.remove('hidden');
+                        el.classList.add('animate-fade-in');
+                    } else {
+                        el.classList.add('hidden');
+                        el.classList.remove('animate-fade-in');
+                    }
+                }
+            });
+        });
+    });
+
+    // Initialize with first tab active
+    const firstBtn = tabBtns[0];
+    if (firstBtn) firstBtn.click();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -294,6 +340,24 @@ document.addEventListener('DOMContentLoaded', () => {
             navigator.serviceWorker.register('sw.js')
                 .then(reg => {
                     console.log('Service Worker registered successfully:', reg);
+                    
+                    // Register Periodic Background Sync if supported
+                    if ('periodicSync' in reg) {
+                        navigator.permissions.query({ name: 'periodic-background-sync' }).then(status => {
+                            if (status.state === 'granted') {
+                                reg.periodicSync.register('daily-report-sync', {
+                                    minInterval: 6 * 60 * 60 * 1000 // Every 6 hours
+                                }).then(() => {
+                                    console.log('[Periodic Sync] Registered successfully.');
+                                }).catch(err => {
+                                    console.error('[Periodic Sync] Registration failed:', err);
+                                });
+                            } else {
+                                console.log('[Periodic Sync] Permission status:', status.state);
+                            }
+                        }).catch(err => console.error('[Periodic Sync] Permission query error:', err));
+                    }
+
                     reg.onupdatefound = () => {
                         const installingWorker = reg.installing;
                         installingWorker.onstatechange = () => {
@@ -323,5 +387,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (typeof window.initTelegramEventListeners === 'function') {
         window.initTelegramEventListeners();
+    }
+
+    if (typeof window.initSettingsTabs === 'function') {
+        window.initSettingsTabs();
     }
 });

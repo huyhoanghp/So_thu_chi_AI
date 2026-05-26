@@ -660,3 +660,65 @@ header,
     border-color: #38bdf8;
     box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2), 0 0 12px -2px rgba(56, 189, 248, 0.15);
 }
+
+/* Scrollbar Hiding & Animations */
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.25s ease-out forwards;
+}
+
+/* Settings Segmented Tab Selector Styling */
+.settings-tab-btn {
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid transparent;
+}
+
+.settings-tab-btn-active {
+    color: #0284c7 !important;
+    background: rgba(2, 132, 199, 0.1) !important;
+    border-color: rgba(2, 132, 199, 0.25) !important;
+    box-shadow: 0 4px 12px -3px rgba(14, 165, 233, 0.2) !important;
+}
+
+.dark .settings-tab-btn-active {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.35), rgba(30, 64, 175, 0.45)) !important;
+    border-color: rgba(56, 189, 248, 0.6) !important;
+    box-shadow: 0 8px 20px -5px rgba(14, 165, 233, 0.45), inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 0 12px 1px rgba(56, 189, 248, 0.20) !important;
+}
+
+.settings-tab-btn-inactive {
+    color: #64748b !important;
+}
+
+.dark .settings-tab-btn-inactive {
+    color: #94a3b8 !important;
+}
+
+.settings-tab-btn-inactive:hover {
+    color: #0284c7 !important;
+    background: rgba(2, 132, 199, 0.05) !important;
+}
+
+.dark .settings-tab-btn-inactive:hover {
+    color: #bae6fd !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+}

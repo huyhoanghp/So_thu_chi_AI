@@ -17,6 +17,9 @@ window.loadTelegramSettings = function() {
     window.telegramConfig.reportTime = localStorage.getItem('telegram_report_time') || 'off';
     window.telegramConfig.reportCustomTime = localStorage.getItem('telegram_report_custom_time') || '';
 
+    // Save to IndexedDB for Service Worker
+    setItem('telegramConfig', window.telegramConfig).catch(err => console.error("Error writing telegramConfig to IndexedDB on load:", err));
+
     // Render in UI Cài đặt if elements exist
     const enableCheckbox = document.getElementById('settings-telegram-enable');
     const txAlertCheckbox = document.getElementById('settings-telegram-tx-alert');
@@ -62,6 +65,9 @@ window.saveTelegramSettings = function(enabled, txAlertEnabled, token, chatId, r
     window.telegramConfig.chatId = chatId;
     window.telegramConfig.reportTime = reportTime;
     window.telegramConfig.reportCustomTime = reportCustomTime;
+
+    // Save to IndexedDB for Service Worker
+    setItem('telegramConfig', window.telegramConfig).catch(err => console.error("Error writing telegramConfig to IndexedDB on save:", err));
 
     window.updateTelegramUIState();
     window.showToast("Đã lưu cấu hình Telegram!");
