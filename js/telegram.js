@@ -2,6 +2,7 @@
 
 window.telegramConfig = {
     enabled: false,
+    txAlertEnabled: false,
     token: "",
     chatId: "",
     reportTime: "off",
@@ -10,6 +11,7 @@ window.telegramConfig = {
 
 window.loadTelegramSettings = function() {
     window.telegramConfig.enabled = localStorage.getItem('telegram_enabled') === 'true';
+    window.telegramConfig.txAlertEnabled = localStorage.getItem('telegram_tx_alert_enabled') === 'true';
     window.telegramConfig.token = localStorage.getItem('telegram_bot_token') || '';
     window.telegramConfig.chatId = localStorage.getItem('telegram_chat_id') || '';
     window.telegramConfig.reportTime = localStorage.getItem('telegram_report_time') || 'off';
@@ -17,12 +19,14 @@ window.loadTelegramSettings = function() {
 
     // Render in UI Cài đặt if elements exist
     const enableCheckbox = document.getElementById('settings-telegram-enable');
+    const txAlertCheckbox = document.getElementById('settings-telegram-tx-alert');
     const tokenInput = document.getElementById('settings-telegram-token');
     const chatIdInput = document.getElementById('settings-telegram-chatid');
     const reportTimeSelect = document.getElementById('settings-telegram-report-time');
     const reportCustomInput = document.getElementById('settings-telegram-report-custom-time');
 
     if (enableCheckbox) enableCheckbox.checked = window.telegramConfig.enabled;
+    if (txAlertCheckbox) txAlertCheckbox.checked = window.telegramConfig.txAlertEnabled;
     if (tokenInput) tokenInput.value = window.telegramConfig.token;
     if (chatIdInput) chatIdInput.value = window.telegramConfig.chatId;
     if (reportTimeSelect) reportTimeSelect.value = window.telegramConfig.reportTime;
@@ -44,14 +48,16 @@ window.updateTelegramUIState = function() {
     }
 };
 
-window.saveTelegramSettings = function(enabled, token, chatId, reportTime, reportCustomTime) {
+window.saveTelegramSettings = function(enabled, txAlertEnabled, token, chatId, reportTime, reportCustomTime) {
     localStorage.setItem('telegram_enabled', String(enabled));
+    localStorage.setItem('telegram_tx_alert_enabled', String(txAlertEnabled));
     localStorage.setItem('telegram_bot_token', token);
     localStorage.setItem('telegram_chat_id', chatId);
     localStorage.setItem('telegram_report_time', reportTime);
     localStorage.setItem('telegram_report_custom_time', reportCustomTime);
 
     window.telegramConfig.enabled = enabled;
+    window.telegramConfig.txAlertEnabled = txAlertEnabled;
     window.telegramConfig.token = token;
     window.telegramConfig.chatId = chatId;
     window.telegramConfig.reportTime = reportTime;
@@ -131,15 +137,16 @@ window.sendTelegramProductStockAlert = function(productName, newStock) {
     if (!window.telegramConfig.enabled) return;
 
     const threshold = +(document.getElementById('low-stock-threshold')?.value || 10);
-    if (newStock < threshold) {
-        const text = `⚠️ <b>CẢNH BÁO: SẢN PHẨM SẮP HẾT KHO!</b>\n` +
-                     `-----------------------------\n` +
-                     `📦 <b>Sản phẩm:</b> ${productName}\n` +
-                     `📉 <b>Tồn kho:</b> <code>${newStock}</code> (Báo động dưới: ${threshold})\n` +
-                     `🕒 <b>Thời gian:</b> ${window.formatDisplayDateTime(new Date().toISOString())}\n` +
-                     `👉 Vui lòng nhập thêm hàng để tránh gián đoạn!`;
-        window.sendTelegramMessage(text);
-    }
+    const isLow = newStock < threshold;
+
+    const title = isLow ? `⚠️ <b>CẢNH BÁO: KHO THẤP / BIẾN ĐỘNG KHO</b>` : `📦 <b>THÔNG BÁO BIẾN ĐỘNG KHO</b>`;
+    const text = `${title}\n` +
+                 `-----------------------------\n` +
+                 `📦 <b>Sản phẩm:</b> ${productName}\n` +
+                 `📉 <b>Tồn kho hiện tại:</b> <code>${newStock}</code>${isLow ? ` (Báo động dưới: ${threshold})` : ''}\n` +
+                 `🕒 <b>Thời gian:</b> ${window.formatDisplayDateTime(new Date().toISOString())}\n` +
+                 (isLow ? `👉 Vui lòng nhập thêm hàng để tránh gián đoạn!` : `✅ Trạng thái tồn kho an toàn.`);
+    window.sendTelegramMessage(text);
 };
 
 // Check and send alert for low stock during POS checkout
@@ -165,15 +172,12 @@ window.sendTelegramManualAlert = function(txData) {
 
     const product = window.products.find(p => p.id === txData.productId);
     if (product) {
-        // Alert only when selling (income)
-        if (txData.type === 'income') {
-            if (typeof txData.newStock === 'number') {
-                window.sendTelegramProductStockAlert(product.name, txData.newStock);
-            } else {
-                const stockChange = txData.type === 'income' ? -txData.quantity : txData.quantity;
-                const newStock = product.stock + stockChange;
-                window.sendTelegramProductStockAlert(product.name, newStock);
-            }
+        if (typeof txData.newStock === 'number') {
+            window.sendTelegramProductStockAlert(product.name, txData.newStock);
+        } else {
+            const stockChange = txData.type === 'income' ? -txData.quantity : txData.quantity;
+            const newStock = product.stock + stockChange;
+            window.sendTelegramProductStockAlert(product.name, newStock);
         }
     }
 };
@@ -299,6 +303,109 @@ window.startScheduledTelegramReportTimer = function() {
     setInterval(window.checkAndSendScheduledReport, 60000);
 };
 
+// --- TRANSACTION NOTIFICATIONS QUEUE & BATCHING ---
+let txAlertQueue = [];
+let txAlertTimeout = null;
+let firstQueueTime = null;
+
+window.queueTelegramTxAlert = function(actionType, txData) {
+    if (!window.telegramConfig.enabled || !window.telegramConfig.txAlertEnabled) return;
+
+    // Clone data to avoid modifications during delay
+    const txCopy = JSON.parse(JSON.stringify(txData));
+    txAlertQueue.push({ actionType, txData: txCopy });
+
+    if (!firstQueueTime) {
+        firstQueueTime = Date.now();
+    }
+
+    if (txAlertTimeout) clearTimeout(txAlertTimeout);
+
+    // If it has been more than 10 seconds since the first item, send immediately to prevent endless delay
+    if (Date.now() - firstQueueTime >= 10000) {
+        window.processTelegramTxAlertQueue();
+    } else {
+        txAlertTimeout = setTimeout(window.processTelegramTxAlertQueue, 3000);
+    }
+};
+
+window.processTelegramTxAlertQueue = async function() {
+    if (txAlertTimeout) {
+        clearTimeout(txAlertTimeout);
+        txAlertTimeout = null;
+    }
+    firstQueueTime = null;
+
+    if (txAlertQueue.length === 0) return;
+
+    const items = [...txAlertQueue];
+    txAlertQueue = [];
+
+    let messageText = '';
+    if (items.length === 1) {
+        const item = items[0];
+        const actionText = {
+            'add': '➕ <b>THÊM GIAO DỊCH MỚI</b>',
+            'edit': '📝 <b>CẬP NHẬT GIAO DỊCH</b>',
+            'delete': '❌ <b>XÓA GIAO DỊCH</b>'
+        }[item.actionType];
+
+        const isIncome = item.txData.type === 'income';
+        const typeText = isIncome ? 'Thu nhập (Thu)' : 'Chi phí (Chi)';
+        const amountText = item.txData.exportZero ? 'Miễn phí' : `${isIncome ? '+' : '-'}${window.formatCurrency(item.txData.amount)}`;
+
+        messageText = `${actionText}\n` +
+                      `-----------------------------\n` +
+                      `📝 <b>Nội dung:</b> ${item.txData.description || 'Không có'}\n` +
+                      `💰 <b>Số tiền:</b> <code>${amountText}</code>\n` +
+                      `🗂️ <b>Phân loại:</b> ${typeText}\n` +
+                      `🏷️ <b>Danh mục:</b> ${item.txData.category || 'Chưa phân loại'}\n`;
+
+        if (item.txData.customerName) {
+            messageText += `👤 <b>Khách hàng:</b> ${item.txData.customerName}\n`;
+        }
+        if (item.txData.customerNote) {
+            messageText += `💬 <b>Ghi chú:</b> ${item.txData.customerNote}\n`;
+        }
+        if (item.txData.discountAmount > 0) {
+            messageText += `🎁 <b>Khuyến mại:</b> -${window.formatCurrency(item.txData.discountAmount)}\n`;
+        }
+        if (item.txData.exportZero && item.txData.exportReason) {
+            messageText += `❓ <b>Lý do miễn phí:</b> ${item.txData.exportReason}\n`;
+        }
+        messageText += `🕒 <b>Thời gian:</b> ${window.formatDisplayDateTime(item.txData.createdAt || new Date().toISOString(), item.txData.date)}\n` +
+                       `-----------------------------`;
+    } else {
+        messageText = `🔔 <b>THÔNG BÁO BIẾN ĐỘNG GIAO DỊCH (${items.length})</b>\n` +
+                      `-----------------------------\n`;
+
+        items.forEach((item, idx) => {
+            const isIncome = item.txData.type === 'income';
+            const amountText = item.txData.exportZero ? 'Miễn phí' : `${isIncome ? '+' : '-'}${window.formatCurrency(item.txData.amount)}`;
+            const actionSymbol = {
+                'add': '➕',
+                'edit': '📝',
+                'delete': '❌'
+            }[item.actionType];
+
+            messageText += `${idx + 1}. ${actionSymbol} <b>${item.txData.description || 'Không có'}</b>\n` +
+                           `   • <b>Số tiền:</b> <code>${amountText}</code>\n` +
+                           `   • <b>Phân loại:</b> ${isIncome ? 'Thu' : 'Chi'} | <b>Danh mục:</b> ${item.txData.category || 'N/A'}\n`;
+            if (item.txData.customerName) {
+                messageText += `   • <b>Khách hàng:</b> ${item.txData.customerName}\n`;
+            }
+            if (item.txData.customerNote) {
+                messageText += `   • <b>Ghi chú:</b> ${item.txData.customerNote}\n`;
+            }
+            messageText += `   • <b>Thời gian:</b> ${window.formatDisplayDateTime(item.txData.createdAt || new Date().toISOString(), item.txData.date)}\n\n`;
+        });
+
+        messageText += `-----------------------------`;
+    }
+
+    await window.sendTelegramMessage(messageText);
+};
+
 // Bind elements on DOMContentLoaded (run in categories.js context or app.js initialization)
 window.initTelegramEventListeners = function() {
     const saveTelegramBtn = document.getElementById('save-telegram-btn');
@@ -316,11 +423,12 @@ window.initTelegramEventListeners = function() {
 
     saveTelegramBtn?.addEventListener('click', () => {
         const enabled = document.getElementById('settings-telegram-enable')?.checked || false;
+        const txAlertEnabled = document.getElementById('settings-telegram-tx-alert')?.checked || false;
         const token = document.getElementById('settings-telegram-token')?.value.trim() || '';
         const chatId = document.getElementById('settings-telegram-chatid')?.value.trim() || '';
         const reportTime = document.getElementById('settings-telegram-report-time')?.value || 'off';
         const reportCustomTime = document.getElementById('settings-telegram-report-custom-time')?.value || '';
-        window.saveTelegramSettings(enabled, token, chatId, reportTime, reportCustomTime);
+        window.saveTelegramSettings(enabled, txAlertEnabled, token, chatId, reportTime, reportCustomTime);
     });
 
     testTelegramBtn?.addEventListener('click', window.testTelegramConnection);

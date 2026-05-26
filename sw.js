@@ -49,7 +49,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  
+
   // Cache-First for static third-party CDNs (e.g. SheetJS, Tailwind, Firebase, ChartJS, Fonts)
   if (url.origin !== self.location.origin) {
     e.respondWith(

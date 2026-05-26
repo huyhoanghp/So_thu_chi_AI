@@ -102,6 +102,15 @@
             const isOpen = menu.classList.contains('show');
             closeAllDropdowns();
             if (!isOpen) {
+                // Check if there is enough space below trigger (approx 250px)
+                const rect = trigger.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                    menu.classList.add('open-upward');
+                } else {
+                    menu.classList.remove('open-upward');
+                }
                 menu.classList.add('show');
                 trigger.classList.add('active');
             }
@@ -258,6 +267,15 @@
             const isOpen = menu.classList.contains('show');
             closeAllDropdowns();
             if (!isOpen) {
+                // Check if there is enough space below trigger (approx 250px)
+                const rect = trigger.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                    menu.classList.add('open-upward');
+                } else {
+                    menu.classList.remove('open-upward');
+                }
                 menu.classList.add('show');
                 trigger.classList.add('active');
             }

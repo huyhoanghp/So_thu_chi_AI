@@ -295,6 +295,9 @@ window.checkoutCart = async function() {
             if (typeof window.sendTelegramPOSAlert === 'function') {
                 window.sendTelegramPOSAlert(txData);
             }
+            if (typeof window.queueTelegramTxAlert === 'function') {
+                window.queueTelegramTxAlert('add', txData);
+            }
             window.clearCart();
         } catch (err) {
             window.showToast(`Lỗi thanh toán: ${err.message}`, "error");

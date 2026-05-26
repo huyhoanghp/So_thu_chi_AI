@@ -432,6 +432,9 @@ window.handleFormSubmit = async function(e) {
                 if (typeof window.sendTelegramManualAlert === 'function') {
                     window.sendTelegramManualAlert(data);
                 }
+                if (typeof window.queueTelegramTxAlert === 'function') {
+                    window.queueTelegramTxAlert('add', data);
+                }
             } else if (window.currentFormMode === 'editPlan') {
                 delete data.createdAt;
                 await window.plansCollection.doc(editingIdInput.value).update(data); 
@@ -492,6 +495,14 @@ window.handleFormSubmit = async function(e) {
                 // Check and alert on edit
                 if (calculatedNewStock !== null && typeof window.sendTelegramProductStockAlert === 'function') {
                     window.sendTelegramProductStockAlert(productName, calculatedNewStock);
+                }
+                if (typeof window.queueTelegramTxAlert === 'function') {
+                    const txAlertData = { ...afterTxData };
+                    if (beforeTx) {
+                        txAlertData.createdAt = beforeTx.createdAt;
+                        txAlertData.id = beforeTx.id;
+                    }
+                    window.queueTelegramTxAlert('edit', txAlertData);
                 }
             }
             window.closeFormModal();
@@ -576,6 +587,9 @@ window.deleteTransaction = function(tx) {
 
                 await batch.commit();
                 window.showToast(revertStock ? "Đã xóa giao dịch và hoàn tồn kho!" : "Đã xóa giao dịch (không hoàn kho).");
+                if (typeof window.queueTelegramTxAlert === 'function') {
+                    window.queueTelegramTxAlert('delete', tx);
+                }
             } catch (e) {
                 window.showToast('Lỗi: ' + e.message, "error");
             }
